@@ -1,0 +1,38 @@
+#include "NeuralNetwork.h"
+#include "Operator.h"
+
+namespace MAI {
+
+void Operator::addInputNames(const std::vector<std::string>& names) {
+    mInputNames.insert(mInputNames.end(), names.begin(), names.end());
+}
+
+void Operator::addOutputNames(const std::vector<std::string>& names) {
+    mOutputNames.insert(mOutputNames.end(), names.begin(), names.end());
+}
+
+std::vector<std::string>& Operator::inputNames() {
+    return mInputNames;
+}
+
+std::vector<std::string>& Operator::outputNames() {
+    return mOutputNames;
+}
+
+void Operator::setNeuralNetwork(NeuralNetwork* network) {
+    mNeuralNetwork = network;
+}
+
+Tensor* Operator::getTensor(const std::string& inputName) {
+    return mNeuralNetwork->getTensor(inputName);
+}
+
+Tensor* Operator::getInputTensor(int inputIdx) {
+    return mNeuralNetwork->getTensor(mInputNames[inputIdx]);
+}
+
+Tensor* Operator::getOutputTensor(int outputIdx) {
+    return mNeuralNetwork->getTensor(mOutputNames[outputIdx]);
+}
+
+} // namespace MAI
