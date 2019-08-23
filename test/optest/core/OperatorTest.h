@@ -15,8 +15,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "util/Util.h"
-#include "Util.h"
+#include "util/MAIUtil.h"
+#include "TestUtil.h"
+#include "core/NetworkBuilder.h"
+#include "core/OperatorBuilder.h"
 
 namespace MAI {
 namespace Test {

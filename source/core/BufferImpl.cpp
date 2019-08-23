@@ -1,7 +1,7 @@
 #include <string.h>
 
 #include "BufferImpl.h"
-#include "util/Type.h"
+#include "util/MAIType.h"
 
 namespace MAI {
 

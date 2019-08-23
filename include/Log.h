@@ -19,7 +19,7 @@
 #define INFO 3
 #define WARN 4
 #define ERROR 5
-#define ASSERT 6
+#define FATAL 6
 
 #define ALOG(level, ...) printf(__VA_ARGS__);printf("\n");
 
@@ -28,4 +28,4 @@
 #define ALOGI(...) ALOG(INFO, __VA_ARGS__);
 #define ALOGW(...) ALOG(WARN, __VA_ARGS__);
 #define ALOGE(...) ALOG(ERROR, __VA_ARGS__);
-#define ALOGA(...) ALOG(ASSERT, __VA_ARGS__);
+#define ALOGF(...) ALOG(ASSERT, __VA_ARGS__);

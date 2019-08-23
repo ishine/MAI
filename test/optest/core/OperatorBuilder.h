@@ -22,6 +22,9 @@ namespace Test {
 
 class OperatorBuilder {
 public:
+
+    OperatorBuilder() : mParam(NULL) {}
+
     inline OperatorBuilder& setType(MAIOperator opType) {
         mOpContext.opType = opType;
         return *this;
@@ -51,13 +54,20 @@ public:
         std::unique_ptr<Operator> op = OperatorRegister::getInstance()->createOperator(mOpContext);
         op->addInputNames(mInputNames);
         op->addOutputNames(mOutputNames);
+        op->setParam(mParam);
         return std::move(op);
+    }
+
+    inline OperatorBuilder& setParam(Param* param) {
+        mParam = param;
+        return *this;
     }
 
 private:
     OpContext mOpContext;
     std::vector<std::string> mInputNames;
     std::vector<std::string> mOutputNames;
+    Param* mParam;
 };
 
 } // namespace Test

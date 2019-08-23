@@ -35,6 +35,7 @@ enum MAI_STATUS {
 
 enum MAIOperator {
     RESHAPE = 1,
+    SQUEEZE = 2,
 };
 
 enum DataType {

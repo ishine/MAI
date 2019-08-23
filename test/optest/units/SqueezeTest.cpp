@@ -17,19 +17,21 @@
 namespace MAI {
 namespace Test {
 
-class ReshapeTest : public OperatorTest {
+class SqueezeTest : public OperatorTest {
 };
 
-TEST_F(ReshapeTest, ReshapeBasic) {
+TEST_F(SqueezeTest, SqueezeBasic) {
+    SqueezeParam* param = new SqueezeParam();
+    param->squeezeDims = {3};
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
-            .setType(RESHAPE)
+            .setType(SQUEEZE)
             .setDataType(DT_FLOAT)
-            .setInputNames({"input", "shape"})
+            .setInputNames({"input"})
             .setOutputNames({"output"})
+            .setParam(param)
             .build())
         .addTensor<float>("input", {1, 2, 2, 1}, {1.f, 2.f, 3.f, 4.f})
-        .addTensor<int32>("shape", {3}, {1, 2, 2})
         .addTensor<float>("output", {}, {})
         .addTensor<float>("check", {1, 2, 2}, {1.f, 2.f, 3.f, 4.f})
         .build();
@@ -39,18 +41,17 @@ TEST_F(ReshapeTest, ReshapeBasic) {
     ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
 }
 
-TEST_F(ReshapeTest, ReshapeDynamic) {
+TEST_F(SqueezeTest, SqueezeNoDims) {
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
-            .setType(RESHAPE)
+            .setType(SQUEEZE)
             .setDataType(DT_FLOAT)
-            .setInputNames({"input", "shape"})
+            .setInputNames({"input"})
             .setOutputNames({"output"})
             .build())
         .addTensor<float>("input", {1, 2, 2, 1}, {1.f, 2.f, 3.f, 4.f})
-        .addTensor<int32>("shape", {3}, {1, -1, 2})
         .addTensor<float>("output", {}, {})
-        .addTensor<float>("check", {1, 2, 2}, {1.f, 2.f, 3.f, 4.f})
+        .addTensor<float>("check", {2, 2}, {1.f, 2.f, 3.f, 4.f})
         .build();
     network->init();
     network->run();
@@ -58,5 +59,25 @@ TEST_F(ReshapeTest, ReshapeDynamic) {
     ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
 }
 
+TEST_F(SqueezeTest, SqueezeNegativeDim) {
+    SqueezeParam* param = new SqueezeParam();
+    param->squeezeDims = {-4};
+    std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
+        .addOperator(OperatorBuilder()
+            .setType(SQUEEZE)
+            .setDataType(DT_FLOAT)
+            .setInputNames({"input"})
+            .setOutputNames({"output"})
+            .setParam(param)
+            .build())
+        .addTensor<float>("input", {1, 2, 2, 1}, {1.f, 2.f, 3.f, 4.f})
+        .addTensor<float>("output", {}, {})
+        .addTensor<float>("check", {2, 2, 1}, {1.f, 2.f, 3.f, 4.f})
+        .build();
+    network->init();
+    network->run();
+
+    ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
+}
 } // namespace Test
 } // namespace MAI

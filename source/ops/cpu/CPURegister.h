@@ -25,11 +25,13 @@ namespace CPU {
     register##op();
 
 DECLARE_REGISTER_OP(Reshape);
+DECLARE_REGISTER_OP(Squeeze);
 
 class CPURegister {
 public:
     CPURegister() {
         REGISTER_OP(Reshape);
+        REGISTER_OP(Squeeze);
     }
     ~CPURegister() = default;
 };

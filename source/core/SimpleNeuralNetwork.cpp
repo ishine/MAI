@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/core/SimpleNeuralNetwork.h"
-#include "source/util/Type.h"
+#include "core/SimpleNeuralNetwork.h"
+#include "util/MAIType.h"
 
 namespace MAI {
 

@@ -1,5 +1,6 @@
 #include "NeuralNetwork.h"
 #include "Operator.h"
+#include "util/MAIUtil.h"
 
 namespace MAI {
 
@@ -33,6 +34,11 @@ Tensor* Operator::getInputTensor(int inputIdx) {
 
 Tensor* Operator::getOutputTensor(int outputIdx) {
     return mNeuralNetwork->getTensor(mOutputNames[outputIdx]);
+}
+
+void Operator::setParam(Param* param) {
+    MAI_UNUSED(param);
+    // do nothing
 }
 
 } // namespace MAI

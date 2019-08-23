@@ -21,6 +21,9 @@
 
 namespace MAI {
 
+struct Param {
+};
+
 class NeuralNetwork;
 class Operator {
 public:
@@ -44,10 +47,16 @@ public:
 
     Tensor* getOutputTensor(int outputIdx);
 
+    virtual void setParam(Param* param);
 private:
     NeuralNetwork* mNeuralNetwork;
     std::vector<std::string> mInputNames;
     std::vector<std::string> mOutputNames;
+};
+
+struct SqueezeParam : public Param {
+public:
+    std::vector<int32> squeezeDims;
 };
 
 } // namespace MAI

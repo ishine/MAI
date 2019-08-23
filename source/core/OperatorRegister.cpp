@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "core/OperatorRegister.h"
-#include "util/Type.h"
+#include "util/MAIType.h"
 
 namespace MAI {
 

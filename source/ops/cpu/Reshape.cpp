@@ -14,7 +14,7 @@
 
 #include <algorithm>
 #include "core/OperatorRegister.h"
-#include "util/Util.h"
+#include "util/MAIUtil.h"
 
 namespace MAI {
 namespace Op {

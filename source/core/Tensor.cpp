@@ -1,7 +1,8 @@
 #include "Tensor.h"
 
-#include "util/Util.h"
 #include "core/BufferImpl.h"
+#include "core/Allocator.h"
+#include "util/MAIUtil.h"
 
 namespace MAI {
 
