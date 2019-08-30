@@ -26,6 +26,9 @@ fileSuffixes=(.java .h .cpp)
 
 headerFirstLine=`head -n +1 ${headerPath}`
 
+findFiles=0
+fileNeedAddHeader=0
+
 checkAndAddHeader() {
     file=$1
     needAddHeader=false
@@ -39,6 +42,7 @@ checkAndAddHeader() {
     done < $file
 
     if [ "$needAddHeader" == "true" ];then
+        fileNeedAddHeader=1
         newFile=${file}__.back
         cat ${headerPath} > ${newFile}
         cat ${file} >> ${newFile}
@@ -47,8 +51,24 @@ checkAndAddHeader() {
 }
 
 for fileSuffix in ${fileSuffixes[*]};do
-    files=`find $path -name *$fileSuffix`
+    targetPath=
+    if [[ $path == /* ]];then
+        targetPath=$path
+    else
+        targetPath=${PWD}/$path
+    fi
+    files=`find $targetPath -name "*$fileSuffix"`
     for file in ${files[*]};do
+        findFiles=1
         checkAndAddHeader $file
     done
 done
+
+if [ $findFiles == 0 ];then
+    echo "No files found in $targetPath"
+    exit
+fi
+
+if [ $fileNeedAddHeader == 0 ];then
+    echo "No files in $targetPath need to be added header "
+fi

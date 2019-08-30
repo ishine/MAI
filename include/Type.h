@@ -15,6 +15,7 @@
 #pragma once
 
 #include <sstream>
+#include <map>
 
 namespace MAI {
 
@@ -33,10 +34,67 @@ enum MAI_STATUS {
     MAI_SUCCESS,
 };
 
+#define DEFINE_OP_NAME(name) name,
+#define DEFINE_OP_NAME_INDEX(name, index) name = index,
+
+#define DEFINE_OP_GET_METHOD(_1, _2, METHOD_NAME) METHOD_NAME
+
+#define DEFINE_OP(...) DEFINE_OP_GET_METHOD( __VA_ARGS__, DEFINE_OP_NAME_INDEX, DEFINE_OP_NAME)(__VA_ARGS__)
 enum MAIOperator {
-    RESHAPE = 1,
-    SQUEEZE = 2,
+    #include "OperatorType.def"
+    //RESHAPE = 1,
+    //SQUEEZE = 2,
+    //RELU,
+    //RELU1,
+    //RELU6,
+    //SIGMOID,
+    //TANH,
+    //MAX_POOL,
+    //AVG_POOL,
+    //BIAS_ADD,
+    //FUSED_BATCH_NORM,
+    //SHAPE,
+    //SOFTMAX,
+    //CONV2D,
+    //DEPTHWISE_CONV2D,
+    //ADD,
+    //SUB,
+    //DIV,
+    //MUL,
+    //PACK,
+    //UNPACK,
+    //PAD,
+    //RESIZE_BILINEAR,
+    //STRIDED_SLICE,
+    //TRANSPOSE_CONV2D,
 };
+
+#undef DEFINE_OP_NAME
+#undef DEFINE_OP_NAME_INDEX
+
+#define DEFINE_OP_NAME(name) {name, #name},
+#define DEFINE_OP_NAME_INDEX(name, index) DEFINE_OP_NAME(name)
+
+inline std::string getNameFromOperator(MAIOperator op) {
+    static std::map<MAIOperator, std::string> sOpNameMap = {
+        #include "OperatorType.def"
+    };
+
+    return sOpNameMap[op];
+}
+
+#undef DEFINE_OP_NAME
+#undef DEFINE_OP_NAME_INDEX
+
+#define DEFINE_OP_NAME(name) {#name, name},
+#define DEFINE_OP_NAME_INDEX(name, index) DEFINE_OP_NAME(name)
+inline MAIOperator getOperatorFromName(std::string opName) {
+    static std::map<std::string, MAIOperator> sOpNameMap = {
+        #include "OperatorType.def"
+    };
+
+    return sOpNameMap[opName];
+}
 
 enum DataType {
     DT_INVALID = 0,
@@ -59,6 +117,30 @@ enum DataType {
     DT_UINT16 = 17,
     DT_HALF = 19,
 };
+
+inline std::string getNameFromDataType(DataType dataType) {
+    switch(dataType) {
+    case DT_INVALID:return "DT_INVALID";
+    case DT_FLOAT:return "DT_FLOAT";
+    case DT_DOUBLE:return "DT_DOUBLE";
+    case DT_INT32:return "DT_INT32";
+    case DT_UINT8:return "DT_UINT8";
+    case DT_INT16:return "DT_INT16";
+    case DT_INT8:return "DT_INT8";
+    case DT_STRING:return "DT_STRING";
+    case DT_COMPLEX64:return "DT_COMPLEX64";
+    case DT_INT64:return "DT_INT64";
+    case DT_BOOL:return "DT_BOOL";
+    case DT_QINT8:return "DT_QINT8";
+    case DT_QUINT8:return "DT_QUINT8";
+    case DT_QINT32:return "DT_QINT32";
+    case DT_QINT16:return "DT_QINT16";
+    case DT_QUINT16:return "DT_QUINT16";
+    case DT_UINT16:return "DT_UINT16";
+    case DT_HALF:return "DT_HALF";
+    default:return "DT_INVALID";
+    }
+}
 
 template<class T>
 struct DataTypeToEnum;
@@ -101,9 +183,9 @@ struct OpContext {
     std::string toString() const {
         std::stringstream ss;
         ss << "OpContext {type:"
-           << opType
+           << getNameFromOperator(opType)
            << ", DataType:"
-           << dataType
+           << getNameFromDataType(dataType)
            << "}";
         return ss.str();
     }

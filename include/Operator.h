@@ -59,4 +59,9 @@ public:
     std::vector<int32> squeezeDims;
 };
 
+struct PadParam : public Param {
+public:
+    std::vector<int32> paddings;
+};
+
 } // namespace MAI

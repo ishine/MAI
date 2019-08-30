@@ -5,12 +5,13 @@ cc_library(
        "source/ops/cpu/*.cpp",
    ]),
    hdrs = glob([
+       "include/OperatorType.def",
        "include/*.h",
        "source/core/*.h",
        "source/util/*.h",
        "source/ops/cpu/*.h",
    ]),
-   copts = ["-Wall", "-Wextra"],
+   copts = ["-Wall", "-Wextra",],
    includes = ["source", "include"],
    visibility = ["//visibility:public"],
 )
