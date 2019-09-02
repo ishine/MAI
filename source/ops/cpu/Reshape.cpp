@@ -71,7 +71,7 @@ public:
 };
 
 void registerReshape() {
-    MAI_REGISTER_OP((OpContext{.opType=RESHAPE, .dataType=DT_FLOAT}), float, Reshape);
+    MAI_REGISTER_OP((OpContext{.opType=RESHAPE,}), float, Reshape);
 }
 
 } // namespace CPU

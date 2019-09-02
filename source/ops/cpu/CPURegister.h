@@ -25,13 +25,27 @@ namespace CPU {
     register##op();
 
 DECLARE_REGISTER_OP(Reshape);
+DECLARE_REGISTER_OP(Shape);
 DECLARE_REGISTER_OP(Squeeze);
+DECLARE_REGISTER_OP(BiasAdd);
+DECLARE_REGISTER_OP(Relu);
+DECLARE_REGISTER_OP(Relu1);
+DECLARE_REGISTER_OP(Relu6);
+DECLARE_REGISTER_OP(Sigmoid);
+DECLARE_REGISTER_OP(Softmax);
 
 class CPURegister {
 public:
     CPURegister() {
         REGISTER_OP(Reshape);
+        REGISTER_OP(Shape);
         REGISTER_OP(Squeeze);
+        REGISTER_OP(BiasAdd);
+        REGISTER_OP(Relu);
+        REGISTER_OP(Relu1);
+        REGISTER_OP(Relu6);
+        REGISTER_OP(Sigmoid);
+        REGISTER_OP(Softmax);
     }
     ~CPURegister() = default;
 };

@@ -25,8 +25,8 @@ namespace MAI {
 class Allocator;
 class Tensor {
 public:
-    Tensor();
-    Tensor(Allocator* allocator);
+    Tensor(DataType dataType);
+    Tensor(DataType dataType, Allocator* allocator);
     ~Tensor();
 
 
@@ -42,6 +42,14 @@ public:
         mName = name;
     }
 
+    inline void setDataFormat(DataFormat dataFormat) {
+        mDataFormat = dataFormat;
+    }
+
+    inline DataFormat getDataFormat() const {
+        return mDataFormat;
+    }
+
     virtual void copy(const void* data, int64 len);
     virtual void allocateBuffer(const std::vector<uint64>& shape);
     virtual void resize(const std::vector<uint64>& shape);
@@ -52,7 +60,7 @@ public:
     }
 
     template<typename T>
-    inline const T* mutableData() {
+    inline T* mutableData() {
         return reinterpret_cast<T*>(mBuffer->mutableData());
     }
 
@@ -73,6 +81,7 @@ private:
 private:
     std::string mName;
     DataType mDataType;
+    DataFormat mDataFormat;
     Buffer* mBuffer;
     std::vector<uint64> mShape;
     Allocator* mAllocator;

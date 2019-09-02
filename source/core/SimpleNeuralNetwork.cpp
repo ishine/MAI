@@ -21,6 +21,9 @@ SimpleNeuralNetwork::SimpleNeuralNetwork() {
 }
 
 MAI_STATUS SimpleNeuralNetwork::init() {
+    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        (*it)->init();
+    }
     return MAI_SUCCESS;
 }
 

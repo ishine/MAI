@@ -36,8 +36,9 @@ public:
     NetworkBuilder& addTensor(
             const std::string& name,
             const std::vector<uint64>& dims,
-            const std::vector<T>& data) {
-        std::unique_ptr<Tensor> tensor(new Tensor(new CPUAllocator()));
+            const std::vector<T>& data,
+            const DataFormat dataFormat = NHWC) {
+        std::unique_ptr<Tensor> tensor(new Tensor(DataTypeToEnum<T>::value, new CPUAllocator()));
         tensor->setName(name);
         if (!dims.empty()) {
             tensor->allocateBuffer(dims);
@@ -45,6 +46,8 @@ public:
         if (!data.empty()) {
             tensor->copy(reinterpret_cast<const void*>(&data[0]), data.size() * sizeof(T));
         }
+
+        tensor->setDataFormat(dataFormat);
 
         mNetwork->addTensor(tensor);
         return *this;

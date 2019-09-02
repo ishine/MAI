@@ -35,6 +35,7 @@ inline void ExpectEQ(const T& a, const T& b) {
 
 template<>
 inline void ExpectEQ<float>(const float& a, const float& b) {
+    printf("ExpectEQ float a:%f, b:%f\n", a, b);
     EXPECT_FLOAT_EQ(a, b);
 }
 
@@ -48,7 +49,7 @@ inline void ExpectTensorEQ(const Tensor* x, const Tensor* y) {
     ASSERT_TRUE(x->dataType() == y->dataType());
     ExpectDimsEQ(x, y);
     auto a = x->data<X_TYPE>();
-    auto b = x->data<Y_TYPE>();
+    auto b = y->data<Y_TYPE>();
     for (int i = 0; i < x->elementSize(); ++i) {
         ExpectEQ(a[i], b[i]);
     }

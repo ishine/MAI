@@ -28,9 +28,9 @@ TEST_F(SigmoidTest, SigmoidBasic) {
             .setInputNames({"input"})
             .setOutputNames({"output"})
             .build())
-        .addTensor<float>("input", {1, 3, 3, 1}, {-9,05.5f,-3,-0.5f,0,1.25,3,7,8})
+        .addTensor<float>("input", {1, 3, 3, 1}, {-9,-5.5f,-3,-0.5f,0,1.25,3,7,8})
         .addTensor<float>("output", {}, {})
-        .addTensor<float>("check", {1, 3, 3, 1}, {0.00012339, 0.0040701032, 0.047425866, 0.37754071,
+        .addTensor<float>("check", {1, 3, 3, 1}, {0.00012339458, 0.00407013763, 0.047425866, 0.37754071,
                 0.5, 0.77729988, 0.95257413, 0.999089, 0.99966466})
         .build();
     network->init();

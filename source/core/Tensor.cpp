@@ -6,17 +6,19 @@
 
 namespace MAI {
 
-Tensor::Tensor() :
+Tensor::Tensor(DataType dataType) :
     mName(""),
-    mDataType(DT_INVALID),
+    mDataType(dataType),
+    mDataFormat(NHWC),
     mBuffer(NULL),
     mAllocator(NULL),
     mFlag(MEMORY_OWNER | ALLOCATOR_OWNER) {
 }
 
-Tensor::Tensor(Allocator* allocator) :
+Tensor::Tensor(DataType dataType, Allocator* allocator) :
     mName(""),
-    mDataType(DT_INVALID),
+    mDataType(dataType),
+    mDataFormat(NHWC),
     mBuffer(NULL),
     mAllocator(allocator),
     mFlag(0) {
@@ -50,7 +52,7 @@ void Tensor::allocateBuffer(const std::vector<uint64>& shape) {
     mShape = shape;
     mFlag |= MEMORY_OWNER;
     mBuffer = new SimpleBuffer(mAllocator);
-    mBuffer->allocate(shapeToSize(shape));
+    mBuffer->allocate(size());
 }
 
 void Tensor::resize(const std::vector<uint64>& shape) {

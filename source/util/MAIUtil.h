@@ -99,6 +99,10 @@ namespace MAI {
         switch(dataType) {
         case DT_FLOAT:
             return sizeof(float);
+        case DT_INT32:
+            return sizeof(int32);
+        case DT_INT64:
+            return sizeof(int64);
         default:
             MAI_CHECK(0, "unsupport dataType:%d", dataType);
             break;

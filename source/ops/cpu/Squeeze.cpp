@@ -73,7 +73,7 @@ private:
 };
 
 void registerSqueeze() {
-    MAI_REGISTER_OP((OpContext{.opType=SQUEEZE, .dataType=DT_FLOAT}), float, Squeeze);
+    MAI_REGISTER_OP((OpContext{.opType=SQUEEZE,}), float, Squeeze);
 }
 
 } // namespace CPU

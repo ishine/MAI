@@ -162,6 +162,15 @@ MAI_MAPPING_DATA_TYPE(float, DT_FLOAT);
 MAI_MAPPING_DATA_TYPE(uint8, DT_UINT8);
 MAI_MAPPING_DATA_TYPE(int8, DT_INT8);
 MAI_MAPPING_DATA_TYPE(int32, DT_INT32);
+MAI_MAPPING_DATA_TYPE(int64, DT_INT64);
+
+enum DataFormat {
+    NHWC, // TF conv2d input
+    NCHW,
+    HWIO, // TF conv2d filter
+    OHWI, // ANN conv2d filter
+    HWOI, // TF deconv2d filter
+};
 
 struct OpContext {
     MAIOperator opType;
