@@ -17,16 +17,33 @@
 #include "include/Type.h"
 #include "include/Operator.h"
 #include "include/Tensor.h"
+#include "include/Optimizer.h"
 
 namespace MAI {
 
 class NeuralNetwork {
+public:
+    enum OptimizerRule {
+        FOLD_BN_INTO_CONV2D,
+        FOLD_ACTIVATION_INTO_CONV2D,
+    };
+
 public:
     virtual MAI_STATUS init() = 0;
     virtual MAI_STATUS run() = 0;
     virtual MAI_STATUS addOperator(std::unique_ptr<Operator>& op) = 0;
     virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor) = 0;
     virtual Tensor* getTensor(const std::string& name) = 0;
+    virtual Operator* getOperator(const std::string& name) = 0;
+
+    virtual void addOptimizer(std::unique_ptr<Optimizer> optimizer);
+    virtual void addOptimizer(OptimizerRule rule);
+    virtual Optimizer* createOptimizer(OptimizerRule rule);
+    virtual void startOptimize();
+    virtual void builGraph() = 0;
+
+private:
+    std::vector<std::unique_ptr<Optimizer> > mOptimizers;
 };
 
 } // namespace MAI

@@ -14,27 +14,13 @@
 
 #pragma once
 
-#include <vector>
-#include <map>
-#include "include/NeuralNetwork.h"
-
 namespace MAI {
 
-class SimpleNeuralNetwork : public NeuralNetwork {
+class FoldBNIntoConv2dOptimizer : public Optimizer {
 public:
-    SimpleNeuralNetwork();
-    ~SimpleNeuralNetwork() = default;
-    virtual MAI_STATUS init();
-    virtual MAI_STATUS run();
-    virtual MAI_STATUS addOperator(std::unique_ptr<Operator>& op);
-    virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor);
-    virtual Tensor* getTensor(const std::string& name);
-    virtual Operator* getOperator(const std::string& name);
-    virtual void builGraph();
-private:
-    std::vector<std::unique_ptr<Operator> > mOperators;
-    std::map<std::string, std::unique_ptr<Tensor> > mTensors;
-
+    FoldBNIntoConv2dOptimizer = default;
+    virtual ~FoldBNIntoConv2dOptimizer = default;
+    void optimize();
 };
 
 } // namespace MAI

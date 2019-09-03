@@ -33,6 +33,7 @@ DECLARE_REGISTER_OP(Relu1);
 DECLARE_REGISTER_OP(Relu6);
 DECLARE_REGISTER_OP(Sigmoid);
 DECLARE_REGISTER_OP(Softmax);
+DECLARE_REGISTER_OP(FusedBatchNorm);
 
 class CPURegister {
 public:
@@ -46,6 +47,7 @@ public:
         REGISTER_OP(Relu6);
         REGISTER_OP(Sigmoid);
         REGISTER_OP(Softmax);
+        REGISTER_OP(FusedBatchNorm);
     }
     ~CPURegister() = default;
 };

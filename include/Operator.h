@@ -35,6 +35,10 @@ public:
 
     void addOutputNames(const std::vector<std::string>& names);
 
+    void setName(const std::string& name);
+
+    std::string name() const;
+
     std::vector<std::string>& inputNames();
 
     std::vector<std::string>& outputNames();
@@ -52,6 +56,7 @@ private:
     NeuralNetwork* mNeuralNetwork;
     std::vector<std::string> mInputNames;
     std::vector<std::string> mOutputNames;
+    std::string mName;
 };
 
 struct SqueezeParam : public Param {
@@ -62,6 +67,17 @@ public:
 struct PadParam : public Param {
 public:
     std::vector<int32> paddings;
+};
+
+struct SoftmaxParam : public Param {
+public:
+    float beta; // default is 1.;
+    int32 axis; // default is -1 or 0;
+};
+
+struct FusedBatchNormParam : public Param {
+public:
+    float epsilon;
 };
 
 } // namespace MAI

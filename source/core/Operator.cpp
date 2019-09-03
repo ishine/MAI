@@ -20,6 +20,14 @@ std::vector<std::string>& Operator::outputNames() {
     return mOutputNames;
 }
 
+void Operator::setName(const std::string& name) {
+    mName = name;
+}
+
+std::string Operator::name() const {
+    return mName;
+}
+
 void Operator::setNeuralNetwork(NeuralNetwork* network) {
     mNeuralNetwork = network;
 }

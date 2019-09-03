@@ -30,7 +30,7 @@ public:
         return MAI_SUCCESS;
     }
 
-    void setParam(Param* param) {
+    void setParam(Param* param) override {
         mParam = reinterpret_cast<SqueezeParam*>(param);
     }
 

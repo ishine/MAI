@@ -35,7 +35,6 @@ inline void ExpectEQ(const T& a, const T& b) {
 
 template<>
 inline void ExpectEQ<float>(const float& a, const float& b) {
-    printf("ExpectEQ float a:%f, b:%f\n", a, b);
     EXPECT_FLOAT_EQ(a, b);
 }
 

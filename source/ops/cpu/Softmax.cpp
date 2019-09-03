@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cmath>
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
 
@@ -22,11 +23,50 @@ namespace CPU {
 template<typename T>
 class Softmax : public Operator {
 public:
-    Softmax() = default;
+    Softmax() : mAxis(-1), mBeta(1.f) {
+    }
     ~Softmax() = default;
 
     MAI_STATUS init() override {
+        if (mAxis < 0) {
+            mAxis += getInputTensor(0)->shape().size();
+        }
         return MAI_SUCCESS;
+    }
+
+    void setParam(Param* param) override {
+        SoftmaxParam* softmaxParam = reinterpret_cast<SoftmaxParam*>(param);
+        if (softmaxParam) {
+            mBeta = softmaxParam->beta;
+            mAxis = softmaxParam->axis;
+        }
+    }
+
+    void softmax2D(const T* input, int32 batch, int32 inSize, T* output) {
+        for (int32 b = 0; b < batch; ++b) {
+            //1. find the max value
+            T max = input[0];
+            for (int32 i = 1; i < inSize; ++i) {
+                if (max < input[i]) {
+                    max = input[i];
+                }
+            }
+
+            //2. calculate sum of a batch
+            T sum = 0.f;
+            for (int32 i = 0; i < inSize; ++i) {
+                output[i] = std::exp((input[i] - max) * mBeta);
+                sum += output[i];
+            }
+
+            //3. calculate tf.exp(logits) / sum
+            T reciprocalSum = 1.f / sum;
+            for (int32 i = 0; i < inSize; ++i) {
+                output[i] *= reciprocalSum;
+            }
+            input += inSize;
+            output += inSize;
+        }
     }
 
     MAI_STATUS run() override {
@@ -34,12 +74,27 @@ public:
         Tensor* output = getOutputTensor(0);
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
-        output->resize({input->shape().size()});
+        output->resize(input->shape());
+
+        const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
-        for (shape_t i = 0; i < input->shape().size(); ++i) {
+
+        if (input->shape().size() == 1) {
+            MAI_CHECK((mAxis == 0), "axis must be 0 when rank of input is 1, but not : %d", mAxis);
+
+            softmax2D(inputData, 1, input->dim(0), outputData);
+        } else if (input->shape().size() == 2) {
+            MAI_CHECK((mAxis == 0 || mAxis == 1), "axis must be 0 or 1 when rank of input is 2, \
+                    but not : %d", mAxis);
+            softmax2D(inputData, input->dim(0), input->dim(1), outputData);
         }
+
         return MAI_SUCCESS;
     }
+
+private:
+    int32 mAxis;// TODO: gavinchen axis is not support now
+    float mBeta;
 };
 
 void registerSoftmax() {

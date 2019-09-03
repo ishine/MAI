@@ -49,4 +49,18 @@ MAI_STATUS SimpleNeuralNetwork::addTensor(std::unique_ptr<Tensor>& tensor) {
 Tensor* SimpleNeuralNetwork::getTensor(const std::string& name) {
     return mTensors[name].get();
 }
+
+Operator* SimpleNeuralNetwork::getOperator(const std::string& name) {
+    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        if ((*it)->name() == name) {
+            return it->get();
+        }
+    }
+    return NULL;
+}
+
+void SimpleNeuralNetwork::builGraph() {
+
+}
+
 } // namespace MAI

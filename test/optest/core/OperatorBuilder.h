@@ -54,7 +54,9 @@ public:
         std::unique_ptr<Operator> op = OperatorRegister::getInstance()->createOperator(mOpContext);
         op->addInputNames(mInputNames);
         op->addOutputNames(mOutputNames);
-        op->setParam(mParam);
+        if (mParam != NULL) {
+            op->setParam(mParam);
+        }
         return std::move(op);
     }
 
