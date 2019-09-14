@@ -45,7 +45,9 @@ inline void ExpectEQ<double>(const double& a, const double& b) {
 
 template<typename X_TYPE, typename Y_TYPE>
 inline void ExpectTensorEQ(const Tensor* x, const Tensor* y) {
-    ASSERT_TRUE(x->dataType() == y->dataType());
+    ASSERT_TRUE(x->dataType() == y->dataType()) << "dataType of " << x->name()
+        << " is " << x->dataType() << " while dataType of " << y->name()
+        << " is " << y->dataType();
     ExpectDimsEQ(x, y);
     auto a = x->data<X_TYPE>();
     auto b = y->data<Y_TYPE>();

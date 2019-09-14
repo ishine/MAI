@@ -34,6 +34,13 @@ DECLARE_REGISTER_OP(Relu6);
 DECLARE_REGISTER_OP(Sigmoid);
 DECLARE_REGISTER_OP(Softmax);
 DECLARE_REGISTER_OP(FusedBatchNorm);
+DECLARE_REGISTER_OP(Cast);
+DECLARE_REGISTER_OP(Floor);
+DECLARE_REGISTER_OP(Tanh);
+DECLARE_REGISTER_OP(Exp);
+DECLARE_REGISTER_OP(Fill);
+DECLARE_REGISTER_OP(ExpandDims);
+DECLARE_REGISTER_OP(Split);
 
 class CPURegister {
 public:
@@ -48,6 +55,13 @@ public:
         REGISTER_OP(Sigmoid);
         REGISTER_OP(Softmax);
         REGISTER_OP(FusedBatchNorm);
+        REGISTER_OP(Cast);
+        REGISTER_OP(Floor);
+        REGISTER_OP(Tanh);
+        REGISTER_OP(Exp);
+        REGISTER_OP(Fill);
+        REGISTER_OP(ExpandDims);
+        REGISTER_OP(Split);
     }
     ~CPURegister() = default;
 };

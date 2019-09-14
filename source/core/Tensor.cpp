@@ -96,6 +96,7 @@ void Tensor::reuse(const Tensor* tensor) {
 }
 
 void Tensor::reshape(const std::vector<shape_t>& shape) {
+    //TODO (gavinchen) check accumulate size of shape and mShape is equal
     mShape = shape;
 }
 

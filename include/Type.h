@@ -32,6 +32,7 @@ typedef uint64 shape_t;
 
 enum MAI_STATUS {
     MAI_SUCCESS,
+    MAI_FAILED,
 };
 
 #define DEFINE_OP_NAME(name) name,

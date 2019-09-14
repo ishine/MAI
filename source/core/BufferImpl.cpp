@@ -19,6 +19,7 @@ MAI_STATUS SimpleBuffer::allocate(int64 bytes) {
     MAI_CHECK(mAllocator != NULL, "Allocator is null");
     MAI_CHECK(mBufferPtr == NULL, "Buffer has been allocated");
     mBufferPtr = mAllocator->allocate(bytes);
+    mSize = bytes;
     return MAI_SUCCESS;
 }
 

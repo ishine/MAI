@@ -45,12 +45,6 @@ private:
     std::map<OpContext, OperatorCreator> mOps;
 };
 
-//#define MAI_REGISTER_OP_WITH_TEMPLATE(OP_CONTEXT, DATA_TYPE, CLASSNAME)      \
-    OpContext opContext = OP_CONTEXT;                                        \
-    opContext.dataType = DataTypeToEnum<DATA_TYPE>::value;                   \
-    OperatorRegister::getInstance()->registerOperator(                       \
-        opContext, OperatorRegister::opDefaultCreator<CLASSNAME<DATA_TYPE> >)
-
 #define MAI_REGISTER_OP_WITH_TEMPLATE(OP_CONTEXT, DATA_TYPE, CLASSNAME)       \
 do {                                                                          \
     OpContext opContext = OP_CONTEXT;                                         \

@@ -80,4 +80,14 @@ public:
     float epsilon;
 };
 
+struct ExpandDimsParam : public Param {
+public:
+    int32 axis;
+};
+
+struct SplitParam : public Param {
+public:
+    int32 numSplit;
+};
+
 } // namespace MAI

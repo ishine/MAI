@@ -50,6 +50,10 @@ public:
         return mDataFormat;
     }
 
+    inline bool isScalar() const {
+        return 1 == dimSize() && 1 == elementSize();
+    }
+
     virtual void copy(const void* data, int64 len);
     virtual void allocateBuffer(const std::vector<uint64>& shape);
     virtual void resize(const std::vector<uint64>& shape);
