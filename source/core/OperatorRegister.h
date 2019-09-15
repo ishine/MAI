@@ -15,6 +15,7 @@
 #pragma once
 
 #include <map>
+#include <functional>
 
 #include "Operator.h"
 
