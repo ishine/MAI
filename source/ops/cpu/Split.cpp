@@ -31,22 +31,18 @@ public:
     }
 
     void setParam(Param* param) override {
-        ALOGI("setParam");
         SplitParam* splitParam = reinterpret_cast<SplitParam*>(param);
         if (splitParam) {
             mNumSplit = splitParam->numSplit;
         }
-        ALOGI("setParam end");
     }
 
     MAI_STATUS run() override {
-        ALOGI("run 1");
         const Tensor* input = getInputTensor(0);
         const Tensor* axisTensor = getInputTensor(1);
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(axisTensor);
         MAI_CHECK(mNumSplit == outputNames().size(), "NumSplit not equal to output tensors");
-        ALOGI("run 2");
         // axis -> [-rank(input), rank(input))
         int32 axis = *(axisTensor->data<int32>());
         axis = axis < 0 ? axis + input->dimSize() : axis;
@@ -60,7 +56,6 @@ public:
             output->resize(outputShape);
         }
 
-        ALOGI("run 3");
         shape_t outerSize = std::accumulate(outputShape.begin(), outputShape.begin() + axis, 1,
                 std::multiplies<shape_t>());
         shape_t innerSize = std::accumulate(outputShape.begin() + axis + 1, outputShape.end(), 1,
@@ -68,7 +63,6 @@ public:
         for (shape_t outerIdx = 0; outerIdx < outerSize; ++outerIdx) {
             shape_t inputIdx = outerIdx * input->dim(axis) * innerSize;
             shape_t outputIdx = outerIdx * outputShape[axis] * innerSize;
-            ALOGI("inputIdx:%d outputIdx:%d, oSize:%d, iSize:%d", inputIdx, outputIdx, outerSize, innerSize);
             for (shape_t i = 0; i < mNumSplit; ++i) {
                 Tensor* output = getOutputTensor(i);
                 MAI_CHECK_NULL(output);
@@ -76,7 +70,6 @@ public:
                 memcpy(outputData + outputIdx, inputData + inputIdx + i * outputShape[axis] * innerSize, innerSize * outputShape[axis] * sizeof(T));
             }
         }
-        ALOGI("run 4");
         return MAI_FAILED;
     }
 private:
