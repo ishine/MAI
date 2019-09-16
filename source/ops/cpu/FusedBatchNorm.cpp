@@ -24,7 +24,6 @@ template<typename T>
 class FusedBatchNorm : public Operator {
 public:
     FusedBatchNorm() : mEpsilon(0.001f) {
-        ALOGI("FusedBatchNorm <init>");
     }
 
     ~FusedBatchNorm() = default;

@@ -27,7 +27,6 @@ public:
     ~BiasAdd() = default;
 
     MAI_STATUS init() override {
-        ALOGI("BiasAdd init");
         mInput = getInputTensor(INPUT);
         mBias = getInputTensor(BIAS);
         mOutput = getOutputTensor(OUTPUT);
@@ -35,9 +34,6 @@ public:
         MAI_CHECK_NULL(mBias);
         MAI_CHECK_NULL(mOutput);
         mOutput->resize(mInput->shape());
-        ALOGI("Input:%s, shape:%s, output:%s, shape:%s",
-                mInput->name().c_str(), shapeToString(mInput->shape()).c_str(),
-                mOutput->name().c_str(), shapeToString(mOutput->shape()).c_str());
 
         if (mInput->getDataFormat() == NHWC) {
             mFunction = biasAddNHWC;
