@@ -14,12 +14,12 @@
 
 #include <stdio.h>
 
-#define VERBOSE 1
-#define DEBUG 2
-#define INFO 3
-#define WARN 4
-#define ERROR 5
-#define FATAL 6
+#define MAI_VERBOSE 1
+#define MAI_DEBUG 2
+#define MAI_INFO 3
+#define MAI_WARN 4
+#define MAI_ERROR 5
+#define MAI_FATAL 6
 
 #define ALOG(level, ...) printf(__VA_ARGS__);printf("\n");
 

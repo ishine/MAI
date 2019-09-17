@@ -90,4 +90,10 @@ public:
     int32 numSplit;
 };
 
+struct Conv2DParam : public Param {
+public:
+    std::vector<int32> dilations;
+    std::vector<int32> strides;
+};
+
 } // namespace MAI
