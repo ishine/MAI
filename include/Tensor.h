@@ -57,6 +57,7 @@ public:
     virtual void copy(const void* data, int64 len);
     virtual void allocateBuffer(const std::vector<uint64>& shape);
     virtual void resize(const std::vector<uint64>& shape);
+    virtual void zero();
 
     template<typename T>
     inline const T* data() const {

@@ -77,4 +77,8 @@ uint64 SimpleBuffer::size() {
     return mSize;
 }
 
+void SimpleBuffer::zero() {
+    memset(mBufferPtr, 0, mSize);
+}
+
 } //namespace MAI

@@ -34,6 +34,7 @@ public:
     virtual uint8* mutableData();
     virtual void resize(uint64 len);
     virtual uint64 size();
+    virtual void zero();
 
 private:
     Allocator* mAllocator;

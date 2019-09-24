@@ -173,6 +173,34 @@ enum DataFormat {
     HWOI, // TF deconv2d filter
 };
 
+
+template<DataFormat format>
+struct DataFormatIndex;
+
+#define DATA_FORMAT_INDEX(format, n, h, w, c, i, o)              \
+    template<>                                                   \
+    struct DataFormatIndex<format> {                             \
+        static const int N = n;                                  \
+        static const int H = h;                                  \
+        static const int W = w;                                  \
+        static const int C = c;                                  \
+        static const int I = i;                                  \
+        static const int O = o;                                  \
+    }
+
+DATA_FORMAT_INDEX(NHWC,0,1,2,3,-1,1);
+DATA_FORMAT_INDEX(NCHW,0,2,3,1,-1,1);
+DATA_FORMAT_INDEX(HWIO,-1,0,1,-1,2,3);
+DATA_FORMAT_INDEX(OHWI,-1,1,2,-1,3,0);
+DATA_FORMAT_INDEX(HWOI,-1,0,1,-1,3,2);
+
+enum PaddingMode {
+    INVALID,
+    VALID,
+    SAME,
+    FULL,
+};
+
 struct OpContext {
     MAIOperator opType;
     DataType dataType;

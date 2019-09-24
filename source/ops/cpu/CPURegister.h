@@ -41,6 +41,10 @@ DECLARE_REGISTER_OP(Exp);
 DECLARE_REGISTER_OP(Fill);
 DECLARE_REGISTER_OP(ExpandDims);
 DECLARE_REGISTER_OP(Split);
+DECLARE_REGISTER_OP(Conv2D);
+DECLARE_REGISTER_OP(DepthwiseConv2d);
+DECLARE_REGISTER_OP(MaxPool);
+DECLARE_REGISTER_OP(AvgPool);
 
 class CPURegister {
 public:
@@ -62,6 +66,10 @@ public:
         REGISTER_OP(Fill);
         REGISTER_OP(ExpandDims);
         REGISTER_OP(Split);
+        REGISTER_OP(Conv2D);
+        REGISTER_OP(MaxPool);
+        REGISTER_OP(AvgPool);
+        REGISTER_OP(DepthwiseConv2d);
     }
     ~CPURegister() = default;
 };

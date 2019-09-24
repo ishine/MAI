@@ -30,6 +30,7 @@
 #define MAI_CHECK_NULL(ptr)            \
     do {                               \
         if (unlikely(NULL == ptr)) {   \
+            ALOGE(#ptr " cannot be null");   \
             abort();                   \
         }                              \
     } while(0)                         \

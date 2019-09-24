@@ -80,6 +80,12 @@ void Tensor::resize(const std::vector<uint64>& shape) {
     }
 }
 
+void Tensor::zero() {
+    MAI_CHECK(mBuffer != NULL,
+        "Tensor cannot been reset to zero as buffer is null");
+    mBuffer->zero();
+}
+
 std::vector<uint64> Tensor::shape() const {
     return mShape;
 }

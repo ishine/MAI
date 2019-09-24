@@ -16,9 +16,11 @@
 #include <fstream>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+#include "source/ops/cpu/CPURegister.h"
 #include "TensorflowNetwork.h"
 #include "Type.h"
 #include "source/core/Allocator.h"
+#include "source/core/OperatorRegister.h"
 #include "graph.pb.h"
 #include "op_def.pb.h"
 
@@ -173,6 +175,25 @@ class OpParserBase {
 public:
     static void processArgType() {
     }
+
+    static std::unique_ptr<Operator> createOperator(MAIOperator opType, DataType dataType) {
+        std::unique_ptr<Operator> op = OperatorRegister::getInstance()->createOperator({opType, dataType});
+        return op;
+    }
+
+    static DataType tf2MIDataType(tensorflow::DataType tfDataType) {
+        return (DataType)tfDataType;
+    }
+
+    static PaddingMode tf2MIPaddingMode(const std::string& paddingModeStr) {
+        if (paddingModeStr == "SAME") {
+            return SAME;
+        }
+        if (paddingModeStr == "VALID") {
+            return VALID;
+        }
+        return INVALID;
+    }
 };
 
 
@@ -190,15 +211,31 @@ public:
 #define MULTI_OP_PARSER(...) \
 
 OP_PARSER(Conv2D) {
-    ALOGI("Conv2D");
     auto& attrs = node.attr();
     Conv2DParam* param = new Conv2DParam();
+    tensorflow::DataType tfDataType;
     std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
         {"strides", [&param](const tensorflow::AttrValue& attr)
             {
-                for(int i = 0; i < attr.list().i_size(); ++i) {
-                    param->strides[i] = attr.list().i(i);
-                }
+                param->strides.insert(param->strides.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"dilations", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->dilations.insert(param->dilations.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"padding", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->paddingMode = tf2MIPaddingMode(attr.s());
+            }
+        },
+
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
             }
         },
     };
@@ -208,6 +245,347 @@ OP_PARSER(Conv2D) {
             attrParserIt->second(it->second);
         }
     }
+    std::unique_ptr<Operator> op = createOperator(CONV2D, tf2MIDataType(tfDataType));
+    op->setParam(param);
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(DepthwiseConv2dNative) {
+    auto& attrs = node.attr();
+    DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"strides", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->strides.insert(param->strides.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"dilations", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->dilations.insert(param->dilations.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"padding", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->paddingMode = tf2MIPaddingMode(attr.s());
+            }
+        },
+
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(DEPTHWISE_CONV2D, tf2MIDataType(tfDataType));
+    op->setParam(param);
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(AvgPool) {
+    auto& attrs = node.attr();
+    PoolParam* param = new PoolParam();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"strides", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->strides.insert(param->strides.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"ksize", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->kernelSizes.insert(param->kernelSizes.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"padding", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->paddingMode = tf2MIPaddingMode(attr.s());
+            }
+        },
+
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(AVG_POOL, tf2MIDataType(tfDataType));
+    op->setParam(param);
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(MaxPool) {
+    auto& attrs = node.attr();
+    PoolParam* param = new PoolParam();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"strides", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->strides.insert(param->strides.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"ksize", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->kernelSizes.insert(param->kernelSizes.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"padding", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->paddingMode = tf2MIPaddingMode(attr.s());
+            }
+        },
+
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(MAX_POOL, tf2MIDataType(tfDataType));
+    op->setParam(param);
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(FusedBatchNorm) {
+    auto& attrs = node.attr();
+    FusedBatchNormParam* param = new FusedBatchNormParam();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"epsilon", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->epsilon = attr.f();
+            }
+        },
+
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(FUSED_BATCH_NORM, tf2MIDataType(tfDataType));
+    op->setParam(param);
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(Relu6) {
+    auto& attrs = node.attr();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(RELU6, tf2MIDataType(tfDataType));
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(BiasAdd) {
+    auto& attrs = node.attr();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(BIAS_ADD, tf2MIDataType(tfDataType));
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(Squeeze) {
+    auto& attrs = node.attr();
+    SqueezeParam* param = new SqueezeParam();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"squeeze_dims", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->squeezeDims.insert(param->squeezeDims.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(SQUEEZE, tf2MIDataType(tfDataType));
+    op->setParam(param);
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(Reshape) {
+    auto& attrs = node.attr();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"Tshape", [](const tensorflow::AttrValue& attr)
+            {
+                //TODO: support int32 now
+            }
+        },
+
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(RESHAPE, tf2MIDataType(tfDataType));
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(Shape) {
+    auto& attrs = node.attr();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"out_type", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                //TODO: support int32 now
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(SHAPE, tf2MIDataType(tfDataType));
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
+}
+
+OP_PARSER(Softmax) {
+    auto& attrs = node.attr();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        auto attrParserIt = attrParsers.find(it->first);
+        if (attrParserIt != attrParsers.end()) {
+            attrParserIt->second(it->second);
+        }
+    }
+    std::unique_ptr<Operator> op = createOperator(SOFTMAX, tf2MIDataType(tfDataType));
+    op->setName(node.name());
+    for (int32 i = 0; i < node.input_size(); ++i) {
+        op->addInputName(node.input(i));
+    }
+    op->addOutputName(node.name());
+    parser.mTFNetwork->addOperator(op);
 }
 
 OP_PARSER(Const) {
@@ -224,15 +602,25 @@ OP_PARSER(Const) {
     }
     tensor->allocateBuffer(dims);
     tensor->copy(tfTensor.tensor_content().c_str(), tfTensor.tensor_content().size());
+    parser.mTFNetwork->addTensor(tensor);
 }
 
 TensorflowNetwork::TensorflowNetwork(const std::string& netPath, const std::string& opDefPath) {
+    Op::CPU::CPURegister cpuRegister;
     TensorflowParser parser(this);
     parser.parse(netPath, opDefPath);
+    std::unique_ptr<Tensor> tensor(new Tensor(DT_FLOAT, new CPUAllocator()));
+    tensor->setName("input");
+    tensor->allocateBuffer({1,224,224,3});
+    tensor->zero();
+    addTensor(tensor);
+    init();
+    run();
 }
 
 MAI_STATUS TensorflowNetwork::init() {
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        ALOGI("TensorflowNetwork::init op name:%s", (*it)->name().c_str());
         (*it)->init();
     }
     return MAI_SUCCESS;
@@ -240,6 +628,7 @@ MAI_STATUS TensorflowNetwork::init() {
 
 MAI_STATUS TensorflowNetwork::run() {
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        ALOGI("TensorflowNetwork::run op name:%s", (*it)->name().c_str());
         (*it)->run();
     }
     return MAI_SUCCESS;
@@ -252,7 +641,8 @@ MAI_STATUS TensorflowNetwork::addOperator(std::unique_ptr<Operator>& op) {
 }
 
 MAI_STATUS TensorflowNetwork::addTensor(std::unique_ptr<Tensor>& tensor) {
-    //MAI_CHECK(mTensors.find(tensor->name()) == mTensors.end(), "%s has exists", tensor->name().c_str());
+    ALOGI("addTensor:%s", tensor->name().c_str());
+    MAI_CHECK(mTensors.find(tensor->name()) == mTensors.end(), "%s has exists", tensor->name().c_str());
     mTensors.emplace(tensor->name(), std::move(tensor));
     return MAI_SUCCESS;
 }

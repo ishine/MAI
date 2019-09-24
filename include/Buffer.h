@@ -32,6 +32,7 @@ public:
     virtual uint8* mutableData() = 0;
     virtual void resize(uint64 len) = 0;
     virtual uint64 size() = 0;
+    virtual void zero() = 0;
 
     //template<typename T = uint8>
     //const T* data() {

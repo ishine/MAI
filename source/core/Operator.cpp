@@ -18,6 +18,14 @@
 
 namespace MAI {
 
+void Operator::addInputName(const std::string& name) {
+    mInputNames.push_back(name);
+}
+
+void Operator::addOutputName(const std::string& name) {
+    mOutputNames.push_back(name);
+}
+
 void Operator::addInputNames(const std::vector<std::string>& names) {
     mInputNames.insert(mInputNames.end(), names.begin(), names.end());
 }
@@ -51,10 +59,16 @@ Tensor* Operator::getTensor(const std::string& inputName) {
 }
 
 Tensor* Operator::getInputTensor(int inputIdx) {
+    if (inputIdx >= mInputNames.size()) {
+        return NULL;
+    }
     return mNeuralNetwork->getTensor(mInputNames[inputIdx]);
 }
 
 Tensor* Operator::getOutputTensor(int outputIdx) {
+    if (outputIdx >= mOutputNames.size()) {
+        return NULL;
+    }
     return mNeuralNetwork->getTensor(mOutputNames[outputIdx]);
 }
 

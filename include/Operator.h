@@ -31,6 +31,10 @@ public:
     virtual MAI_STATUS init() = 0;
     virtual MAI_STATUS run() = 0;
 
+    void addInputName(const std::string& name);
+
+    void addOutputName(const std::string& name);
+
     void addInputNames(const std::vector<std::string>& names);
 
     void addOutputNames(const std::vector<std::string>& names);
@@ -92,8 +96,26 @@ public:
 
 struct Conv2DParam : public Param {
 public:
-    std::vector<int32> dilations;
-    std::vector<int32> strides;
+    std::vector<int32> dilations;//4-d TOP-BOTTON-LEFT-RIGHT
+    std::vector<int32> strides;//4-d format associated with input format(NHWC or NCHW)
+    std::vector<int32> paddings;//4-d TOP-BOTTON-LEFT-RIGHT
+    PaddingMode paddingMode;
+};
+
+struct DepthwiseConv2dParam : public Param {
+public:
+    std::vector<int32> dilations;//4-d TOP-BOTTON-LEFT-RIGHT
+    std::vector<int32> strides;//4-d format associated with input format(NHWC or NCHW)
+    std::vector<int32> paddings;//4-d TOP-BOTTON-LEFT-RIGHT
+    PaddingMode paddingMode;
+};
+
+struct PoolParam : public Param {
+public:
+    std::vector<int32> kernelSizes;//4-d format associated with input format(NHWC or NCHW)
+    std::vector<int32> strides;//4-d format associated with input format(NHWC or NCHW)
+    std::vector<int32> paddings;//4-d TOP-BOTTON-LEFT-RIGHT
+    PaddingMode paddingMode;
 };
 
 } // namespace MAI
