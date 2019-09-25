@@ -120,4 +120,34 @@ void Tensor::reshape(const std::vector<shape_t>& shape) {
     mShape = shape;
 }
 
+void Tensor::toFile(const std::string& dir, const std::string& file) {
+    std::string filePath = dir;
+    if (filePath.at(filePath.size() - 1) != '/') {
+        filePath += "/";
+    }
+    if (file == "") {
+        std::string newFile = mName;
+        replace(newFile, "/", "_");
+        filePath += (newFile + ".txt");
+    } else {
+        filePath += file;
+    }
+
+    FILE* outputFile = fopen(filePath.c_str(), "wb");
+    if (outputFile) {
+        if (mDataType == DT_FLOAT) {
+            for(int32 i = 0; i < elementSize(); ++i) {
+                fprintf(outputFile, "[%d]: %10.8e\n", i, *(data<float>() + i));
+            }
+        //} else if (mDataType == DT_INT32 || mDataType == DT_UINT8 || mDataType == DT_INT16 || mDataType == DT_INT8
+        //        || mDataType == DT_INT64 || mDataType == DT_UINT16) {
+        //    for(int32 i = 0; i < elementSize(); ++i) {
+        //        fprintf(outputFile, "[%d]: %d\n", i, *(tensor->data<EnumToDataType<mDataType>::Type>() + i));
+        //    }
+        }
+    } else {
+        ALOGE("Cannot open file:%s", filePath.c_str());
+    }
+}
+
 } // namespace MAI

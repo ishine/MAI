@@ -27,10 +27,6 @@ public:
     ~Reshape() = default;
 
     MAI_STATUS init() override {
-        return MAI_SUCCESS;
-    }
-
-    MAI_STATUS run() override {
         const Tensor* inputPtr = getInputTensor(0);
         const Tensor* shapePtr = getInputTensor(1);
         Tensor* outputPtr = getOutputTensor(0);
@@ -66,6 +62,10 @@ public:
 
         outputPtr->reuse(inputPtr);
         outputPtr->reshape(shape);
+        return MAI_SUCCESS;
+    }
+
+    MAI_STATUS run() override {
         return MAI_SUCCESS;
     }
 };

@@ -27,6 +27,12 @@ public:
     ~Floor() = default;
 
     MAI_STATUS init() override {
+        const Tensor* input = getInputTensor(0);
+        // TODO (gavinchen) check the datatype of input is half, bfloat16, float32, float64
+        Tensor* output = getOutputTensor(0);
+        MAI_CHECK_NULL(input);
+        MAI_CHECK_NULL(output);
+        output->resize(input->shape());
         return MAI_SUCCESS;
     }
 
@@ -34,9 +40,6 @@ public:
         const Tensor* input = getInputTensor(0);
         // TODO (gavinchen) check the datatype of input is half, bfloat16, float32, float64
         Tensor* output = getOutputTensor(0);
-        MAI_CHECK_NULL(input);
-        MAI_CHECK_NULL(output);
-        output->resize(input->shape());
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
         for (shape_t i = 0; i < input->elementSize(); ++i) {

@@ -77,6 +77,7 @@ public:
     virtual void reuse(const Tensor* tensor);
     virtual void reshape(const std::vector<shape_t>& tensor);
     virtual void release();
+    virtual void toFile(const std::string& dir, const std::string& file = "");
 private:
     enum FLAG {
         MEMORY_OWNER = 1 << 0,

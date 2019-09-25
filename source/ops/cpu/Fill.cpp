@@ -27,10 +27,6 @@ public:
     ~Fill() = default;
 
     MAI_STATUS init() override {
-        return MAI_SUCCESS;
-    }
-
-    MAI_STATUS run() override {
         const Tensor* dims = getInputTensor(0);
         const Tensor* value = getInputTensor(1);
         Tensor* output = getOutputTensor(0);
@@ -44,6 +40,14 @@ public:
             outputShape[i] = dimsData[i];
         }
         output->resize(outputShape);
+
+        return MAI_SUCCESS;
+    }
+
+    MAI_STATUS run() override {
+        const Tensor* dims = getInputTensor(0);
+        const Tensor* value = getInputTensor(1);
+        Tensor* output = getOutputTensor(0);
 
         const T* valueData = value->data<T>();
         T* outputData = output->mutableData<T>();

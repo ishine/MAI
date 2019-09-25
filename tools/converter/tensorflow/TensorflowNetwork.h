@@ -30,9 +30,20 @@ public:
     virtual Tensor* getTensor(const std::string& name);
     virtual Operator* getOperator(const std::string& name);
     virtual void builGraph();
+    virtual void addModelInput(const std::string& inputName, DataType dataType, const std::vector<shape_t>& inputShape);
+    virtual void addModelOutput(const std::string& outputName);
+
+    inline std::vector<std::string> getModelInputs() {
+        return mModelInputs;
+    }
+    inline std::vector<std::string> getModelOutputs() {
+        return mModelOutputs;
+    }
 private:
     std::vector<std::unique_ptr<Operator> > mOperators;
     std::map<std::string, std::unique_ptr<Tensor> > mTensors;
+    std::vector<std::string> mModelInputs;
+    std::vector<std::string> mModelOutputs;
 };
 
 } // namespace MAI

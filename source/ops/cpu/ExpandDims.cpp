@@ -27,17 +27,6 @@ public:
     ~ExpandDims() = default;
 
     MAI_STATUS init() override {
-        return MAI_SUCCESS;
-    }
-
-    void setParam(Param* param) override {
-        ExpandDimsParam* expandDimsParam = reinterpret_cast<ExpandDimsParam*>(param);
-        if (expandDimsParam) {
-            mAxis = expandDimsParam->axis;
-        }
-    }
-
-    MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
         MAI_CHECK_NULL(input);
@@ -58,6 +47,37 @@ public:
         }
         output->reuse(input);
         output->reshape(outputShape);
+        return MAI_SUCCESS;
+    }
+
+    void setParam(Param* param) override {
+        ExpandDimsParam* expandDimsParam = reinterpret_cast<ExpandDimsParam*>(param);
+        if (expandDimsParam) {
+            mAxis = expandDimsParam->axis;
+        }
+    }
+
+    MAI_STATUS run() override {
+        //const Tensor* input = getInputTensor(0);
+        //Tensor* output = getOutputTensor(0);
+        //MAI_CHECK_NULL(input);
+        //MAI_CHECK_NULL(output);
+        //MAI_CHECK(mAxis >= -(input->dimSize() + 1) && mAxis <= input->dimSize(), "Axis(%d) is not valid", mAxis);
+        //if (mAxis < 0) {
+        //    mAxis = mAxis + input->dimSize() + 1;
+        //}
+        //std::vector<shape_t> outputShape(input->dimSize() + 1);
+        //for (int32 i = 0; i < input->dimSize() + 1; ++i) {
+        //    if (i < mAxis) {
+        //        outputShape[i] = input->dim(i);
+        //    } else if (i == mAxis) {
+        //        outputShape[i] = 1;
+        //    } else {
+        //        outputShape[i] = input->dim(i - 1);
+        //    }
+        //}
+        //output->reuse(input);
+        //output->reshape(outputShape);
         return MAI_SUCCESS;
     }
 private:

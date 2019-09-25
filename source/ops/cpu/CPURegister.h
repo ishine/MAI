@@ -24,6 +24,7 @@ namespace CPU {
 #define REGISTER_OP(op) \
     register##op();
 
+DECLARE_REGISTER_OP(Transpose);
 DECLARE_REGISTER_OP(Reshape);
 DECLARE_REGISTER_OP(Shape);
 DECLARE_REGISTER_OP(Squeeze);
@@ -49,6 +50,7 @@ DECLARE_REGISTER_OP(AvgPool);
 class CPURegister {
 public:
     CPURegister() {
+        REGISTER_OP(Transpose);
         REGISTER_OP(Reshape);
         REGISTER_OP(Shape);
         REGISTER_OP(Squeeze);

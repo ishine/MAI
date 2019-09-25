@@ -3,6 +3,7 @@ cc_library(
    srcs = glob([
        "source/core/*.cpp",
        "source/ops/cpu/*.cpp",
+       "source/util/*.cpp",
    ]),
    hdrs = glob([
        "include/OperatorType.def",

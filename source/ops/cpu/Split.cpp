@@ -27,17 +27,6 @@ public:
     ~Split() = default;
 
     MAI_STATUS init() override {
-        return MAI_SUCCESS;
-    }
-
-    void setParam(Param* param) override {
-        SplitParam* splitParam = reinterpret_cast<SplitParam*>(param);
-        if (splitParam) {
-            mNumSplit = splitParam->numSplit;
-        }
-    }
-
-    MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         const Tensor* axisTensor = getInputTensor(1);
         MAI_CHECK_NULL(input);
@@ -55,6 +44,25 @@ public:
             MAI_CHECK_NULL(output);
             output->resize(outputShape);
         }
+
+        return MAI_SUCCESS;
+    }
+
+    void setParam(Param* param) override {
+        SplitParam* splitParam = reinterpret_cast<SplitParam*>(param);
+        if (splitParam) {
+            mNumSplit = splitParam->numSplit;
+        }
+    }
+
+    MAI_STATUS run() override {
+        const Tensor* input = getInputTensor(0);
+        const Tensor* axisTensor = getInputTensor(1);
+        int32 axis = *(axisTensor->data<int32>());
+        axis = axis < 0 ? axis + input->dimSize() : axis;
+        const T* inputData = input->data<T>();
+        std::vector<shape_t> outputShape(input->shape());
+        outputShape[axis] = input->dim(axis) / mNumSplit;
 
         shape_t outerSize = std::accumulate(outputShape.begin(), outputShape.begin() + axis, 1,
                 std::multiplies<shape_t>());
