@@ -69,8 +69,9 @@ public:
         mOutput->zero();
 
         if (mFunction == NULL) {
-            MAI_CHECK(false, "Unsupported input data format: %d, with filter data format:%d", mInput->getDataFormat(),
-                    mFilter->getDataFormat());
+            MAI_CHECK(false, "Unsupported input data format: %s, with filter data format:%s",
+                    getNameFromDataFormat(mInput->getDataFormat()).c_str(),
+                    getNameFromDataFormat(mFilter->getDataFormat()).c_str());
         }
 
         return MAI_SUCCESS;
@@ -81,6 +82,47 @@ public:
     }
 
     static void conv2DNHWC_HWIO(const T* input,
+            const std::vector<shape_t>& inputShape,
+            const T* filter,
+            const std::vector<shape_t>& filterShape,
+            const T* bias,
+            const std::vector<shape_t>& biasShape,
+            const Conv2DParam* param,
+            T* output,
+            const std::vector<shape_t>& outputShape) {
+        for(shape_t n = 0; n < outputShape[0]; ++n) {
+            for(shape_t h = 0; h < outputShape[1]; ++h) {
+                for(shape_t w = 0; w < outputShape[2]; ++w) {
+                    for(shape_t o = 0; o < outputShape[3]; ++o) {
+                        T* outputV = output + offset4D(outputShape, n, h, w, o);
+                        shape_t inHBase = h * param->strides[1] - param->paddings[0];
+                        shape_t inWBase = w * param->strides[2] - param->paddings[2];
+                        for(shape_t i = 0; i < inputShape[3]; ++i) {
+                            for(shape_t fh = 0; fh < filterShape[0]; ++fh) {
+                                for(shape_t fw = 0; fw < filterShape[1]; ++fw) {
+                                    shape_t inHOffset = inHBase + fh;
+                                    shape_t inWOffset = inWBase + fw;
+                                    if (inHOffset >= 0 && inHOffset < inputShape[1]
+                                            && inWOffset >= 0 && inWOffset < inputShape[2]) {
+                                        shape_t inputOffset = offset4D(inputShape, n, inHOffset, inWOffset, i);
+                                        shape_t filterOffset = offset4D(filterShape, fh, fw, i, o);
+                                        const T* inputV = input + inputOffset;
+                                        const T* filterV = filter + filterOffset;
+                                        *outputV += (*inputV) * (*filterV);
+                                    }
+                                }
+                            }
+                        }
+                        if (bias != NULL) {
+                            *outputV += *(bias + o);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    static void conv2DNCHW_OIHW(const T* input,
             const std::vector<shape_t>& inputShape,
             const T* filter,
             const std::vector<shape_t>& filterShape,

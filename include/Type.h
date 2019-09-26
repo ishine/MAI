@@ -16,6 +16,7 @@
 
 #include <sstream>
 #include <map>
+#include "Log.h"
 
 namespace MAI {
 
@@ -171,8 +172,27 @@ enum DataFormat {
     HWIO, // TF conv2d filter
     OHWI, // ANN conv2d filter
     HWOI, // TF deconv2d filter
+    OIHW, // ONNX conv2d filter
 };
 
+inline std::string getNameFromDataFormat(DataFormat format) {
+#define DATA_FORMAT_NAME(FORMAT) \
+    if (FORMAT == format) { \
+        return #FORMAT; \
+    }
+
+    DATA_FORMAT_NAME(NHWC);
+    DATA_FORMAT_NAME(NCHW);
+    DATA_FORMAT_NAME(HWIO);
+    DATA_FORMAT_NAME(OHWI);
+    DATA_FORMAT_NAME(HWOI);
+    DATA_FORMAT_NAME(OIHW);
+
+    ALOGF("Unknown format:%d", format);
+    return "";
+
+#undef DATA_FORMAT_NAME
+}
 
 template<DataFormat format>
 struct DataFormatIndex;
@@ -193,6 +213,7 @@ DATA_FORMAT_INDEX(NCHW,0,2,3,1,-1,1);
 DATA_FORMAT_INDEX(HWIO,-1,0,1,-1,2,3);
 DATA_FORMAT_INDEX(OHWI,-1,1,2,-1,3,0);
 DATA_FORMAT_INDEX(HWOI,-1,0,1,-1,3,2);
+DATA_FORMAT_INDEX(OIHW,-1,2,3,-1,1,0);
 
 enum PaddingMode {
     INVALID,

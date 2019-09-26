@@ -116,7 +116,7 @@ public:
         for (int i = 0; i < nodeCount; ++i) {
             const tensorflow::NodeDef& node = mTFGraphDef.node(i);
             const std::string& opType = node.op();
-            const tensorflow::OpDef& opDef = mOpList.op(mOpMap[opType]);
+            //const tensorflow::OpDef& opDef = mOpList.op(mOpMap[opType]);
             if (opParsers.find(opType) != opParsers.end()) {
                 opParsers[opType](*this, node);
             } else {
