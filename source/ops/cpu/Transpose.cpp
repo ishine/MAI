@@ -26,9 +26,14 @@ public:
     ~Transpose() = default;
 
     MAI_STATUS init() override {
+        return MAI_SUCCESS;
+    }
+
+    MAI_STATUS run() override {
         const Tensor* input = getInputTensor(INPUT);
         const Tensor* perm = getInputTensor(PERM);
         Tensor* output = getOutputTensor(OUTPUT);
+        // run first
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(perm);
         MAI_CHECK_NULL(output);
@@ -42,7 +47,7 @@ public:
             gap *= input->dim(i);
         }
         mStrides.resize(input->dimSize());
-        for (shape_t i = 0; i <= input->dimSize(); ++i) {
+        for (shape_t i = 0; i < input->dimSize(); ++i) {
             outputShape[i] = input->dim(permData[i]);
             mStrides[i] = inputStrides[permData[i]];
         }
@@ -53,12 +58,7 @@ public:
             mOutputStrides[i] = gap;
             gap *= output->dim(i);
         }
-        return MAI_SUCCESS;
-    }
-
-    MAI_STATUS run() override {
-        const Tensor* input = getInputTensor(INPUT);
-        Tensor* output = getOutputTensor(OUTPUT);
+        // run first end
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
         shape_t loopCount = 1;

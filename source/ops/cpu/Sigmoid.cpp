@@ -27,18 +27,15 @@ public:
     ~Sigmoid() = default;
 
     MAI_STATUS init() override {
-        const Tensor* input = getInputTensor(0);
-        Tensor* output = getOutputTensor(0);
-        MAI_CHECK_NULL(input);
-        MAI_CHECK_NULL(output);
-        output->resize(input->shape());
-
         return MAI_SUCCESS;
     }
 
     MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
+        MAI_CHECK_NULL(input);
+        MAI_CHECK_NULL(output);
+        output->resize(input->shape());
 
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();

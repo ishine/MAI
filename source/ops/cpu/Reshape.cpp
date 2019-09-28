@@ -27,17 +27,32 @@ public:
     ~Reshape() = default;
 
     MAI_STATUS init() override {
+        return MAI_SUCCESS;
+    }
+
+    MAI_STATUS run() override {
         const Tensor* inputPtr = getInputTensor(0);
         const Tensor* shapePtr = getInputTensor(1);
         Tensor* outputPtr = getOutputTensor(0);
         MAI_CHECK_NULL(inputPtr);
         MAI_CHECK_NULL(shapePtr);
+        std::vector<shape_t> outputShape(shapePtr->elementSize());
         std::vector<shape_t> shape(shapePtr->elementSize());
-        auto shapeData = shapePtr->data<int32>();
+        if (shapePtr->dataType() == DT_INT32) {
+            auto shapeData = shapePtr->data<int32>();
+            for (shape_t i = 0; i < shapePtr->elementSize(); ++i) {
+                shape[i] = shapeData[i];
+            }
+        } else {
+            auto shapeData = shapePtr->data<int64>();
+            for (shape_t i = 0; i < shapePtr->elementSize(); ++i) {
+                shape[i] = shapeData[i];
+            }
+        }
 
         int64 unknownDims = -1;
         uint8 index = 0;
-        std::for_each(shapeData, shapeData + shapePtr->elementSize(), [&](int32 v){
+        std::for_each(shape.begin(), shape.end(), [&](shape_t v){
             if (v == -1) {
                 if(unknownDims != -1) {
                     MAI_CHECK(0, "Only one dim can be dynamic");
@@ -46,26 +61,22 @@ public:
                     unknownDims = index;
                 }
             }
-            shape[index] = unknownDims == index ? 0 : v;
+            outputShape[index] = unknownDims == index ? 0 : v;
             ++index;
         });
         if (unknownDims != -1) {
-            shape_t shapeSize = shapeToSizeSkipDim(shape, unknownDims);
+            shape_t shapeSize = shapeToSizeSkipDim(outputShape, unknownDims);
             shape_t dynamicDim = inputPtr->elementSize() / shapeSize;
             MAI_CHECK((dynamicDim * shapeSize) == inputPtr->elementSize(), "Error shape");
-            shape[unknownDims] = dynamicDim;
+            outputShape[unknownDims] = dynamicDim;
 
         } else {
-            shape_t shapeSize = shapeToSize(shape);
+            shape_t shapeSize = shapeToSize(outputShape);
             MAI_CHECK((inputPtr->elementSize() == shapeSize), "Error shape");
         }
 
         outputPtr->reuse(inputPtr);
-        outputPtr->reshape(shape);
-        return MAI_SUCCESS;
-    }
-
-    MAI_STATUS run() override {
+        outputPtr->reshape(outputShape);
         return MAI_SUCCESS;
     }
 };

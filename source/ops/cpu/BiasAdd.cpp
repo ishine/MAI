@@ -27,22 +27,6 @@ public:
     ~BiasAdd() = default;
 
     MAI_STATUS init() override {
-        mInput = getInputTensor(INPUT);
-        mBias = getInputTensor(BIAS);
-        mOutput = getOutputTensor(OUTPUT);
-        MAI_CHECK_NULL(mInput);
-        MAI_CHECK_NULL(mBias);
-        MAI_CHECK_NULL(mOutput);
-        mOutput->resize(mInput->shape());
-
-        if (mInput->getDataFormat() == NHWC) {
-            mFunction = biasAddNHWC;
-        } else if (mInput->getDataFormat() == NCHW) {
-            mFunction = biasAddNCHW;
-        } else {
-            MAI_CHECK(false, "Unsupported data format: %d", mInput->getDataFormat());
-        }
-
         return MAI_SUCCESS;
     }
 
@@ -88,6 +72,22 @@ public:
     }
 
     MAI_STATUS run() override {
+        mInput = getInputTensor(INPUT);
+        mBias = getInputTensor(BIAS);
+        mOutput = getOutputTensor(OUTPUT);
+        MAI_CHECK_NULL(mInput);
+        MAI_CHECK_NULL(mBias);
+        MAI_CHECK_NULL(mOutput);
+        mOutput->resize(mInput->shape());
+
+        if (mInput->getDataFormat() == NHWC) {
+            mFunction = biasAddNHWC;
+        } else if (mInput->getDataFormat() == NCHW) {
+            mFunction = biasAddNCHW;
+        } else {
+            MAI_CHECK(false, "Unsupported data format: %d", mInput->getDataFormat());
+        }
+
         mFunction(mInput->data<T>(), mInput->shape(), mBias->data<T>(), mBias->shape(), mOutput->mutableData<T>(), mOutput->shape());
         return MAI_SUCCESS;
     }

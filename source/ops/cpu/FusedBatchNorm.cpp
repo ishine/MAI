@@ -29,6 +29,45 @@ public:
     ~FusedBatchNorm() = default;
 
     MAI_STATUS init() override {
+        return MAI_SUCCESS;
+    }
+
+    static void fusedBatchNormNHWC(const T* input, const std::vector<shape_t>& inputShape,
+            const std::vector<T>& scale, const std::vector<T>& offset, T* output) {
+        int idx = 0;
+        for (shape_t b = 0; b < inputShape[0]; ++b) {
+            for (shape_t h = 0; h < inputShape[1]; ++h) {
+                for (shape_t w = 0; w < inputShape[2]; ++w) {
+                    for (shape_t c = 0; c < inputShape[3]; ++c) {
+                        output[idx] = input[idx] * scale[c] + offset[c];
+                        idx++;
+                    }
+                }
+            }
+        }
+    }
+
+    static void fusedBatchNormNCHW(const T* input, const std::vector<shape_t>& inputShape,
+            const std::vector<T>& scale, const std::vector<T>& offset, T* output) {
+        int idx = 0;
+        for (shape_t b = 0; b < inputShape[0]; ++b) {
+            for (shape_t c = 0; c < inputShape[3]; ++c) {
+                for (shape_t h = 0; h < inputShape[1]; ++h) {
+                    for (shape_t w = 0; w < inputShape[2]; ++w) {
+                        output[idx] = input[idx] * scale[c] + offset[c];
+                        idx++;
+                    }
+                }
+            }
+        }
+    }
+
+    void setParam(Param* param) override {
+        FusedBatchNormParam* fParam = reinterpret_cast<FusedBatchNormParam*>(param);
+        mEpsilon = fParam->epsilon;
+    }
+
+    MAI_STATUS run() override {
         const Tensor* input = getInputTensor(INPUT);
         mInput = input;
         const Tensor* scale = getInputTensor(SCALE);
@@ -71,45 +110,6 @@ public:
             mNewOffset[c] = offsetData[c] - mNewScale[c] * meanData[c];
         }
 
-        return MAI_SUCCESS;
-    }
-
-    static void fusedBatchNormNHWC(const T* input, const std::vector<shape_t>& inputShape,
-            const std::vector<T>& scale, const std::vector<T>& offset, T* output) {
-        int idx = 0;
-        for (shape_t b = 0; b < inputShape[0]; ++b) {
-            for (shape_t h = 0; h < inputShape[1]; ++h) {
-                for (shape_t w = 0; w < inputShape[2]; ++w) {
-                    for (shape_t c = 0; c < inputShape[3]; ++c) {
-                        output[idx] = input[idx] * scale[c] + offset[c];
-                        idx++;
-                    }
-                }
-            }
-        }
-    }
-
-    static void fusedBatchNormNCHW(const T* input, const std::vector<shape_t>& inputShape,
-            const std::vector<T>& scale, const std::vector<T>& offset, T* output) {
-        int idx = 0;
-        for (shape_t b = 0; b < inputShape[0]; ++b) {
-            for (shape_t c = 0; c < inputShape[3]; ++c) {
-                for (shape_t h = 0; h < inputShape[1]; ++h) {
-                    for (shape_t w = 0; w < inputShape[2]; ++w) {
-                        output[idx] = input[idx] * scale[c] + offset[c];
-                        idx++;
-                    }
-                }
-            }
-        }
-    }
-
-    void setParam(Param* param) override {
-        FusedBatchNormParam* fParam = reinterpret_cast<FusedBatchNormParam*>(param);
-        mEpsilon = fParam->epsilon;
-    }
-
-    MAI_STATUS run() override {
         mFunction(mInput->data<T>(), mInput->shape(), mNewScale,
             mNewOffset, mOutput->mutableData<T>());
         return MAI_SUCCESS;

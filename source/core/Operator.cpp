@@ -67,6 +67,7 @@ Tensor* Operator::getInputTensor(int inputIdx) {
 
 Tensor* Operator::getOutputTensor(int outputIdx) {
     if (outputIdx >= mOutputNames.size()) {
+        ALOGE("getOutputTensor %d out of index(%d)", outputIdx, mOutputNames.size());
         return NULL;
     }
     return mNeuralNetwork->getTensor(mOutputNames[outputIdx]);

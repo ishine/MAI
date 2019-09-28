@@ -28,14 +28,6 @@ public:
     ~Softmax() = default;
 
     MAI_STATUS init() override {
-        if (mAxis < 0) {
-            mAxis += getInputTensor(0)->shape().size();
-        }
-        const Tensor* input = getInputTensor(0);
-        Tensor* output = getOutputTensor(0);
-        MAI_CHECK_NULL(input);
-        MAI_CHECK_NULL(output);
-        output->resize(input->shape());
         return MAI_SUCCESS;
     }
 
@@ -77,6 +69,14 @@ public:
     MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
+        // run first
+        if (mAxis < 0) {
+            mAxis += input->shape().size();
+        }
+        MAI_CHECK_NULL(input);
+        MAI_CHECK_NULL(output);
+        output->resize(input->shape());
+        // run first end
 
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
@@ -89,6 +89,8 @@ public:
             MAI_CHECK((mAxis == 0 || mAxis == 1), "axis must be 0 or 1 when rank of input is 2, \
                     but not : %d", mAxis);
             softmax2D(inputData, input->dim(0), input->dim(1), outputData);
+        } else {
+            MAI_ABORT("Unsupport shape size");
         }
 
         return MAI_SUCCESS;

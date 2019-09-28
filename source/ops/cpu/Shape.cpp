@@ -26,6 +26,10 @@ public:
     ~Shape() = default;
 
     MAI_STATUS init() override {
+        return MAI_SUCCESS;
+    }
+
+    MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
         MAI_CHECK_NULL(input);
@@ -35,10 +39,6 @@ public:
         for (shape_t i = 0; i < input->shape().size(); ++i) {
             outputData[i] = input->shape()[i];
         }
-        return MAI_SUCCESS;
-    }
-
-    MAI_STATUS run() override {
         return MAI_SUCCESS;
     }
 };

@@ -18,7 +18,7 @@ int main() {
     network.run();
     endTime = nowMicros();
     ALOGI("First run time:%lu ms", (endTime - startTime) / 1000);
-    int32 count = 10;
+    int32 count = 1;
     int32 i = count;
     while(i-- > 0) {
         startTime = nowMicros();

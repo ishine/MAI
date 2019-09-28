@@ -173,6 +173,7 @@ enum DataFormat {
     OHWI, // ANN conv2d filter
     HWOI, // TF deconv2d filter
     OIHW, // ONNX conv2d filter
+    IOHW, // ONNX depthwise conv2d filter
 };
 
 inline std::string getNameFromDataFormat(DataFormat format) {
@@ -187,6 +188,7 @@ inline std::string getNameFromDataFormat(DataFormat format) {
     DATA_FORMAT_NAME(OHWI);
     DATA_FORMAT_NAME(HWOI);
     DATA_FORMAT_NAME(OIHW);
+    DATA_FORMAT_NAME(IOHW);
 
     ALOGF("Unknown format:%d", format);
     return "";
@@ -214,6 +216,7 @@ DATA_FORMAT_INDEX(HWIO,-1,0,1,-1,2,3);
 DATA_FORMAT_INDEX(OHWI,-1,1,2,-1,3,0);
 DATA_FORMAT_INDEX(HWOI,-1,0,1,-1,3,2);
 DATA_FORMAT_INDEX(OIHW,-1,2,3,-1,1,0);
+DATA_FORMAT_INDEX(IOHW,-1,2,3,-1,0,1);
 
 enum PaddingMode {
     INVALID,
@@ -233,7 +236,12 @@ struct OpContext {
         }
 
         COMPARE(opType)
-        COMPARE(dataType)
+        if (dataType != opContext.dataType) {
+            if (dataType == DT_INVALID || opContext.dataType == DT_INVALID) {
+                return false;
+            }
+            return dataType < opContext.dataType;
+        }
 
 #undef COMPARE
         return false;

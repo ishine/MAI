@@ -27,6 +27,14 @@ public:
     ~Squeeze() = default;
 
     MAI_STATUS init() override {
+        return MAI_SUCCESS;
+    }
+
+    void setParam(Param* param) override {
+        mParam = reinterpret_cast<SqueezeParam*>(param);
+    }
+
+    MAI_STATUS run() override {
         const Tensor* inputPtr = getInputTensor(0);
         Tensor* outputPtr = getOutputTensor(0);
         MAI_CHECK_NULL(inputPtr);
@@ -58,14 +66,6 @@ public:
 
         outputPtr->reuse(inputPtr);
         outputPtr->reshape(shape);
-        return MAI_SUCCESS;
-    }
-
-    void setParam(Param* param) override {
-        mParam = reinterpret_cast<SqueezeParam*>(param);
-    }
-
-    MAI_STATUS run() override {
         return MAI_SUCCESS;
     }
 private:

@@ -29,51 +29,6 @@ public:
     }
 
     MAI_STATUS init() override {
-        mInput = getInputTensor(INPUT);
-        mFilter = getInputTensor(FILTER);
-        mBias = getInputTensor(BIAS);
-        mOutput = getOutputTensor(OUTPUT);
-        MAI_CHECK_NULL(mInput);
-        MAI_CHECK_NULL(mFilter);
-        MAI_CHECK_NULL(mOutput);
-        MAI_CHECK_NULL(mParam);
-        MAI_CHECK(mInput->shape().size() == 4, "Input shape must be 4-d");
-        MAI_CHECK(checkVectorValues(mParam->dilations, 1), "Cannot support dilations greater than 1 now");
-        if (mParam->paddingMode != INVALID) {
-            MAI_CHECK(mParam->paddings.size() == 0,
-                "Cannot use explicit padding when paddingMode is :%d", mParam->paddingMode);
-        } else {
-            MAI_CHECK(mParam->paddings.size() == 4,
-                "Explicit padding size must be 4 but not: %d", mParam->paddings.size());
-        }
-
-        std::vector<shape_t> outputShape(4);
-        if (mInput->getDataFormat() == NHWC) {
-            if (mFilter->getDataFormat() == HWIO) {
-                outputShape[0] = mInput->dim(0);
-                outputShape[3] = mFilter->dim(3);
-                std::vector<int32> outputHW = calculateHW(
-                        {mInput->dim(DataFormatIndex<NHWC>::H), mInput->dim(DataFormatIndex<NHWC>::W)},
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)},
-                        mParam->strides, mParam->paddings, mParam->paddingMode);
-                outputShape[1] = outputHW[0];
-                outputShape[2] = outputHW[1];
-                mFunction = conv2DNHWC_HWIO;
-            }
-            if (mParam->paddingMode != INVALID) {
-                mParam->paddings = calcPaddings(mParam->paddingMode,
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)});
-            }
-        }
-        mOutput->resize(outputShape);
-        mOutput->zero();
-
-        if (mFunction == NULL) {
-            MAI_CHECK(false, "Unsupported input data format: %s, with filter data format:%s",
-                    getNameFromDataFormat(mInput->getDataFormat()).c_str(),
-                    getNameFromDataFormat(mFilter->getDataFormat()).c_str());
-        }
-
         return MAI_SUCCESS;
     }
 
@@ -95,15 +50,15 @@ public:
                 for(shape_t w = 0; w < outputShape[2]; ++w) {
                     for(shape_t o = 0; o < outputShape[3]; ++o) {
                         T* outputV = output + offset4D(outputShape, n, h, w, o);
-                        shape_t inHBase = h * param->strides[1] - param->paddings[0];
-                        shape_t inWBase = w * param->strides[2] - param->paddings[2];
-                        for(shape_t i = 0; i < inputShape[3]; ++i) {
-                            for(shape_t fh = 0; fh < filterShape[0]; ++fh) {
-                                for(shape_t fw = 0; fw < filterShape[1]; ++fw) {
+                        shape_t inHBase = h * param->strides[DataFormatIndex<NHWC>::H] - param->paddings[0];
+                        shape_t inWBase = w * param->strides[DataFormatIndex<NHWC>::W] - param->paddings[2];
+                        for(shape_t i = 0; i < inputShape[DataFormatIndex<NHWC>::C]; ++i) {
+                            for(shape_t fh = 0; fh < filterShape[DataFormatIndex<HWIO>::H]; ++fh) {
+                                for(shape_t fw = 0; fw < filterShape[DataFormatIndex<HWIO>::H]; ++fw) {
                                     shape_t inHOffset = inHBase + fh;
                                     shape_t inWOffset = inWBase + fw;
-                                    if (inHOffset >= 0 && inHOffset < inputShape[1]
-                                            && inWOffset >= 0 && inWOffset < inputShape[2]) {
+                                    if (inHOffset >= 0 && inHOffset < inputShape[DataFormatIndex<NHWC>::H]
+                                            && inWOffset >= 0 && inWOffset < inputShape[DataFormatIndex<NHWC>::W]) {
                                         shape_t inputOffset = offset4D(inputShape, n, inHOffset, inWOffset, i);
                                         shape_t filterOffset = offset4D(filterShape, fh, fw, i, o);
                                         const T* inputV = input + inputOffset;
@@ -132,21 +87,21 @@ public:
             T* output,
             const std::vector<shape_t>& outputShape) {
         for(shape_t n = 0; n < outputShape[0]; ++n) {
-            for(shape_t h = 0; h < outputShape[1]; ++h) {
-                for(shape_t w = 0; w < outputShape[2]; ++w) {
-                    for(shape_t o = 0; o < outputShape[3]; ++o) {
-                        T* outputV = output + offset4D(outputShape, n, h, w, o);
-                        shape_t inHBase = h * param->strides[1] - param->paddings[0];
-                        shape_t inWBase = w * param->strides[2] - param->paddings[2];
-                        for(shape_t i = 0; i < inputShape[3]; ++i) {
-                            for(shape_t fh = 0; fh < filterShape[0]; ++fh) {
-                                for(shape_t fw = 0; fw < filterShape[1]; ++fw) {
+            for(shape_t o = 0; o < outputShape[1]; ++o) {
+                for(shape_t h = 0; h < outputShape[2]; ++h) {
+                    for(shape_t w = 0; w < outputShape[3]; ++w) {
+                        T* outputV = output + offset4D(outputShape, n, o, h, w);
+                        shape_t inHBase = h * param->strides[DataFormatIndex<NCHW>::H] - param->paddings[0];
+                        shape_t inWBase = w * param->strides[DataFormatIndex<NCHW>::W] - param->paddings[2];
+                        for(shape_t i = 0; i < inputShape[DataFormatIndex<NCHW>::C]; ++i) {
+                            for(shape_t fh = 0; fh < filterShape[DataFormatIndex<OIHW>::H]; ++fh) {
+                                for(shape_t fw = 0; fw < filterShape[DataFormatIndex<OIHW>::W]; ++fw) {
                                     shape_t inHOffset = inHBase + fh;
                                     shape_t inWOffset = inWBase + fw;
-                                    if (inHOffset >= 0 && inHOffset < inputShape[1]
-                                            && inWOffset >= 0 && inWOffset < inputShape[2]) {
-                                        shape_t inputOffset = offset4D(inputShape, n, inHOffset, inWOffset, i);
-                                        shape_t filterOffset = offset4D(filterShape, fh, fw, i, o);
+                                    if (inHOffset >= 0 && inHOffset < inputShape[DataFormatIndex<NCHW>::H]
+                                            && inWOffset >= 0 && inWOffset < inputShape[DataFormatIndex<NCHW>::W]) {
+                                        shape_t inputOffset = offset4D(inputShape, n, i, inHOffset, inWOffset);
+                                        shape_t filterOffset = offset4D(filterShape, o, i, fh, fw);
                                         const T* inputV = input + inputOffset;
                                         const T* filterV = filter + filterOffset;
                                         *outputV += (*inputV) * (*filterV);
@@ -164,6 +119,76 @@ public:
     }
 
     MAI_STATUS run() override {
+        //static __runFirst = true;
+        //if (__runFirst) {
+        //    __runFirst = false;
+        //}
+        //RUN_FIRST_START
+        mInput = getInputTensor(INPUT);
+        mFilter = getInputTensor(FILTER);
+        mBias = getInputTensor(BIAS);
+        mOutput = getOutputTensor(OUTPUT);
+        MAI_CHECK_NULL(mInput);
+        MAI_CHECK_NULL(mFilter);
+        MAI_CHECK_NULL(mOutput);
+        MAI_CHECK_NULL(mParam);
+        MAI_CHECK(mInput->shape().size() == 4, "Input shape must be 4-d");
+        MAI_CHECK(checkVectorValues(mParam->dilations, 1), "Cannot support dilations greater than 1 now");
+        if (mParam->paddingMode != INVALID) {
+            MAI_CHECK(mParam->paddings.size() == 0,
+                "Cannot use explicit padding when paddingMode is :%d, size:%d", mParam->paddingMode, mParam->paddings.size());
+        } else {
+            MAI_CHECK(mParam->paddings.size() == 4,
+                "Explicit padding size must be 4 but not: %d", mParam->paddings.size());
+        }
+
+        std::vector<shape_t> outputShape(4);
+        if (mInput->getDataFormat() == NHWC) {
+            if (mFilter->getDataFormat() == HWIO) {
+                MAI_CHECK(mInput->dim(DataFormatIndex<NHWC>::C) == mFilter->dim(DataFormatIndex<HWIO>::I),
+                        "input channel(%d) should be equal to filter channel(%d)", mInput->dim(DataFormatIndex<NHWC>::C),
+                        mFilter->dim(DataFormatIndex<HWIO>::I));
+                outputShape[0] = mInput->dim(0);
+                outputShape[3] = mFilter->dim(3);
+                std::vector<int32> outputHW = calculateHW(
+                        {mInput->dim(DataFormatIndex<NHWC>::H), mInput->dim(DataFormatIndex<NHWC>::W)},
+                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)},
+                        {mParam->strides[DataFormatIndex<NHWC>::H], mParam->strides[DataFormatIndex<NHWC>::W]},
+                        mParam->paddings, mParam->paddingMode);
+                outputShape[1] = outputHW[0];
+                outputShape[2] = outputHW[1];
+                mFunction = conv2DNHWC_HWIO;
+            }
+            if (mParam->paddingMode != INVALID) {
+                mParam->paddings = calcPaddings(mParam->paddingMode,
+                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)});
+            }
+        } else if (mInput->getDataFormat() == NCHW) {
+            if (mFilter->getDataFormat() == OIHW) {
+                MAI_CHECK(mInput->dim(DataFormatIndex<NCHW>::C) == mFilter->dim(DataFormatIndex<OIHW>::I),
+                        "input channel(%d) should be equal to filter channel(%d)", mInput->dim(DataFormatIndex<NCHW>::C),
+                         mFilter->dim(DataFormatIndex<OIHW>::I));
+                outputShape[0] = mInput->dim(0);
+                outputShape[1] = mFilter->dim(0);
+                std::vector<int32> outputHW = calculateHW(
+                        {mInput->dim(DataFormatIndex<NCHW>::H), mInput->dim(DataFormatIndex<NCHW>::W)},
+                        {mFilter->dim(DataFormatIndex<OIHW>::H), mFilter->dim(DataFormatIndex<OIHW>::W)},
+                        {mParam->strides[DataFormatIndex<NCHW>::H], mParam->strides[DataFormatIndex<NCHW>::W]},
+                        mParam->paddings, mParam->paddingMode);
+                outputShape[2] = outputHW[0];
+                outputShape[3] = outputHW[1];
+                mFunction = conv2DNCHW_OIHW;
+            }
+        }
+        mOutput->resize(outputShape);
+        mOutput->zero();
+
+        if (mFunction == NULL) {
+            MAI_CHECK(false, "Unsupported input data format: %s, with filter data format:%s",
+                    getNameFromDataFormat(mInput->getDataFormat()).c_str(),
+                    getNameFromDataFormat(mFilter->getDataFormat()).c_str());
+        }
+
         std::vector<shape_t> biasShape;
         if (mBias != NULL) {
             biasShape = mBias->shape();

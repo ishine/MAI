@@ -27,20 +27,6 @@ public:
     ~Fill() = default;
 
     MAI_STATUS init() override {
-        const Tensor* dims = getInputTensor(0);
-        const Tensor* value = getInputTensor(1);
-        Tensor* output = getOutputTensor(0);
-        MAI_CHECK_NULL(dims);
-        MAI_CHECK_NULL(output);
-        MAI_CHECK(dims->dimSize() == 1, "dimSize of dims must be 1 but not %d", dims->dimSize());
-        MAI_CHECK(value->isScalar(), "Tensor(%s) is not scalar", value->name().c_str());
-        std::vector<shape_t> outputShape(dims->dim(0));
-        const int32* dimsData = dims->data<int32>();
-        for (shape_t i = 0; i < dims->elementSize(); ++i) {
-            outputShape[i] = dimsData[i];
-        }
-        output->resize(outputShape);
-
         return MAI_SUCCESS;
     }
 
@@ -48,6 +34,18 @@ public:
         const Tensor* dims = getInputTensor(0);
         const Tensor* value = getInputTensor(1);
         Tensor* output = getOutputTensor(0);
+
+        MAI_CHECK_NULL(dims);
+        MAI_CHECK_NULL(output);
+        MAI_CHECK(dims->dimSize() == 1, "dimSize of dims must be 1 but not %d", dims->dimSize());
+        MAI_CHECK(value->isScalar(), "Tensor(%s) is not scalar", value->name().c_str());
+
+        std::vector<shape_t> outputShape(dims->dim(0));
+        const int32* dimsData = dims->data<int32>();
+        for (shape_t i = 0; i < dims->elementSize(); ++i) {
+            outputShape[i] = dimsData[i];
+        }
+        output->resize(outputShape);
 
         const T* valueData = value->data<T>();
         T* outputData = output->mutableData<T>();

@@ -64,7 +64,7 @@ std::vector<int32> calculateHW(const std::vector<int32>& hw,
         PaddingMode paddingMode) {
     MAI_CHECK(hw.size() == 2, "hw must be 2-d");
     MAI_CHECK(kSize.size() == 2, "kSize must be 2-d");
-    MAI_CHECK(strides.size() == 4, "strides must be 4-d");
+    MAI_CHECK(strides.size() == 2, "strides must be 2-d");
     MAI_CHECK(paddingMode != INVALID || paddings.size() == 4, "paddings must be 4-d, but not:%d", paddings.size());
     auto calcSize = [](int32 k, PaddingMode paddingMode, int32 iSize, int32 s, const int32* paddings) -> int32 {
         int32 p = 0;
@@ -85,8 +85,8 @@ std::vector<int32> calculateHW(const std::vector<int32>& hw,
         return size;
     };
     std::vector<int32> newHW(2);
-    newHW[0] = calcSize(kSize[0], paddingMode, hw[0], strides[1], paddings.data());
-    newHW[1] = calcSize(kSize[1], paddingMode, hw[1], strides[2], paddings.data() + 2);
+    newHW[0] = calcSize(kSize[0], paddingMode, hw[0], strides[0], paddings.data());
+    newHW[1] = calcSize(kSize[1], paddingMode, hw[1], strides[1], paddings.data() + 2);
     return newHW;
 }
 

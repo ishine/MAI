@@ -117,6 +117,11 @@ bool registerOpParser(OpParserFunction functionParser, const std::string& names)
 }
 
 static const void* getTensorData(const onnx::TensorProto& tensorProto) {
+    if (tensorProto.name() == "reshape__254__255") {
+        ALOGI("shape getData, dataType:%s", getNameFromDataType(onnx2MIDataType(tensorProto.data_type())).c_str());
+        const int64* data = reinterpret_cast<const int64*>(tensorProto.raw_data().c_str());
+        ALOGI("data0:%d, 1:%d", data[0], data[1]);
+    }
 #define FIND_TENSOR_DATA(DATA_TYPE, dataFunc) \
     if (tensorProto.data_type() == onnx::TensorProto::DATA_TYPE) { \
         if (tensorProto.dataFunc##_data().size() != 0) { \
@@ -180,7 +185,8 @@ public:
                 const onnx::TypeProto_Tensor& tensor = input.type().tensor_type();
                 std::vector<shape_t> inputShape(tensor.shape().dim_size());
                 for (int32 d = 0; d < tensor.shape().dim_size(); ++d) {
-                    inputShape[d] = tensor.shape().dim(d).dim_value();
+                    int32 dim = tensor.shape().dim(d).dim_value();
+                    inputShape[d] = (dim == 0 || dim == -1) ? 1 : dim; //TODO:(gavinchen) receive input size from command line
                 }
                 mOnnxNetwork->addModelInput(input.name(),
                         onnx2MIDataType(tensor.elem_type()), inputShape);
@@ -281,12 +287,27 @@ static onnx::TensorProto::DataType findOpDataType(const onnx::GraphProto& graphP
 }
 
 static void parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOperator opType, onnx::TensorProto::DataType& onnxDataType,
-        Param* param, std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers) {
+        Param* param, std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers) {
+    std::map<std::string, bool> parserUsed;
+    for (auto it = attrParsers.begin(); it != attrParsers.end(); ++it) {
+        parserUsed[it->first] = false;
+        MAI_CHECK((it->second.size() == 1 || it->second.size() == 2),
+                "attrParsers cannot support functions size 1 or 2 but not: %d", it->second.size());
+    }
     auto& attrs = node.attribute();
     for (auto it = attrs.begin(); it != attrs.end(); ++it) {
         auto attrParserIt = attrParsers.find((*it).name());
         if (attrParserIt != attrParsers.end()) {
-            attrParserIt->second(*(it));
+            attrParserIt->second[0](*(it));
+            parserUsed[(*it).name()] = true;
+        }
+    }
+
+    // call default attrs parser
+    for (auto it = parserUsed.begin(); it != parserUsed.end(); ++it) {
+        if (it->second == false && attrParsers[it->first].size() == 2) {
+            const onnx::AttributeProto proto;
+            attrParsers[it->first][1](proto);
         }
     }
 
@@ -301,7 +322,6 @@ static void parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOpera
     }
     for(int32 i = 0; i < node.output_size(); ++i) {
         op->addOutputName(node.output(i));
-        //ALOGI("name:%s output:%s", node.name().c_str(), node.output(i).c_str());
         std::unique_ptr<Tensor> tensor(new Tensor(onnx2MIDataType(onnxDataType), new CPUAllocator()));
         tensor->setName(node.output(i));
         tensor->setDataFormat(NCHW);
@@ -327,36 +347,85 @@ static void parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOpera
 
 OP_PARSER(Conv) {
     //TODO:(gavinchen)
+    bool isDepthwiseConv = false;
+    auto& attrs = node.attribute();
+    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
+        if ((*it).name() == "group") {
+            if ((*it).i() > 0) {
+                //TODO: check group size is equal to input channel size
+                isDepthwiseConv = true;
+            }
+        }
+    }
+
+    if (isDepthwiseConv) {
+        parser.mOnnxNetwork->getTensor(node.input(1))->setDataFormat(IOHW);
+    }
+
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
-    Conv2DParam* param = new Conv2DParam();
-    std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers = {
-        {"strides", [&param](const onnx::AttributeProto& attr)
+    Conv2DParam* param = isDepthwiseConv ? new DepthwiseConv2dParam() : new Conv2DParam();
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"strides",
             {
-                param->strides.insert(param->strides.end(), attr.ints().begin(), attr.ints().end());
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    if (attr.ints().size() != 2) {
+                        MAI_ABORT("Unimplement strides size:%d", attr.ints().size());
+                    }
+                    // NCHW
+                    param->strides.push_back(1);// N
+                    param->strides.push_back(1);// C
+                    param->strides.insert(param->strides.end(), attr.ints().begin(), attr.ints().end()); // HW
+                }
             }
         },
 
-        {"dilations", [&param](const onnx::AttributeProto& attr)
+        {"dilations",
             {
-                param->dilations.insert(param->dilations.end(), attr.ints().begin(), attr.ints().end());
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    if (attr.ints().size() != 2) {
+                        MAI_ABORT("Unimplement dilations size:%d", attr.ints().size());
+                    }
+                    param->dilations.push_back(1); // N
+                    param->dilations.push_back(1); // C
+                    param->dilations.insert(param->dilations.end(), attr.ints().begin(), attr.ints().end());
+                }
             }
         },
 
-        {"pads", [&param](const onnx::AttributeProto& attr)
+        {"pads",
             {
-                param->paddings.insert(param->paddings.end(), attr.ints().begin(), attr.ints().end());
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    //ONNX pads: TOP LEFT BOTTOM RIGHT
+                    //MAI pads: TOP BOTTOM LEFT RIGHT
+                    MAI_CHECK(attr.ints().size() == 4, "Unimplement pads size:%d", attr.ints().size());
+                    param->paddings.resize(4);
+                    param->paddings[0] = attr.ints(0);
+                    param->paddings[1] = attr.ints(2);
+                    param->paddings[2] = attr.ints(1);
+                    param->paddings[3] = attr.ints(3);
+                }
             }
         },
 
-        {"auto_pad", [&param](const onnx::AttributeProto& attr)
+        {"auto_pad",
             {
-                //TODO:(gavinchen) deprecated
-                MAI_ABORT("auto_pad is deprecated");
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    //TODO:(gavinchen) deprecated
+                    MAI_ABORT("auto_pad is deprecated");
+                }
             }
         },
     };
 
-    parseAttrs(parser, node, CONV2D, onnxDataType, param, attrParsers);
+    if (isDepthwiseConv) {
+        parseAttrs(parser, node, DEPTHWISE_CONV2D, onnxDataType, param, attrParsers);
+    } else {
+        parseAttrs(parser, node, CONV2D, onnxDataType, param, attrParsers);
+    }
 }
 
 OP_PARSER(DepthwiseConv2dNative) {
@@ -366,39 +435,67 @@ OP_PARSER(DepthwiseConv2dNative) {
 OP_PARSER(AveragePool) {
     PoolParam* param = new PoolParam();
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
-    std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers = {
-        {"auto_pad", [&param](const onnx::AttributeProto& attr)
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"auto_pad",
             {
-                param->paddingMode = onnx2MIPaddingMode(attr.s());
-            }
-        },
-
-        {"count_include_pad", [&param](const onnx::AttributeProto& attr)
-            {
-                //TODO:(gavinchen)
-            }
-        },
-
-        {"kernel_shape", [&param](const onnx::AttributeProto& attr)
-            {
-                if (attr.ints_size() < 4) {
-                    for (int32 i = 0; i < (4 - attr.ints_size()); ++i) {
-                        param->kernelSizes.emplace_back(1);
-                    }
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->paddingMode = onnx2MIPaddingMode(attr.s());
                 }
-                param->kernelSizes.insert(param->kernelSizes.end(), attr.ints().begin(), attr.ints().end());
             }
         },
 
-        {"pads", [&param](const onnx::AttributeProto& attr)
+        {"count_include_pad",
             {
-                param->paddings.insert(param->paddings.end(), attr.ints().begin(), attr.ints().end());
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    //TODO:(gavinchen)
+                }
             }
         },
 
-        {"strides", [&param](const onnx::AttributeProto& attr)
+        {"kernel_shape",
             {
-                param->strides.insert(param->strides.end(), attr.ints().begin(), attr.ints().end());
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    if (attr.ints_size() < 4) {
+                        for (int32 i = 0; i < (4 - attr.ints_size()); ++i) {
+                            param->kernelSizes.emplace_back(1);
+                        }
+                    }
+                    param->kernelSizes.insert(param->kernelSizes.end(), attr.ints().begin(), attr.ints().end());
+                }
+            }
+        },
+
+        {"pads",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->paddings.insert(param->paddings.end(), attr.ints().begin(), attr.ints().end());
+                },
+
+                [&param](const onnx::AttributeProto& attr)
+                {
+
+                    param->paddings.resize(4);
+                    std::fill_n(param->paddings.begin(), 4, 0);// 0 0 0 0
+                },
+            }
+        },
+
+        {"strides",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    if (attr.ints().size() != 2) {
+                        MAI_ABORT("Unimplement strides size:%d", attr.ints().size());
+                    }
+                    // NCHW
+                    param->strides.push_back(1);// N
+                    param->strides.push_back(1);// C
+                    param->strides.insert(param->strides.end(), attr.ints().begin(), attr.ints().end());
+                }
             }
         },
     };
@@ -408,22 +505,31 @@ OP_PARSER(AveragePool) {
 OP_PARSER(BatchNormalization) {
     FusedBatchNormParam* param = new FusedBatchNormParam();
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
-    std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers = {
-        {"epsilon", [&param](const onnx::AttributeProto& attr)
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"epsilon",
             {
-                param->epsilon = attr.f();
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->epsilon = attr.f();
+                }
             }
         },
 
-        {"momentum", [&param](const onnx::AttributeProto& attr)
+        {"momentum",
             {
-                //TODO:(gavinchen)
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    //TODO:(gavinchen)
+                }
             }
         },
 
-        {"spatial", [](const onnx::AttributeProto& attr)
+        {"spatial",
             {
-                //TODO:(gavinchen)
+                [](const onnx::AttributeProto& attr)
+                {
+                    //TODO:(gavinchen)
+                }
             }
         },
     };
@@ -434,16 +540,22 @@ OP_PARSER(Clip) {
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
     float min = std::numeric_limits<float>::lowest();
     float max = std::numeric_limits<float>::max();
-    std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers = {
-        {"min", [&min](const onnx::AttributeProto& attr)
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"min",
             {
-                min = attr.f();
+                [&min](const onnx::AttributeProto& attr)
+                {
+                    min = attr.f();
+                }
             }
         },
 
-        {"max", [&max](const onnx::AttributeProto& attr)
+        {"max",
             {
-                max = attr.f();
+                [&max](const onnx::AttributeProto& attr)
+                {
+                    max = attr.f();
+                }
             }
         },
     };
@@ -453,10 +565,13 @@ OP_PARSER(Clip) {
 OP_PARSER(Squeeze) {
     SqueezeParam* param = new SqueezeParam();
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
-    std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers = {
-        {"axes", [&param](const onnx::AttributeProto& attr)
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"axes",
             {
-                param->squeezeDims.insert(param->squeezeDims.end(), attr.ints().begin(), attr.ints().end());
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->squeezeDims.insert(param->squeezeDims.end(), attr.ints().begin(), attr.ints().end());
+                }
             }
         },
     };
@@ -465,23 +580,28 @@ OP_PARSER(Squeeze) {
 
 OP_PARSER(Reshape) {
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
-    std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
     parseAttrs(parser, node, RESHAPE, onnxDataType, NULL/*param*/, attrParsers);
 }
 
 OP_PARSER(Shape) {
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::INT64;
-    std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
     parseAttrs(parser, node, SHAPE, onnxDataType, NULL/*param*/, attrParsers);
 }
 
 OP_PARSER(Softmax) {
     SoftmaxParam* param = new SoftmaxParam();
+    param->beta = 1.f;
+    param->axis = -1;
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
-    std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers = {
-        {"axis", [&param](const onnx::AttributeProto& attr)
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"axis",
             {
-                param->axis = attr.i();
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->axis = attr.i();
+                }
             }
         },
     };
@@ -490,10 +610,13 @@ OP_PARSER(Softmax) {
 
 OP_PARSER(Cast) {
     onnx::TensorProto::DataType onnxDataType;
-    std::map<std::string, std::function<void(const onnx::AttributeProto&)>> attrParsers = {
-        {"to", [&](const onnx::AttributeProto& attr)
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"to",
             {
-                onnxDataType = (onnx::TensorProto::DataType)attr.i();
+                [&](const onnx::AttributeProto& attr)
+                {
+                    onnxDataType = (onnx::TensorProto::DataType)attr.i();
+                }
             }
         },
     };
@@ -507,6 +630,7 @@ OnnxNetwork::OnnxNetwork(const std::string& netPath) {
 }
 
 MAI_STATUS OnnxNetwork::init() {
+    ALOGI("init ");
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
         (*it)->init();
     }
@@ -514,13 +638,13 @@ MAI_STATUS OnnxNetwork::init() {
 }
 
 MAI_STATUS OnnxNetwork::run() {
-    ALOGI("run ");
+    ALOGI("run relu6 is exists:%d", mTensors.find("MobilenetV1/MobilenetV1/Conv2d_0/Relu6:0") != mTensors.end());
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
         ALOGI("run op:%s", (*it)->name().c_str());
         (*it)->run();
     }
 
-#if 0
+#if 1
     // tensor to file
     const std::string kOutputDir = "output";
     for(int32 i = 0; i < mModelInputs.size(); ++i) {
@@ -568,7 +692,7 @@ void OnnxNetwork::addModelInput(const std::string& inputName,
     tensor->setDataFormat(NCHW);
     tensor->setName(inputName);
     tensor->allocateBuffer(inputShape);
-    ALOGI("add model input tensor:%s", tensor->name().c_str());
+    ALOGI("add model input tensor: %s", tensor->name().c_str());
     addTensor(tensor);
 }
 

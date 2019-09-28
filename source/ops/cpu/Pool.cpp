@@ -33,6 +33,14 @@ public:
     }
 
     MAI_STATUS init() override {
+        return MAI_SUCCESS;
+    }
+
+    void setParam(Param* param) override {
+        mParam = reinterpret_cast<PoolParam*>(param);
+    }
+
+    MAI_STATUS run() override {
         mInput = getInputTensor(INPUT);
         mOutput = getOutputTensor(OUTPUT);
         MAI_CHECK_NULL(mInput);
@@ -55,29 +63,39 @@ public:
             std::vector<int32> outputHW = calculateHW(
                     {mInput->dim(1), mInput->dim(2)},
                     {mParam->kernelSizes[1], mParam->kernelSizes[2]},
-                    mParam->strides, mParam->paddings, mParam->paddingMode);
+                    {mParam->strides[DataFormatIndex<NHWC>::H], mParam->strides[DataFormatIndex<NHWC>::W]},
+                    mParam->paddings, mParam->paddingMode);
             outputShape[1] = outputHW[0];
             outputShape[2] = outputHW[1];
             mFunction = mFunctionNHWC;
             if (mParam->paddingMode != INVALID) {
                 mParam->paddings = calcPaddings(mParam->paddingMode, mParam->kernelSizes);
             }
+        } else if (mInput->getDataFormat() == NCHW) {
+            outputShape[0] = mInput->dim(0);
+            outputShape[1] = mInput->dim(1);
+            std::vector<int32> outputHW = calculateHW(
+                    {mInput->dim(DataFormatIndex<NCHW>::H), mInput->dim(DataFormatIndex<NCHW>::W)},
+                    {mParam->kernelSizes[DataFormatIndex<NCHW>::H], mParam->kernelSizes[DataFormatIndex<NCHW>::W]},
+                    {mParam->strides[DataFormatIndex<NCHW>::H], mParam->strides[DataFormatIndex<NCHW>::W]},
+                    mParam->paddings, mParam->paddingMode);
+            outputShape[2] = outputHW[0];
+            outputShape[3] = outputHW[1];
+            mFunction = mFunctionNCHW;
+            if (mParam->paddingMode != INVALID) {
+                mParam->paddings = calcPaddings(mParam->paddingMode, mParam->kernelSizes);
+            }
+
+        } else {
+            MAI_ABORT("Unsupported dataFormat:%s", getNameFromDataFormat(mInput->getDataFormat()));
         }
         mOutput->resize(outputShape);
         mOutput->zero();
 
         if (mFunction == NULL) {
-            MAI_CHECK(false, "Unsupported input data format: %d", mInput->getDataFormat());
+            MAI_CHECK(false, "Unsupported input data format: %s", getNameFromDataFormat(mInput->getDataFormat()).c_str());
         }
 
-        return MAI_SUCCESS;
-    }
-
-    void setParam(Param* param) override {
-        mParam = reinterpret_cast<PoolParam*>(param);
-    }
-
-    MAI_STATUS run() override {
         mFunction(mInput->data<T>(), mInput->shape(),
                 mParam,
                 mOutput->mutableData<T>(), mOutput->shape());
@@ -113,12 +131,12 @@ public:
                         shape_t iWBase = w * param->strides[DataFormatIndex<NHWC>::W] - param->paddings[2];
                         T max = std::numeric_limits<T>::lowest();
                         int count = 0;
-                        for (shape_t fh = 0; fh < param->kernelSizes[1]; ++fh) {
-                            for (shape_t fw = 0; fw < param->kernelSizes[1]; ++fw) {
+                        for (shape_t fh = 0; fh < param->kernelSizes[DataFormatIndex<NHWC>::H]; ++fh) {
+                            for (shape_t fw = 0; fw < param->kernelSizes[DataFormatIndex<NHWC>::W]; ++fw) {
                                 shape_t iHOffset = iHBase + fh;
                                 shape_t iWOffset = iWBase + fw;
-                                if (iHOffset >= 0 && iHOffset < inputShape[1]
-                                        && iWOffset >= 0 && iWOffset < inputShape[2]) {
+                                if (iHOffset >= 0 && iHOffset < inputShape[DataFormatIndex<NHWC>::H]
+                                        && iWOffset >= 0 && iWOffset < inputShape[DataFormatIndex<NHWC>::W]) {
                                     const T* inputV = input + offset4D(inputShape, n, iHOffset, iWOffset, c);
                                     if (*inputV > max) {
                                         max = *inputV;
@@ -140,6 +158,34 @@ public:
             const PoolParam* param,
             T* output,
             const std::vector<shape_t>& outputShape) {
+        for(shape_t n = 0; n < outputShape[0]; ++n) {
+            for(shape_t c = 0; c < outputShape[3]; ++c) {
+                for(shape_t h = 0; h < outputShape[1]; ++h) {
+                    for(shape_t w = 0; w < outputShape[2]; ++w) {
+                        shape_t iHBase = h * param->strides[DataFormatIndex<NCHW>::H] - param->paddings[0];
+                        shape_t iWBase = w * param->strides[DataFormatIndex<NCHW>::W] - param->paddings[2];
+                        T max = std::numeric_limits<T>::lowest();
+                        int count = 0;
+                        for (shape_t fh = 0; fh < param->kernelSizes[DataFormatIndex<NCHW>::H]; ++fh) {
+                            for (shape_t fw = 0; fw < param->kernelSizes[DataFormatIndex<NCHW>::W]; ++fw) {
+                                shape_t iHOffset = iHBase + fh;
+                                shape_t iWOffset = iWBase + fw;
+                                if (iHOffset >= 0 && iHOffset < inputShape[DataFormatIndex<NCHW>::H]
+                                        && iWOffset >= 0 && iWOffset < inputShape[DataFormatIndex<NCHW>::W]) {
+                                    const T* inputV = input + offset4D(inputShape, n, c, iHOffset, iWOffset);
+                                    if (*inputV > max) {
+                                        max = *inputV;
+                                    }
+                                    count++;
+                                }
+                            }
+                        }
+                        T* outputV = output + offset4D(outputShape, n, c, h, w);
+                        *outputV = count == 0 ? 0 : max;
+                    }
+                }
+            }
+        }
     }
 
 };
@@ -162,12 +208,12 @@ public:
                         shape_t iWBase = w * param->strides[DataFormatIndex<NHWC>::W] - param->paddings[2];
                         T sum = 0;
                         int32 count = 0;
-                        for (shape_t fh = 0; fh < param->kernelSizes[1]; ++fh) {
-                            for (shape_t fw = 0; fw < param->kernelSizes[1]; ++fw) {
+                        for (shape_t fh = 0; fh < param->kernelSizes[DataFormatIndex<NHWC>::H]; ++fh) {
+                            for (shape_t fw = 0; fw < param->kernelSizes[DataFormatIndex<NHWC>::W]; ++fw) {
                                 shape_t iHOffset = iHBase + fh;
                                 shape_t iWOffset = iWBase + fw;
-                                if (iHOffset >= 0 && iHOffset < inputShape[1]
-                                        && iWOffset >= 0 && iWOffset < inputShape[2]) {
+                                if (iHOffset >= 0 && iHOffset < inputShape[DataFormatIndex<NHWC>::H]
+                                        && iWOffset >= 0 && iWOffset < inputShape[DataFormatIndex<NHWC>::W]) {
                                     const T* inputV = input + offset4D(inputShape, n, iHOffset, iWOffset, c);
                                     sum += *inputV;
                                     count++;
@@ -187,6 +233,32 @@ public:
             const PoolParam* param,
             T* output,
             const std::vector<shape_t>& outputShape) {
+        for(shape_t n = 0; n < outputShape[0]; ++n) {
+            for(shape_t c = 0; c < outputShape[1]; ++c) {
+                for(shape_t h = 0; h < outputShape[2]; ++h) {
+                    for(shape_t w = 0; w < outputShape[3]; ++w) {
+                        shape_t iHBase = h * param->strides[DataFormatIndex<NCHW>::H] - param->paddings[0];
+                        shape_t iWBase = w * param->strides[DataFormatIndex<NCHW>::W] - param->paddings[2];
+                        T sum = 0;
+                        int32 count = 0;
+                        for (shape_t fh = 0; fh < param->kernelSizes[DataFormatIndex<NCHW>::H]; ++fh) {
+                            for (shape_t fw = 0; fw < param->kernelSizes[DataFormatIndex<NCHW>::W]; ++fw) {
+                                shape_t iHOffset = iHBase + fh;
+                                shape_t iWOffset = iWBase + fw;
+                                if (iHOffset >= 0 && iHOffset < inputShape[DataFormatIndex<NCHW>::H]
+                                        && iWOffset >= 0 && iWOffset < inputShape[DataFormatIndex<NCHW>::W]) {
+                                    const T* inputV = input + offset4D(inputShape, n, c, iHOffset, iWOffset);
+                                    sum += *inputV;
+                                    count++;
+                                }
+                            }
+                        }
+                        T* outputV = output + offset4D(outputShape, n, c, h, w);
+                        *outputV = count == 0 ? 0 : (sum / count);
+                    }
+                }
+            }
+        }
     }
 
 };

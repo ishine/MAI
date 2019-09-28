@@ -494,7 +494,7 @@ OP_PARSER(Placeholder) {
             {
                 for (int32 i = 0; i < attr.shape().dim_size(); ++i) {
                     int32 dim = attr.shape().dim(i).size();
-                    shape.emplace_back(dim == -1 ? 1 : dim);
+                    shape.emplace_back(dim == -1 ? 1 : dim);// TODO:(gavinchen) receive input size from command line
                 }
             }
         },
@@ -524,10 +524,11 @@ MAI_STATUS TensorflowNetwork::init() {
 
 MAI_STATUS TensorflowNetwork::run() {
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        ALOGI("run op:%s", (*it)->name().c_str());
         (*it)->run();
     }
 
-#if 0
+#if 1
     // tensor to file
     const std::string kOutputDir = "output";
     for(int32 i = 0; i < mModelInputs.size(); ++i) {
