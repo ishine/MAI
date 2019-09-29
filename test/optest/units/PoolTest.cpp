@@ -29,7 +29,7 @@ void test(MAIOperator op,
         const std::vector<uint64>& inputShape,
         const std::vector<T>& inputData,
         const std::vector<shape_t>& checkShape,
-        const std::vector<T>& checkData) {
+        const std::vector<T>& checkData, DataFormat dataFormat = NHWC) {
     PoolParam* param = new PoolParam();
     param->kernelSizes = kernelSizes;
     param->strides = strides;
@@ -42,7 +42,7 @@ void test(MAIOperator op,
             .setOutputNames({"output"})
             .setParam(param)
             .build())
-        .template addTensor<T>("input", inputShape, inputData)
+        .template addTensor<T>("input", inputShape, inputData, dataFormat)
         .template addTensor<T>("output", {}, {})
         .template addTensor<T>("check", checkShape, checkData)
         .build();
@@ -75,6 +75,16 @@ TEST_F(PoolTest, avgPool_floatWithMultiChannelSame_NHWC) {
 TEST_F(PoolTest, maxPool_floatWithMultiChannelSame_NHWC) {
     test<float>(MAX_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, SAME, {1,2,2,2}, {-1,-2,-3,-4,-5,-6,-7,-8},
             {1,2,2,2}, {-1,-2,-3,-4,-5,-6,-7,-8});
+}
+
+TEST_F(PoolTest, globalAveragePoolNCHW) {
+    test<float>(GLOBAL_AVG_POOL, DT_FLOAT, {1,1,3,3}/*not used*/, {1,1,1,1}/*not used*/, VALID/*not used*/, {1,1,3,3}, {1,2,3,4,5,6,7,8,9},
+            {1,1,1,1}, {5}, NCHW);
+    test<float>(GLOBAL_AVG_POOL, DT_FLOAT, {1,1,3,3}/*not used*/, {1,1,1,1}/*not used*/, VALID/*not used*/, {1,2,3,3},
+            {1,2,3,4,5,6,7,8,9,
+             10,11,12,13,14,15,16,17,18,
+            },
+            {1,2,1,1}, {5, 14}, NCHW);
 }
 
 } // namespace Test

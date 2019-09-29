@@ -70,7 +70,8 @@ public:
 
 struct PadParam : public Param {
 public:
-    std::vector<int32> paddings;
+    float constantValue;
+    std::vector<int32> paddings;//dim0_begin, dim0_end, ...
 };
 
 struct SoftmaxParam : public Param {
@@ -86,7 +87,7 @@ public:
 
 struct ExpandDimsParam : public Param {
 public:
-    int32 axis;
+    std::vector<int32> axes;
 };
 
 struct SplitParam : public Param {
@@ -116,6 +117,20 @@ public:
     std::vector<int32> strides;//4-d format associated with input format(NHWC or NCHW)
     std::vector<int32> paddings;//4-d TOP-BOTTON-LEFT-RIGHT
     PaddingMode paddingMode;
+};
+
+struct ConcatParam : public Param {
+public:
+    int32 num;
+    int32 axis;//[-rank, rank - 1]
+};
+
+struct GemmParam : public Param {
+public:
+    float alpha;
+    float beta;
+    bool transA;
+    bool transB;
 };
 
 } // namespace MAI

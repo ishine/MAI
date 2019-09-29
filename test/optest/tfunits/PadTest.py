@@ -1,30 +1,15 @@
 import tensorflow as tf
+from tensorflow.python.framework import graph_util
 
 sess = tf.InteractiveSession()
 
-#pad channel
-t=tf.constant([[[[1,2], [3,4]], [[5,6], [7, 8]]]])
-paddings=tf.constant([[0,0],[0,0],[0,0],[1,2]])
+#1 2 2 3
+input=tf.constant([[[[1,2,3], [4,5,6]], [[7,8,9], [10,11,12]]]])
+op = tf.pad(input, [3,1,2,0], name='transpose_self')
+target=op.eval();
+print(target)
+#constant_graph = graph_util.convert_variables_to_constants(sess, sess.graph_def, ['transpose_self'])
+#
+#with tf.gfile.FastGFile("transpose.pb", mode='wb') as f:
+#    f.write(constant_graph.SerializeToString());
 
-target=tf.pad(t, paddings).eval()
-
-print("pad channel========================")
-print target
-
-#pad batch
-t=tf.constant([[[[1],[2],[3]], [[4],[5],[6]], [[7],[8],[9]]]])
-paddings=tf.constant([[1,1],[0,0],[0,0],[0,0]])
-
-target=tf.pad(t, paddings).eval()
-
-print("pad batch========================")
-print target
-
-#pad all
-t=tf.constant([[[[1],[2]],[[3],[4]]]])
-paddings=tf.constant([[1,1],[1,1],[1,1],[1,1]])
-
-target=tf.pad(t, paddings).eval()
-
-print("pad batch========================")
-print target

@@ -26,7 +26,8 @@ public:
     typedef std::function<void(const T*, const std::vector<shape_t>&,
             const PoolParam*,
             T*, const std::vector<shape_t>&)> PoolFunction;
-    Pool(PoolFunction fNHWC, PoolFunction fNCHW) : mFunctionNHWC(fNHWC), mFunctionNCHW(fNCHW) {
+    Pool(MAIOperator poolType, PoolFunction fNHWC, PoolFunction fNCHW)
+        : mPoolType(poolType), mFunctionNHWC(fNHWC), mFunctionNCHW(fNCHW) {
     }
     ~Pool() {
         delete mParam;
@@ -45,9 +46,13 @@ public:
         mOutput = getOutputTensor(OUTPUT);
         MAI_CHECK_NULL(mInput);
         MAI_CHECK_NULL(mOutput);
+        if (mPoolType == GLOBAL_AVG_POOL) {
+            mParam = new PoolParam();
+            mParam->paddingMode = VALID;
+            mParam->strides = {1,1,1,1};
+        }
         MAI_CHECK_NULL(mParam);
         MAI_CHECK(mInput->shape().size() == 4, "Input shape must be 4-d");
-        MAI_CHECK(mParam->kernelSizes.size() == 4, "KernelSize must be 4-d format");
         if (mParam->paddingMode != INVALID) {
             MAI_CHECK(mParam->paddings.size() == 0,
                 "Cannot use explicit padding when paddingMode is :%d", mParam->paddingMode);
@@ -58,6 +63,10 @@ public:
 
         std::vector<shape_t> outputShape(4);
         if (mInput->getDataFormat() == NHWC) {
+            if (mPoolType == GLOBAL_AVG_POOL) {
+                mParam->kernelSizes = {1, 1, mInput->dim(DataFormatIndex<NHWC>::H), mInput->dim(DataFormatIndex<NHWC>::W)};
+            }
+            MAI_CHECK(mParam->kernelSizes.size() == 4, "KernelSize must be 4-d format");
             outputShape[0] = mInput->dim(0);
             outputShape[3] = mInput->dim(3);
             std::vector<int32> outputHW = calculateHW(
@@ -72,6 +81,10 @@ public:
                 mParam->paddings = calcPaddings(mParam->paddingMode, mParam->kernelSizes);
             }
         } else if (mInput->getDataFormat() == NCHW) {
+            if (mPoolType == GLOBAL_AVG_POOL) {
+                mParam->kernelSizes = {1, 1, mInput->dim(DataFormatIndex<NCHW>::H), mInput->dim(DataFormatIndex<NCHW>::W)};
+            }
+            MAI_CHECK(mParam->kernelSizes.size() == 4, "KernelSize must be 4-d format");
             outputShape[0] = mInput->dim(0);
             outputShape[1] = mInput->dim(1);
             std::vector<int32> outputHW = calculateHW(
@@ -106,6 +119,7 @@ private:
     enum FLAG {INPUT, OUTPUT = 0,};
     const Tensor* mInput;
     Tensor* mOutput;
+    MAIOperator mPoolType;
     PoolFunction mFunction;
     PoolFunction mFunctionNHWC;
     PoolFunction mFunctionNCHW;
@@ -115,7 +129,7 @@ private:
 template<typename T>
 class MaxPool : public Pool<T> {
 public:
-    MaxPool() : Pool<T>(poolNHWC, poolNCHW){
+    MaxPool() : Pool<T>(MAX_POOL, poolNHWC, poolNCHW){
     }
 
     static void poolNHWC(const T* input,
@@ -159,9 +173,9 @@ public:
             T* output,
             const std::vector<shape_t>& outputShape) {
         for(shape_t n = 0; n < outputShape[0]; ++n) {
-            for(shape_t c = 0; c < outputShape[3]; ++c) {
-                for(shape_t h = 0; h < outputShape[1]; ++h) {
-                    for(shape_t w = 0; w < outputShape[2]; ++w) {
+            for(shape_t c = 0; c < outputShape[1]; ++c) {
+                for(shape_t h = 0; h < outputShape[2]; ++h) {
+                    for(shape_t w = 0; w < outputShape[3]; ++w) {
                         shape_t iHBase = h * param->strides[DataFormatIndex<NCHW>::H] - param->paddings[0];
                         shape_t iWBase = w * param->strides[DataFormatIndex<NCHW>::W] - param->paddings[2];
                         T max = std::numeric_limits<T>::lowest();
@@ -193,7 +207,7 @@ public:
 template<typename T>
 class AvgPool : public Pool<T> {
 public:
-    AvgPool() : Pool<T>(poolNHWC, poolNCHW){
+    AvgPool() : Pool<T>(AVG_POOL, poolNHWC, poolNCHW){
     }
     static void poolNHWC(const T* input,
             const std::vector<shape_t>& inputShape,
@@ -263,12 +277,23 @@ public:
 
 };
 
+template<class T>
+class GlobalAvgPool : public Pool<T> {
+public:
+    GlobalAvgPool() : Pool<T>(GLOBAL_AVG_POOL, AvgPool<T>::poolNHWC, AvgPool<T>::poolNCHW){
+    }
+};
+
 void registerMaxPool() {
     MAI_REGISTER_OP((OpContext{.opType=MAX_POOL,}), float, MaxPool);
 }
 
 void registerAvgPool() {
     MAI_REGISTER_OP((OpContext{.opType=AVG_POOL,}), float, AvgPool);
+}
+
+void registerGlobalAvgPool() {
+    MAI_REGISTER_OP((OpContext{.opType=GLOBAL_AVG_POOL,}), float, GlobalAvgPool);
 }
 
 } // namespace CPU

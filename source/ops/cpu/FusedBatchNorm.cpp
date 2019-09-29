@@ -51,9 +51,9 @@ public:
             const std::vector<T>& scale, const std::vector<T>& offset, T* output) {
         int idx = 0;
         for (shape_t b = 0; b < inputShape[0]; ++b) {
-            for (shape_t c = 0; c < inputShape[3]; ++c) {
-                for (shape_t h = 0; h < inputShape[1]; ++h) {
-                    for (shape_t w = 0; w < inputShape[2]; ++w) {
+            for (shape_t c = 0; c < inputShape[1]; ++c) {
+                for (shape_t h = 0; h < inputShape[2]; ++h) {
+                    for (shape_t w = 0; w < inputShape[3]; ++w) {
                         output[idx] = input[idx] * scale[c] + offset[c];
                         idx++;
                     }

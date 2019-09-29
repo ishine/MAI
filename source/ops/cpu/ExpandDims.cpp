@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class ExpandDims : public Operator {
 public:
-    ExpandDims() : mAxis(std::numeric_limits<int32>::min()) {}
+    ExpandDims() = default;
     ~ExpandDims() = default;
 
     MAI_STATUS init() override {
@@ -33,7 +33,8 @@ public:
     void setParam(Param* param) override {
         ExpandDimsParam* expandDimsParam = reinterpret_cast<ExpandDimsParam*>(param);
         if (expandDimsParam) {
-            mAxis = expandDimsParam->axis;
+            mAxes = expandDimsParam->axes;
+            delete param;
         }
     }
 
@@ -42,26 +43,28 @@ public:
         Tensor* output = getOutputTensor(0);
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
-        MAI_CHECK(mAxis >= -(input->dimSize() + 1) && mAxis <= input->dimSize(), "Axis(%d) is not valid", mAxis);
-        if (mAxis < 0) {
-            mAxis = mAxis + input->dimSize() + 1;
-        }
-        std::vector<shape_t> outputShape(input->dimSize() + 1);
-        for (int32 i = 0; i < input->dimSize() + 1; ++i) {
-            if (i < mAxis) {
-                outputShape[i] = input->dim(i);
-            } else if (i == mAxis) {
-                outputShape[i] = 1;
-            } else {
-                outputShape[i] = input->dim(i - 1);
+        MAI_CHECK(mAxes.size() > 0, "At least one axis need to be sepecified");
+        if (mAxes.size() == 1) {
+            int32 axis = mAxes[0];
+            MAI_CHECK(axis >= -(input->dimSize() + 1) && axis <= input->dimSize(), "Axis(%d) is not valid", axis);
+            if (mAxes[0] < 0) {
+                mAxes[0] = mAxes[0] + input->dimSize() + 1;
             }
+        }
+        for (int32 i = 0; i < mAxes.size(); ++i) {
+            int32 axis = mAxes[i];
+            MAI_CHECK(axis >= 0, "Onnx operator can only support positive axis");
+        }
+        std::vector<shape_t> outputShape(input->shape());
+        for (int32 i = 0; i < mAxes.size(); ++i) {
+            outputShape.insert(outputShape.begin() + mAxes[i], 1);
         }
         output->reuse(input);
         output->reshape(outputShape);
         return MAI_SUCCESS;
     }
 private:
-    int32 mAxis;
+    std::vector<int32> mAxes;
 };
 
 void registerExpandDims() {

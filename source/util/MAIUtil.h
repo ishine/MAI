@@ -99,7 +99,19 @@ inline int8 getDataTypeSize(DataType dataType) {
 }
 
 inline shape_t offset4D(const std::vector<shape_t>& shape, shape_t d0, shape_t d1, shape_t d2, shape_t d3) {
-    return ((d0 * shape[1] + d1) * shape[2] + d2) * shape[3] + d3;
+    return (((d0) * shape[1] + (d1)) * shape[2] + (d2)) * shape[3] + (d3);
+}
+
+inline bool isShapeSame(const std::vector<shape_t>& shape1, const std::vector<shape_t>& shape2) {
+    if (shape1.size() != shape2.size()) {
+        return false;
+    }
+    for (int32 i = 0; i < shape1.size(); ++i) {
+        if (shape1[i] != shape2[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 template<class T>

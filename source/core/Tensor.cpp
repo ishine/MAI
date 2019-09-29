@@ -136,6 +136,7 @@ void Tensor::toFile(const std::string& dir, const std::string& file) {
     FILE* outputFile = fopen(filePath.c_str(), "wb");
     if (outputFile) {
         if (mDataType == DT_FLOAT) {
+            fprintf(outputFile, "%s\n", shapeToString(shape()).c_str());
             for(int32 i = 0; i < elementSize(); ++i) {
                 fprintf(outputFile, "[%d]: %10.8e\n", i, *(data<float>() + i));
             }
@@ -145,6 +146,7 @@ void Tensor::toFile(const std::string& dir, const std::string& file) {
         //        fprintf(outputFile, "[%d]: %d\n", i, *(tensor->data<EnumToDataType<mDataType>::Type>() + i));
         //    }
         }
+        fclose(outputFile);
     } else {
         ALOGE("Cannot open file:%s", filePath.c_str());
     }

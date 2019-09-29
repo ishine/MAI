@@ -90,8 +90,8 @@ public:
                         T* outputV = output + offset4D(outputShape, n, o, h, w);
                         shape_t inHBase = h * param->strides[2] - param->paddings[0];
                         shape_t inWBase = w * param->strides[3] - param->paddings[2];
-                        for(shape_t fh = 0; fh < filterShape[0]; ++fh) {
-                            for(shape_t fw = 0; fw < filterShape[1]; ++fw) {
+                        for(shape_t fh = 0; fh < filterShape[2]; ++fh) {
+                            for(shape_t fw = 0; fw < filterShape[3]; ++fw) {
                                 shape_t inHOffset = inHBase + fh;
                                 shape_t inWOffset = inWBase + fw;
                                 if (inHOffset >= 0 && inHOffset < inputShape[2]
