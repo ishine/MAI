@@ -5,7 +5,8 @@
 using namespace MAI;
 int main() {
     uint64_t startTime, endTime, totalTime;
-    MAI::OnnxNetwork network("tools/converter/onnx/models/mobilenet_v1_1.0_224.onnx");
+    //MAI::OnnxNetwork network("tools/converter/onnx/models/mobilenet_v1_1.0_224.onnx");
+    MAI::OnnxNetwork network("tools/converter/onnx/models/onnx_model.onnx");
     startTime = nowMicros();
     network.init();
     endTime = nowMicros();
@@ -13,7 +14,7 @@ int main() {
     //const char* inputData = MAI::mapFile<char>("tools/converter/onnx/models/input.bin");
     const char* inputData = MAI::mapFile<char>("mobilenetv1_input.bin");
     MAI::Tensor* inputTensor = network.getTensor(network.getModelInputs()[0]);
-    ALOGI("Copy data into: %s, inputTensor:%p", inputTensor->name().c_str(), inputTensor);
+    ALOGI("Copy data into: %s, shape:%s, inputTensor:%p", inputTensor->name().c_str(), shapeToString(inputTensor->shape()).c_str(), inputTensor);
     inputTensor->copy(inputData, inputTensor->size());
     startTime = nowMicros();
     network.run();

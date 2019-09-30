@@ -102,6 +102,16 @@ inline shape_t offset4D(const std::vector<shape_t>& shape, shape_t d0, shape_t d
     return (((d0) * shape[1] + (d1)) * shape[2] + (d2)) * shape[3] + (d3);
 }
 
+inline shape_t offset(const std::vector<shape_t>& shape, const std::vector<shape_t>& dims) {
+    shape_t stride = 1;
+    shape_t offsetValue = 0;
+    for (shape_t i = shape.size() - 1; i >= 0; --i) {
+        offsetValue += dims[i] * stride;
+        stride *= shape[i];
+    }
+    return offsetValue;
+}
+
 inline bool isShapeSame(const std::vector<shape_t>& shape1, const std::vector<shape_t>& shape2) {
     if (shape1.size() != shape2.size()) {
         return false;
@@ -164,5 +174,9 @@ std::vector<int32> calculateHW(const std::vector<int32>& hw,
         PaddingMode paddingMode);
 
 uint64_t nowMicros();
+
+bool isShapeCompatible(const std::vector<shape_t>& shape1, const std::vector<shape_t>& shape2);
+
+std::vector<shape_t> broadcastShape(const std::vector<shape_t>& shape1, const std::vector<shape_t>& shape2);
 
 } // namespace MAI

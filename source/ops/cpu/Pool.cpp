@@ -47,6 +47,9 @@ public:
         MAI_CHECK_NULL(mInput);
         MAI_CHECK_NULL(mOutput);
         if (mPoolType == GLOBAL_AVG_POOL) {
+            if (mParam != NULL) {
+                delete mParam;
+            }
             mParam = new PoolParam();
             mParam->paddingMode = VALID;
             mParam->strides = {1,1,1,1};

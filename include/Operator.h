@@ -133,4 +133,9 @@ public:
     bool transB;
 };
 
+struct GatherParam : public Param {
+public:
+    int32 axis;
+};
+
 } // namespace MAI

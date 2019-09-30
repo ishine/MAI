@@ -166,18 +166,24 @@ public:
         // 1. parse model const tensor
         for (int32 i = 0; i < mOnnxGraphProto.initializer_size(); ++i) {
             auto& tensorProto = mOnnxGraphProto.initializer(i);
+            std::vector<shape_t> tensorShape(tensorProto.dims().begin(), tensorProto.dims().end());
             modelConstInputs[i] = tensorProto.name();
+            if (!tensorShape.empty()) {
             std::unique_ptr<Tensor> tensor(new Tensor(onnx2MIDataType(tensorProto.data_type()), new CPUAllocator()));
             tensor->setName(tensorProto.name());
             tensor->setDataFormat(OIHW);// TODO:(gavinchen) setDataFormat should be done in node parser
             //ALOGI("addTensor:%s", tensorProto.name().c_str());
-            std::vector<shape_t> tensorShape(tensorProto.dims().begin(), tensorProto.dims().end());
+            //ALOGD("tensorShape:%s, name:%s", shapeToString(tensorShape).c_str(), tensorProto.name().c_str());
             tensor->allocateBuffer(tensorShape);
             const void* tensorData = getTensorData(tensorProto);
             MAI_CHECK_NULL(tensorData);
             tensor->copy(tensorData, tensor->size());
             mOnnxNetwork->addTensor(tensor);
+            } else {
+                ALOGE("Unparsed tensor:%s", tensorProto.name().c_str());
+            }
         }
+        ALOGD("before parse model input & output");
         // 2. parse model input & output
         for (int32 i = 0; i < mOnnxGraphProto.input_size(); ++i) {
             auto& input = mOnnxGraphProto.input(i);
@@ -315,7 +321,10 @@ static void parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOpera
     if (param != NULL) {
         op->setParam(param);
     }
-    op->setName(node.name());
+    //ALOGI("parse op name:%s", node.name());
+    //op->setName(node.name());
+    //TODO:(gavinchen) some model this is null
+    op->setName(node.op_type());
     for(int32 i = 0; i < node.input_size(); ++i) {
         //ALOGI("name:%s input:%s", node.name().c_str(), node.input(i).c_str());
         op->addInputName(node.input(i));
@@ -351,7 +360,7 @@ OP_PARSER(Conv) {
     auto& attrs = node.attribute();
     for (auto it = attrs.begin(); it != attrs.end(); ++it) {
         if ((*it).name() == "group") {
-            if ((*it).i() > 0) {
+            if ((*it).i() > 1) {
                 //TODO: check group size is equal to input channel size
                 isDepthwiseConv = true;
             }
@@ -432,7 +441,7 @@ OP_PARSER(DepthwiseConv2dNative) {
     DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
 }
 
-OP_PARSER(AveragePool) {
+OP_PARSER(AveragePool, MaxPool) {
     PoolParam* param = new PoolParam();
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
     std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
@@ -472,7 +481,12 @@ OP_PARSER(AveragePool) {
             {
                 [&param](const onnx::AttributeProto& attr)
                 {
-                    param->paddings.insert(param->paddings.end(), attr.ints().begin(), attr.ints().end());
+                    MAI_CHECK(attr.ints().size() == 4, "Unimplement pads size:%d", attr.ints().size());
+                    param->paddings.resize(4);
+                    param->paddings[0] = attr.ints(0);
+                    param->paddings[1] = attr.ints(2);
+                    param->paddings[2] = attr.ints(1);
+                    param->paddings[3] = attr.ints(3);
                 },
 
                 [&param](const onnx::AttributeProto& attr)
@@ -499,7 +513,11 @@ OP_PARSER(AveragePool) {
             }
         },
     };
-    parseAttrs(parser, node, AVG_POOL, onnxDataType, param, attrParsers);
+    if (node.op_type() == "AveragePool") {
+        parseAttrs(parser, node, AVG_POOL, onnxDataType, param, attrParsers);
+    } else if (node.op_type() == "MaxPool") {
+        parseAttrs(parser, node, MAX_POOL, onnxDataType, param, attrParsers);
+    }
 }
 
 OP_PARSER(BatchNormalization) {
@@ -623,6 +641,167 @@ OP_PARSER(Cast) {
     parseAttrs(parser, node, CAST, onnxDataType, NULL/*param*/, attrParsers);
 }
 
+OP_PARSER(Gemm) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    GemmParam* param = new GemmParam();
+    param->alpha = 1.f;
+    param->beta = 1.f;
+    param->transA = false;
+    param->transB = false;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"alpha",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->alpha = attr.f();
+                }
+            }
+        },
+
+        {"beta",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->beta = attr.f();
+                }
+            }
+        },
+
+        {"transA",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->transA = static_cast<bool>(attr.i());
+                }
+            }
+        },
+
+        {"transB",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->transB = static_cast<bool>(attr.i());
+                }
+            }
+        },
+    };
+    parseAttrs(parser, node, GEMM, onnxDataType, param, attrParsers);
+}
+
+OP_PARSER(Unsqueeze) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    ExpandDimsParam* param = new ExpandDimsParam();
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"axes",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->axes.insert(param->axes.end(), attr.ints().begin(), attr.ints().end());
+                }
+            }
+        },
+    };
+    parseAttrs(parser, node, EXPAND_DIMS, onnxDataType, param, attrParsers);
+}
+
+OP_PARSER(Concat) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    ConcatParam* param = new ConcatParam();
+    param->num = node.input_size();
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"axis",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->axis = attr.i();
+                }
+            }
+        },
+    };
+    parseAttrs(parser, node, CONCAT, onnxDataType, param, attrParsers);
+}
+
+OP_PARSER(Gather) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    GatherParam* param = new GatherParam();
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"axis",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->axis = attr.i();
+                }
+            }
+        },
+    };
+    parseAttrs(parser, node, GATHER, onnxDataType, param, attrParsers);
+}
+
+OP_PARSER(Pad) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    PadParam* param = new PadParam();
+    param->constantValue = 0.f;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"mode",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    //TODO:(gavinchen) MAI cannot support mode now
+                }
+            }
+        },
+
+        {"pads",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->paddings.insert(param->paddings.end(), attr.ints().begin(), attr.ints().end());
+                }
+            }
+        },
+
+        {"value",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->constantValue = attr.f();
+                }
+            }
+        },
+    };
+    parseAttrs(parser, node, PAD, onnxDataType, param, attrParsers);
+}
+
+OP_PARSER(Add) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
+    parseAttrs(parser, node, ADD, onnxDataType, NULL/*param*/, attrParsers);
+}
+
+OP_PARSER(Mul) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
+    parseAttrs(parser, node, MUL, onnxDataType, NULL/*param*/, attrParsers);
+}
+
+OP_PARSER(Sigmoid) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
+    parseAttrs(parser, node, SIGMOID, onnxDataType, NULL/*param*/, attrParsers);
+}
+
+OP_PARSER(Relu) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
+    parseAttrs(parser, node, RELU, onnxDataType, NULL/*param*/, attrParsers);
+}
+
+OP_PARSER(GlobalAveragePool) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
+    parseAttrs(parser, node, GLOBAL_AVG_POOL, onnxDataType, NULL/*param*/, attrParsers);
+}
+
 OnnxNetwork::OnnxNetwork(const std::string& netPath) {
     Op::CPU::CPURegister cpuRegister;
     OnnxParser parser(this);
@@ -638,18 +817,25 @@ MAI_STATUS OnnxNetwork::init() {
 }
 
 MAI_STATUS OnnxNetwork::run() {
-    ALOGI("run relu6 is exists:%d", mTensors.find("MobilenetV1/MobilenetV1/Conv2d_0/Relu6:0") != mTensors.end());
-    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
-        ALOGI("run op:%s", (*it)->name().c_str());
-        (*it)->run();
-    }
-
-#if 1
+    ALOGI("OnnxNetwork::run");
     // tensor to file
+#if 1
     const std::string kOutputDir = "output";
     for(int32 i = 0; i < mModelInputs.size(); ++i) {
         getTensor(mModelInputs[i])->toFile(kOutputDir);
     }
+#endif
+    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        ALOGI("run op:%s, outputFile:%s", (*it)->name().c_str(), (*it)->getOutputTensor(0)->name().c_str());
+        (*it)->run();
+#if 1
+        for (int32 i = 0; i < (*it)->outputNames().size(); ++i) {
+            (*it)->getOutputTensor(i)->toFile(kOutputDir);
+        }
+#endif
+    }
+
+#if 0
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
         for (int32 i = 0; i < (*it)->outputNames().size(); ++i) {
             (*it)->getOutputTensor(i)->toFile(kOutputDir);

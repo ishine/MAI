@@ -19,6 +19,75 @@ namespace MAI {
 namespace Op {
 namespace CPU {
 
+static shape_t offsetWithBroadcast(const std::vector<shape_t>& shape, const shape_t& n,
+        const shape_t& h, const shape_t& w, const shape_t& c) {
+    shape_t shapeSize = shape.size();
+    shape_t stride = 1;
+    shape_t offset = 0;
+    if (shapeSize > 0) {
+        shape_t dim = (shape[shapeSize - 1] == 1) ? 0 : c;
+        offset += dim;
+        stride *= shape[shapeSize - 1];
+    }
+
+    if (shape.size() > 1) {
+        shape_t dim = (shape[shapeSize - 2] == 1) ? 0 : w;
+        offset += dim * stride;
+        stride *= shape[shapeSize - 2];
+    }
+
+    if (shape.size() > 2) {
+        shape_t dim = (shape[shapeSize - 3] == 1) ? 0 : h;
+        offset += dim * stride;
+        stride *= shape[shapeSize - 3];
+    }
+
+    if (shape.size() > 3) {
+        shape_t dim = (shape[shapeSize - 4] == 1) ? 0 : n;
+        offset += dim * stride;
+        stride *= shape[shapeSize - 4];
+    }
+
+    return offset;
+}
+
+template<typename T, int32 dimSize = -1, bool IS_SHAPE_SAME = true>
+class MulImpl {
+public:
+    static void mul(
+            const std::vector<shape_t>& input1Shape, const T* input1Data,
+            const std::vector<shape_t>& input2Shape, const T* input2Data,
+            const std::vector<shape_t>& outputShape, T* outputData) {
+        shape_t elementSize =
+            std::accumulate(input1Shape.begin(), input1Shape.end(), 1, std::multiplies<shape_t>());
+        for (shape_t i = 0; i < elementSize; ++i) {
+            outputData[i] = input1Data[i] * input2Data[i];
+        }
+    }
+};
+
+
+template<typename T>
+class MulImpl<T, 4, false> {
+public:
+    static void mul(
+            const std::vector<shape_t>& input1Shape, const T* input1Data,
+            const std::vector<shape_t>& input2Shape, const T* input2Data,
+            const std::vector<shape_t>& outputShape, T* outputData) {
+        for (shape_t n = 0; n < outputShape[0]; ++n) {
+            for (shape_t h = 0; h < outputShape[1]; ++h) {
+                for (shape_t w = 0; w < outputShape[2]; ++w) {
+                    for (shape_t c = 0; c < outputShape[3]; ++c) {
+                        *outputData++ = input1Shape[offsetWithBroadcast(input1Shape, n, h, w, c)]
+                            * input2Shape[offsetWithBroadcast(input2Shape, n, h, w, c)];
+
+                    }
+                }
+            }
+        }
+    }
+};
+
 template<typename T>
 class Mul : public Operator {
 public:
@@ -38,16 +107,28 @@ public:
         MAI_CHECK_NULL(t1);
         MAI_CHECK_NULL(t2);
         MAI_CHECK_NULL(output);
-        MAI_CHECK(isShapeSame(t1->shape(), t2->shape()), "t1->shape(%s) != t2->shape(%s)",
-                shapeToString(t1->shape()).c_str(), shapeToString(t2->shape()).c_str());
-        ALOGI("Mul::run1");
+        //MAI_CHECK(isShapeSame(t1->shape(), t2->shape()), "t1->shape(%s) != t2->shape(%s)",
+        //        shapeToString(t1->shape()).c_str(), shapeToString(t2->shape()).c_str());
+        ALOGI("Mul::run22");
+        bool isSame = isShapeSame(t1->shape(), t2->shape());
         const T* t1Data = t1->data<T>();
         const T* t2Data = t2->data<T>();
-        std::vector<shape_t> outputShape(t1->shape());
-        output->resize(outputShape);
-        T* outputData = output->mutableData<T>();
-        for (shape_t i = 0; i < t1->elementSize(); ++i) {
-            outputData[i] = t1Data[i] * t2Data[i];
+        if (isSame) {
+            ALOGI("Mul::run sameShape");
+            std::vector<shape_t> outputShape(t1->shape());
+            output->resize(outputShape);
+            T* outputData = output->mutableData<T>();
+            MulImpl<T>::mul(t1->shape(), t1Data, t2->shape(), t2Data, outputShape, outputData);
+        } else {
+            ALOGI("Mul::run not sameShape");
+            std::vector<shape_t> outputShape = broadcastShape(t1->shape(), t2->shape());
+            ALOGI("Mul::run not sameShape shape:%s", shapeToString(outputShape).c_str());
+            output->resize(outputShape);
+            if (outputShape.size() != 4) {//TODO:(gavinchen) support more rank
+                MAI_ABORT("Unsupport broadcast now for shape not equal to 4");
+            }
+            T* outputData = output->mutableData<T>();
+            MulImpl<T, 4, false>::mul(t1->shape(), t1Data, t2->shape(), t2Data, outputShape, outputData);
         }
         return MAI_SUCCESS;
     }

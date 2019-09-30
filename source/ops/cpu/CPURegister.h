@@ -51,6 +51,8 @@ DECLARE_REGISTER_OP(Concat);
 DECLARE_REGISTER_OP(Mul);
 DECLARE_REGISTER_OP(Pad);
 DECLARE_REGISTER_OP(Gemm);
+DECLARE_REGISTER_OP(Gather);
+DECLARE_REGISTER_OP(Add);
 
 class CPURegister {
 public:
@@ -82,6 +84,8 @@ public:
         REGISTER_OP(Mul);
         REGISTER_OP(Pad);
         REGISTER_OP(Gemm);
+        REGISTER_OP(Gather);
+        REGISTER_OP(Add);
     }
     ~CPURegister() = default;
 };
