@@ -20,7 +20,6 @@ namespace MAI {
 namespace Op {
 namespace CPU {
 
-template<typename T>
 class ExpandDims : public Operator {
 public:
     ExpandDims() = default;
@@ -68,8 +67,7 @@ private:
 };
 
 void registerExpandDims() {
-    MAI_REGISTER_OP((OpContext{.opType=EXPAND_DIMS,}), float, ExpandDims);
-    MAI_REGISTER_OP((OpContext{.opType=EXPAND_DIMS,}), int32, ExpandDims);
+    MAI_REGISTER_OP((OpContext{.opType=EXPAND_DIMS,}), ExpandDims);
 }
 
 } // namespace CPU

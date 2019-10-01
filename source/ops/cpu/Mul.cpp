@@ -78,9 +78,8 @@ public:
             for (shape_t h = 0; h < outputShape[1]; ++h) {
                 for (shape_t w = 0; w < outputShape[2]; ++w) {
                     for (shape_t c = 0; c < outputShape[3]; ++c) {
-                        *outputData++ = input1Shape[offsetWithBroadcast(input1Shape, n, h, w, c)]
-                            * input2Shape[offsetWithBroadcast(input2Shape, n, h, w, c)];
-
+                        *outputData++ = input1Data[offsetWithBroadcast(input1Shape, n, h, w, c)]
+                            * input2Data[offsetWithBroadcast(input2Shape, n, h, w, c)];
                     }
                 }
             }

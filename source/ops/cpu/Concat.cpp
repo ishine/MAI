@@ -98,7 +98,7 @@ void registerConcat() {
     MAI_REGISTER_OP((OpContext{.opType=CONCAT,}), float, Concat);
     //MAI_REGISTER_OP((OpContext{.opType=CONCAT,}), uint32, Concat);
     //MAI_REGISTER_OP((OpContext{.opType=CONCAT,}), int32, Concat);
-    //MAI_REGISTER_OP((OpContext{.opType=CONCAT,}), int64, Concat);
+    MAI_REGISTER_OP((OpContext{.opType=CONCAT,}), int64, Concat);
     //MAI_REGISTER_OP((OpContext{.opType=CONCAT,}), int8, Concat);
     //MAI_REGISTER_OP((OpContext{.opType=CONCAT,}), uint8, Concat);
 }

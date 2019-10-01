@@ -38,5 +38,24 @@ TEST_F(MulTest, MulNoBroadcast) {
 
     ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
 }
+
+TEST_F(MulTest, MulBroadcast) {
+    std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
+        .addOperator(OperatorBuilder()
+            .setType(MUL)
+            .setDataType(DT_FLOAT)
+            .setInputNames({"input0", "input1"})
+            .setOutputNames({"output"})
+            .build())
+        .addTensor<float>("input0", {1,2,2,2}, {1,2,3,4,5,6,7,8})
+        .addTensor<float>("input1", {1,2,1,1}, {1,2})
+        .addTensor<float>("output", {}, {})
+        .addTensor<float>("check", {1,2,2,2}, {1,2,3,4,10,12,14,16})
+        .build();
+    network->init();
+    network->run();
+
+    ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
+}
 } // namespace Test
 } // namespace MAI

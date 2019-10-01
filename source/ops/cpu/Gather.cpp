@@ -70,8 +70,9 @@ public:
             const int64* indicesData = indices->data<int64>();
             for (shape_t i = 0; i < indices->elementSize(); ++i) {
                 int32 v = static_cast<int32>(indicesData[i]);
-                MAI_CHECK(v >= -input->dim(mAxis) && v < input->dim(mAxis),
-                        "Invalid indices value(%d)", v);
+                int32 dim = static_cast<int32>(input->dim(mAxis));
+                MAI_CHECK(v >= -dim && v < dim,
+                        "Invalid indices value(%d), dim:%d", v, dim);
                 if (v < 0) {
                     v += input->dim(mAxis);
                 }
@@ -121,6 +122,8 @@ private:
 
 void registerGather() {
     MAI_REGISTER_OP((OpContext{.opType=GATHER,}), float, Gather);
+    MAI_REGISTER_OP((OpContext{.opType=GATHER,}), int32, Gather);
+    MAI_REGISTER_OP((OpContext{.opType=GATHER,}), int64, Gather);
 }
 
 } // namespace CPU

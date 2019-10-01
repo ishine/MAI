@@ -59,7 +59,7 @@ void Tensor::copy(const void* data, int64 len) {
     mBuffer->copy((const uint8*)data, 0, len);
 }
 
-void Tensor::allocateBuffer(const std::vector<uint64>& shape) {
+void Tensor::allocateBuffer(const std::vector<shape_t>& shape) {
     MAI_CHECK(!shape.empty(), "Shape cannot be null");
     MAI_CHECK(mBuffer == NULL && mShape.empty(), "Buffer is not null or shape is not null");
     MAI_CHECK(mAllocator != NULL, "Allocator cannot be null");
@@ -69,7 +69,7 @@ void Tensor::allocateBuffer(const std::vector<uint64>& shape) {
     mBuffer->allocate(size());
 }
 
-void Tensor::resize(const std::vector<uint64>& shape) {
+void Tensor::resize(const std::vector<shape_t>& shape) {
     if (mBuffer != NULL) {
         mShape = shape;
         if (size() > mBuffer->size()) {
@@ -86,11 +86,11 @@ void Tensor::zero() {
     mBuffer->zero();
 }
 
-std::vector<uint64> Tensor::shape() const {
+std::vector<shape_t> Tensor::shape() const {
     return mShape;
 }
 
-uint64 Tensor::dim(uint8 i) const {
+shape_t Tensor::dim(uint8 i) const {
     return mShape[i];
 }
 
@@ -140,11 +140,14 @@ void Tensor::toFile(const std::string& dir, const std::string& file) {
             for(int32 i = 0; i < elementSize(); ++i) {
                 fprintf(outputFile, "[%d]: %10.8e\n", i, *(data<float>() + i));
             }
-        //} else if (mDataType == DT_INT32 || mDataType == DT_UINT8 || mDataType == DT_INT16 || mDataType == DT_INT8
-        //        || mDataType == DT_INT64 || mDataType == DT_UINT16) {
-        //    for(int32 i = 0; i < elementSize(); ++i) {
-        //        fprintf(outputFile, "[%d]: %d\n", i, *(tensor->data<EnumToDataType<mDataType>::Type>() + i));
-        //    }
+        } else if (mDataType == DT_INT64) {
+            for(int32 i = 0; i < elementSize(); ++i) {
+                fprintf(outputFile, "[%d]: %d\n", i, *(data<EnumToDataType<DT_INT64>::Type>() + i));
+            }
+        } else if (mDataType == DT_INT32) {
+            for(int32 i = 0; i < elementSize(); ++i) {
+                fprintf(outputFile, "[%d]: %d\n", i, *(data<EnumToDataType<DT_INT32>::Type>() + i));
+            }
         }
         fclose(outputFile);
     } else {

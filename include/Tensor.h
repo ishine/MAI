@@ -55,8 +55,8 @@ public:
     }
 
     virtual void copy(const void* data, int64 len);
-    virtual void allocateBuffer(const std::vector<uint64>& shape);
-    virtual void resize(const std::vector<uint64>& shape);
+    virtual void allocateBuffer(const std::vector<shape_t>& shape);
+    virtual void resize(const std::vector<shape_t>& shape);
     virtual void zero();
 
     template<typename T>
@@ -69,8 +69,8 @@ public:
         return reinterpret_cast<T*>(mBuffer->mutableData());
     }
 
-    virtual std::vector<uint64> shape() const;//TODO: (gavinchen) use const std::vector<uint64>&
-    virtual uint64 dim(uint8 i) const;
+    virtual std::vector<shape_t> shape() const;//TODO: (gavinchen) use const std::vector<uint64>&
+    virtual shape_t dim(uint8 i) const;
     virtual uint8 dimSize() const;
     virtual uint64 elementSize() const;
     virtual uint64 size() const;
@@ -89,7 +89,7 @@ private:
     DataType mDataType;
     DataFormat mDataFormat;
     Buffer* mBuffer;
-    std::vector<uint64> mShape;
+    std::vector<shape_t> mShape;
     Allocator* mAllocator;
     int32 mFlag;
 };

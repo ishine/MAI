@@ -280,6 +280,51 @@ static bool findTensor(const onnx::GraphProto& graphProto, const std::string& na
     return false;
 }
 
+static int32 getOnnxDataTypeSize(const onnx::TensorProto::DataType dataType) {
+    switch (dataType) {
+    case onnx::TensorProto::FLOAT:
+        return 4;
+    case onnx::TensorProto::UINT8:
+        return 1;
+    case onnx::TensorProto::INT8:
+        return 1;
+    case onnx::TensorProto::UINT16:
+        return 2;
+    case onnx::TensorProto::INT16:
+        return 2;
+    case onnx::TensorProto::INT32:
+        return 4;
+    case onnx::TensorProto::INT64:
+        return 8;
+    case onnx::TensorProto::STRING:
+        return 1;
+    case onnx::TensorProto::FLOAT16:
+        return 2;
+    case onnx::TensorProto::DOUBLE:
+        return 8;
+    case onnx::TensorProto::UINT32:
+        return 4;
+    case onnx::TensorProto::UINT64:
+        return 8;
+    default:
+        MAI_ABORT("Unsupported data type:%d", dataType);
+        return 0;
+    }
+}
+
+static int32 getTensorDataSize(const onnx::TensorProto& tensorProto) {
+    auto dataType = tensorProto.data_type();
+    int32 dataTypeSize = getOnnxDataTypeSize((onnx::TensorProto::DataType)dataType);
+    if (!tensorProto.raw_data().empty()) {
+        return tensorProto.raw_data().size() / dataTypeSize;
+    } else if (dataType == onnx::TensorProto::FLOAT){
+        return tensorProto.float_data_size();
+    } else {
+        MAI_ABORT("Unimplement to parse dataType:%d", dataType);
+    }
+    return 0;
+}
+
 static onnx::TensorProto::DataType findOpDataType(const onnx::GraphProto& graphProto, const std::string& name) {
     onnx::TensorProto::DataType onnxDataType;
     onnx::TensorProto tensor;
@@ -353,6 +398,33 @@ static void parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOpera
     void OP_PARSER_NAME(__VA_ARGS__)::parse(OnnxParser& parser, const onnx::GraphProto& graph, const onnx::NodeProto& node)
 
 #define MULTI_OP_PARSER(...) \
+
+OP_PARSER(Constant) {
+    ALOGI("name:%s, input:%d, output:%d, attri:%d", node.name().c_str(), node.input_size(), node.output_size(), node.attribute_size());
+    ALOGI("output:%s, attribute_type:%s", node.output(0).c_str(), node.attribute(0).name().c_str());
+    ALOGI("Tensor dataType:%d", node.attribute(0).t().data_type());
+    MAI_CHECK(node.attribute_size() != 0 && node.attribute(0).type() == onnx::AttributeProto::TENSOR, "Unsupported now");
+    auto tensorProto = node.attribute(0).t();
+
+    std::vector<shape_t> tensorShape(tensorProto.dims().begin(), tensorProto.dims().end());
+    //modelConstInputs[i] = tensorProto.name();
+    //MAI_ABORT("shape:%d, rawDataSize:%d", tensorProto.dims().size(), tensorProto.raw_data().size(), tensorProto.segment);
+    if (tensorShape.empty()) {
+        tensorShape.resize(1);
+        tensorShape[0] = getTensorDataSize(tensorProto);
+    }
+    std::unique_ptr<Tensor> tensor(new Tensor(onnx2MIDataType(tensorProto.data_type()), new CPUAllocator()));
+    tensor->setName(node.output(0));
+    tensor->setDataFormat(OIHW);// TODO:(gavinchen) setDataFormat should be done in node parser
+    ALOGI("addTensor:%s", tensorProto.name().c_str());
+    ALOGD("tensorShape:%s, name:%s", shapeToString(tensorShape).c_str(), tensorProto.name().c_str());
+    tensor->allocateBuffer(tensorShape);
+    const void* tensorData = getTensorData(tensorProto);
+    ALOGI("Value:%d", ((const int64*)tensorData)[0]);
+    MAI_CHECK_NULL(tensorData);
+    tensor->copy(tensorData, tensor->size());
+    parser.mOnnxNetwork->addTensor(tensor);
+}
 
 OP_PARSER(Conv) {
     //TODO:(gavinchen)
@@ -689,7 +761,7 @@ OP_PARSER(Gemm) {
 }
 
 OP_PARSER(Unsqueeze) {
-    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::INT64;
     ExpandDimsParam* param = new ExpandDimsParam();
     std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
         {"axes",
@@ -705,7 +777,8 @@ OP_PARSER(Unsqueeze) {
 }
 
 OP_PARSER(Concat) {
-    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    //TODO:(gavinchen) This is a workround for some models.
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::INT64;
     ConcatParam* param = new ConcatParam();
     param->num = node.input_size();
     std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
@@ -722,7 +795,8 @@ OP_PARSER(Concat) {
 }
 
 OP_PARSER(Gather) {
-    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    //TODO: This is a workround for some models.
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::INT64;
     GatherParam* param = new GatherParam();
     std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
         {"axis",
