@@ -35,7 +35,7 @@ public:
     template<typename T>
     NetworkBuilder& addTensor(
             const std::string& name,
-            const std::vector<uint64>& dims,
+            const std::vector<shape_t>& dims,
             const std::vector<T>& data,
             const DataFormat dataFormat = NHWC) {
         std::unique_ptr<Tensor> tensor(new Tensor(DataTypeToEnum<T>::value, new CPUAllocator()));

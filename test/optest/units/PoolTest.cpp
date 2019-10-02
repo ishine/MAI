@@ -26,7 +26,7 @@ void test(MAIOperator op,
         const std::vector<int32>& kernelSizes,
         const std::vector<int32>& strides,
         const PaddingMode& paddingMode,
-        const std::vector<uint64>& inputShape,
+        const std::vector<shape_t>& inputShape,
         const std::vector<T>& inputData,
         const std::vector<shape_t>& checkShape,
         const std::vector<T>& checkData, DataFormat dataFormat = NHWC) {

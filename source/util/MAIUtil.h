@@ -22,6 +22,7 @@
 #include <vector>
 #include <numeric>
 #include <stdlib.h>
+#include <sstream>
 
 #include "Type.h"
 #include "Tensor.h"
@@ -178,5 +179,18 @@ uint64_t nowMicros();
 bool isShapeCompatible(const std::vector<shape_t>& shape1, const std::vector<shape_t>& shape2);
 
 std::vector<shape_t> broadcastShape(const std::vector<shape_t>& shape1, const std::vector<shape_t>& shape2);
+
+template<typename T>
+std::string vectorToString(const std::vector<T>& values, const std::string& sep = ", ") {
+    if (values.empty()) {
+        return "";
+    }
+    std::stringstream ss;
+    for (int32 i = 0; i < values.size() - 1; ++i) {
+        ss << values[i] << sep;
+    }
+    ss << values[values.size() - 1];
+    return ss.str();
+}
 
 } // namespace MAI
