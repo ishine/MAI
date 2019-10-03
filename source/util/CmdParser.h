@@ -61,6 +61,8 @@ private:
 template<class T>
 struct OneOfReader {
 public:
+    OneOfReader(const std::vector<T>& values) : mValues(values) {
+    }
     std::string operator()(const std::string& str, T& value) {
         std::string error = defaultReader<T>(str, value);
         if (!error.empty()) {

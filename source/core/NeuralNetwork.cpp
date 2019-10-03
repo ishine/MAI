@@ -13,8 +13,26 @@
 // limitations under the License.
 
 #include "NeuralNetwork.h"
+#include "source/util/MAIType.h"
+#include "tools/converter/tensorflow/TensorflowNetwork.h"
 
 namespace MAI {
+
+/*static*/
+std::unique_ptr<NeuralNetwork> NeuralNetwork::getNeuralNetwork(
+        const NetworkFormat networkFormat, const std::string& modelPath) {
+    ALOGI("getNeuralNetwork:%d", networkFormat);
+    switch (networkFormat) {
+    case TENSORFLOW:
+        ALOGI("getNeuralNetwork TENSORFLOW");
+        return std::unique_ptr<NeuralNetwork>(new TensorflowNetwork(modelPath));
+    case ONNX:
+    case MAI:
+    default:
+        MAI_ABORT("Unsupported network format:%d", networkFormat);
+        return NULL;
+    }
+}
 
 void NeuralNetwork::addOptimizer(std::unique_ptr<Optimizer> optimizer) {
     mOptimizers.emplace_back(std::move(optimizer));

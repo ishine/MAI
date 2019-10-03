@@ -42,6 +42,8 @@ public:
     void setName(const std::string& name);
 
     std::string name() const;
+    void setType(MAIOperator opType);
+    MAIOperator type() const;
 
     std::vector<std::string>& inputNames();
 
@@ -61,6 +63,7 @@ private:
     std::vector<std::string> mInputNames;
     std::vector<std::string> mOutputNames;
     std::string mName;
+    MAIOperator mOpType;
 };
 
 struct SqueezeParam : public Param {

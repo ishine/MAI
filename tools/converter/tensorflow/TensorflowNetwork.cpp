@@ -22,8 +22,9 @@
 #include "source/core/Allocator.h"
 #include "source/core/OperatorRegister.h"
 #include "source/util/MAIUtil.h"
-#include "graph.pb.h"
-#include "op_def.pb.h"
+#include "tools/converter/tensorflow/protos/graph.pb.h"
+#include "tools/converter/tensorflow/protos/op_def.pb.h"
+#include "tools/profiling/Profiler.h"
 
 namespace MAI {
 std::string& trim(std::string &s)
@@ -103,15 +104,12 @@ public:
     TensorflowParser(TensorflowNetwork* network) : mTFNetwork(network) {
     }
 
-    void parse(const std::string& netPath, const std::string& opDefPath) {
+    void parse(const std::string& netPath) {
         if (!openGraph(netPath)) {
             return;
         }
-        if (!openOpTxt(opDefPath)) {
-            return;
-        }
         ALOGI("op count:%d", mTFGraphDef.node_size());
-        ALOGI("op def count:%d", mOpList.op_size());
+        //ALOGI("op def count:%d", mOpList.op_size());
         int nodeCount = mTFGraphDef.node_size();
         for (int i = 0; i < nodeCount; ++i) {
             const tensorflow::NodeDef& node = mTFGraphDef.node(i);
@@ -158,7 +156,7 @@ private:
         }
         for (int i = 0; i < mOpList.op_size(); ++i) {
             const tensorflow::OpDef& op = mOpList.op(i);
-            mOpMap[op.name()] = i;
+            //mOpMap[op.name()] = i;
         }
         return true;
     }
@@ -463,8 +461,8 @@ OP_PARSER(Softmax) {
 }
 
 OP_PARSER(Const) {
-    const tensorflow::OpDef& opDef = parser.mOpList.op(parser.mOpMap[node.op()]);
-    const tensorflow::AttrValue& attr = node.attr().at(opDef.attr(0).name());
+    //const tensorflow::OpDef& opDef = parser.mOpList.op(parser.mOpMap[node.op()]);
+    const tensorflow::AttrValue& attr = node.attr().at("value");
     const tensorflow::TensorProto& tfTensor = attr.tensor();
     std::unique_ptr<Tensor> tensor(new Tensor((MAI::DataType)tfTensor.dtype(), new CPUAllocator()));
     tensor->setName(node.name());
@@ -509,10 +507,10 @@ OP_PARSER(Placeholder) {
     parser.mTFNetwork->addModelInput(node.name(), tf2MIDataType(tfDataType), shape);
 }
 
-TensorflowNetwork::TensorflowNetwork(const std::string& netPath, const std::string& opDefPath) {
+TensorflowNetwork::TensorflowNetwork(const std::string& netPath) {
     Op::CPU::CPURegister cpuRegister;
     TensorflowParser parser(this);
-    parser.parse(netPath, opDefPath);
+    parser.parse(netPath);
 }
 
 MAI_STATUS TensorflowNetwork::init() {
@@ -525,10 +523,11 @@ MAI_STATUS TensorflowNetwork::init() {
 MAI_STATUS TensorflowNetwork::run() {
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
         ALOGI("run op:%s", (*it)->name().c_str());
+        SCOPED_OPERATOR_PROFILE(getProfiler(), (*it)->name(), getNameFromOperator((*it)->type()));
         (*it)->run();
     }
 
-#if 1
+#if 0
     // tensor to file
     const std::string kOutputDir = "output";
     for(int32 i = 0; i < mModelInputs.size(); ++i) {

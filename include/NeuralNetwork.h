@@ -21,6 +21,9 @@
 
 namespace MAI {
 
+namespace Profiling {
+class Profiler;
+}
 class NeuralNetwork {
 public:
     enum OptimizerRule {
@@ -28,7 +31,25 @@ public:
         FOLD_ACTIVATION_INTO_CONV2D,
     };
 
+    enum NetworkFormat {
+        TENSORFLOW,
+        ONNX,
+        MAI,
+    };
+
 public:
+    static std::unique_ptr<NeuralNetwork> getNeuralNetwork(
+            const NetworkFormat networkFormat, const std::string& modelPath);
+
+    NeuralNetwork() : mProfiler(NULL) {}
+
+    inline void setProfiler(Profiling::Profiler* profiler) {
+        mProfiler = profiler;
+    }
+
+    inline Profiling::Profiler* getProfiler() {
+        return mProfiler;
+    }
     virtual MAI_STATUS init() = 0;
     virtual MAI_STATUS run() = 0;
     virtual MAI_STATUS addOperator(std::unique_ptr<Operator>& op) = 0;
@@ -41,9 +62,12 @@ public:
     virtual Optimizer* createOptimizer(OptimizerRule rule);
     virtual void startOptimize();
     virtual void builGraph() = 0;
+    virtual std::vector<std::string> getModelInputs() = 0;
+    virtual std::vector<std::string> getModelOutputs() = 0;
 
 private:
     std::vector<std::unique_ptr<Optimizer> > mOptimizers;
+    Profiling::Profiler* mProfiler;
 };
 
 } // namespace MAI

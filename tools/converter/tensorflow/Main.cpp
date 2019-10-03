@@ -5,8 +5,7 @@
 using namespace MAI;
 int main() {
     uint64_t startTime, endTime, totalTime;
-    MAI::TensorflowNetwork network("tools/converter/tensorflow/models/mobilenet-v1-1.0.pb",
-            "tools/converter/tensorflow/protos/ops.pbtxt");
+    MAI::TensorflowNetwork network("tools/converter/tensorflow/models/mobilenet-v1-1.0.pb");
     startTime = nowMicros();
     network.init();
     endTime = nowMicros();

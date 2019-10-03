@@ -17,6 +17,13 @@
 #include "util/MAIUtil.h"
 
 namespace MAI {
+void Operator::setType(MAIOperator opType) {
+    mOpType = opType;
+}
+
+MAIOperator Operator::type() const {
+    return mOpType;
+}
 
 void Operator::addInputName(const std::string& name) {
     mInputNames.push_back(name);

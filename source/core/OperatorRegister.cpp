@@ -26,7 +26,9 @@ void OperatorRegister::registerOperator(const OpContext opContext, const Operato
 std::unique_ptr<Operator> OperatorRegister::createOperator(const OpContext& opContext) {
     auto it = mOps.find(opContext);
     MAI_CHECK(it != mOps.end(), "Operator(%s) is not registered", opContext.toString().c_str());
-    return it->second();
+    auto op = it->second();
+    op->setType(opContext.opType);
+    return op;
 }
 
 } // namespace MAI

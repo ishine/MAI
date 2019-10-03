@@ -1,8 +1,7 @@
 cc_binary(
     name = "tensorflow_converter",
     srcs = glob([
-        "*.cpp",
-        "*.h",
+        "Main.cpp",
     ]),
     includes = [
     #    "tools/converter/tensorflow/",

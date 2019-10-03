@@ -21,7 +21,7 @@ namespace MAI {
 
 class TensorflowNetwork : public NeuralNetwork {
 public:
-    TensorflowNetwork(const std::string& netPath, const std::string& opDefPath);
+    TensorflowNetwork(const std::string& netPath);
     ~TensorflowNetwork() = default;
     virtual MAI_STATUS init();
     virtual MAI_STATUS run();
