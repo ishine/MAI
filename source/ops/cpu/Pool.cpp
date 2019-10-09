@@ -27,10 +27,13 @@ public:
             const PoolParam*,
             T*, const std::vector<shape_t>&)> PoolFunction;
     Pool(MAIOperator poolType, PoolFunction fNHWC, PoolFunction fNCHW)
-        : mPoolType(poolType), mFunctionNHWC(fNHWC), mFunctionNCHW(fNCHW) {
+        : mPoolType(poolType), mFunctionNHWC(fNHWC), mFunctionNCHW(fNCHW), mParam(NULL), mRunFirst(true) {
     }
     ~Pool() {
-        delete mParam;
+        if (mParam) {
+            delete mParam;
+            mParam = NULL;
+        }
     }
 
     MAI_STATUS init() override {
@@ -42,6 +45,7 @@ public:
     }
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
         mInput = getInputTensor(INPUT);
         mOutput = getOutputTensor(OUTPUT);
         MAI_CHECK_NULL(mInput);
@@ -106,12 +110,14 @@ public:
             MAI_ABORT("Unsupported dataFormat:%s", getNameFromDataFormat(mInput->getDataFormat()));
         }
         mOutput->resize(outputShape);
-        mOutput->zero();
 
         if (mFunction == NULL) {
             MAI_CHECK(false, "Unsupported input data format: %s", getNameFromDataFormat(mInput->getDataFormat()).c_str());
         }
 
+        MAI_OP_RUN_FIRST_END
+
+        mOutput->zero();
         mFunction(mInput->data<T>(), mInput->shape(),
                 mParam,
                 mOutput->mutableData<T>(), mOutput->shape());
@@ -127,6 +133,7 @@ private:
     PoolFunction mFunctionNHWC;
     PoolFunction mFunctionNCHW;
     PoolParam* mParam;
+    bool mRunFirst;
 };
 
 template<typename T>

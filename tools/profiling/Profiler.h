@@ -51,6 +51,9 @@ public:
     void startProfiling();
     void stopProfiling();
     void reset();
+    inline void setEnable(bool enable) {
+        mEventHub->setEnable(enable);
+    }
     inline std::vector<ProfileEvent>& getProfileEvents() const {
         return mEventHub->getProfileEvents();
     }

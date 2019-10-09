@@ -17,14 +17,17 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include "source/ops/cpu/CPURegister.h"
-#include "OnnxNetwork.h"
+#include "OnnxParser.h"
 #include "Type.h"
 #include "source/core/Allocator.h"
 #include "source/core/OperatorRegister.h"
 #include "source/util/MAIUtil.h"
-#include "onnx.pb.h"
+#include "OnnxParser.h"
 
 namespace MAI {
+namespace Converter {
+namespace ONNX {
+
 std::string& trim(std::string &s)
 {
     if (s.empty())
@@ -98,7 +101,6 @@ static DataType onnx2MIDataType(int32 dataType) {
     return maps[onnxDataType];
 }
 
-class OnnxParser;
 typedef std::function<void(OnnxParser&, const onnx::GraphProto&, const onnx::NodeProto&)> OpParserFunction;
 static std::map<std::string, OpParserFunction> opParsers;
 
@@ -148,96 +150,6 @@ static const void* getTensorData(const onnx::TensorProto& tensorProto) {
     }
     return NULL;
 }
-
-class OnnxParser {
-public:
-    OnnxParser(OnnxNetwork* network) : mOnnxNetwork(network) {
-    }
-
-    void parse(const std::string& netPath) {
-        if (!openGraph(netPath)) {
-            return;
-        }
-        ALOGI("Model value_infos:%d", mOnnxGraphProto.value_info_size());
-        ALOGI("Model inputs:%d", mOnnxGraphProto.input_size());
-        ALOGI("Model initializer:%d", mOnnxGraphProto.initializer_size());
-        ALOGI("Model outputs:%d, %s", mOnnxGraphProto.output_size(), mOnnxGraphProto.output(0).name().c_str());
-        std::vector<std::string> modelConstInputs(mOnnxGraphProto.initializer_size());
-        // 1. parse model const tensor
-        for (int32 i = 0; i < mOnnxGraphProto.initializer_size(); ++i) {
-            auto& tensorProto = mOnnxGraphProto.initializer(i);
-            std::vector<shape_t> tensorShape(tensorProto.dims().begin(), tensorProto.dims().end());
-            modelConstInputs[i] = tensorProto.name();
-            if (!tensorShape.empty()) {
-            std::unique_ptr<Tensor> tensor(new Tensor(onnx2MIDataType(tensorProto.data_type()), new CPUAllocator()));
-            tensor->setName(tensorProto.name());
-            tensor->setDataFormat(OIHW);// TODO:(gavinchen) setDataFormat should be done in node parser
-            //ALOGI("addTensor:%s", tensorProto.name().c_str());
-            //ALOGD("tensorShape:%s, name:%s", shapeToString(tensorShape).c_str(), tensorProto.name().c_str());
-            tensor->allocateBuffer(tensorShape);
-            const void* tensorData = getTensorData(tensorProto);
-            MAI_CHECK_NULL(tensorData);
-            tensor->copy(tensorData, tensor->size());
-            mOnnxNetwork->addTensor(tensor);
-            } else {
-                ALOGE("Unparsed tensor:%s", tensorProto.name().c_str());
-            }
-        }
-        ALOGD("before parse model input & output");
-        // 2. parse model input & output
-        for (int32 i = 0; i < mOnnxGraphProto.input_size(); ++i) {
-            auto& input = mOnnxGraphProto.input(i);
-            if (std::find(modelConstInputs.begin(), modelConstInputs.end(), input.name()) == modelConstInputs.end()) {// This is a placeholder
-                const onnx::TypeProto_Tensor& tensor = input.type().tensor_type();
-                std::vector<shape_t> inputShape(tensor.shape().dim_size());
-                for (int32 d = 0; d < tensor.shape().dim_size(); ++d) {
-                    int32 dim = tensor.shape().dim(d).dim_value();
-                    inputShape[d] = (dim == 0 || dim == -1) ? 1 : dim; //TODO:(gavinchen) receive input size from command line
-                }
-                mOnnxNetwork->addModelInput(input.name(),
-                        onnx2MIDataType(tensor.elem_type()), inputShape);
-            }
-        }
-        // 3. parse operator
-        ALOGI("op count:%d", mOnnxGraphProto.node_size());
-        int nodeCount = mOnnxGraphProto.node_size();
-        for (int32 i = 0; i < nodeCount; ++i) {
-            const onnx::NodeProto& node = mOnnxGraphProto.node(i);
-            const std::string& opType = node.op_type();
-            if (opParsers.find(opType) != opParsers.end()) {
-                opParsers[opType](*this, mOnnxGraphProto, node);
-            } else {
-                ALOGE("Unrecognize op:%s", opType.c_str());
-            }
-        }
-    }
-
-private:
-    bool openGraph(const std::string& netPath) {
-        std::ifstream ifs(netPath, std::ifstream::in | std::ifstream::binary);
-        if (!ifs.is_open()) {
-            ALOGE("Cannot open graph:%s", netPath.c_str());
-            return false;
-        }
-        google::protobuf::io::IstreamInputStream input(&ifs);
-        google::protobuf::io::CodedInputStream codedStream(&input);
-        bool success = mOnnxModelProto.ParseFromCodedStream(&codedStream);
-        if (!success) {
-            ALOGE("Cannot parse graph:%s", netPath.c_str());
-            return false;
-        }
-
-        ifs.close();
-        mOnnxGraphProto = mOnnxModelProto.graph();
-        return success;
-    }
-
-public:
-    OnnxNetwork* mOnnxNetwork;
-    onnx::ModelProto mOnnxModelProto;
-    onnx::GraphProto mOnnxGraphProto;
-    std::map<std::string, int> mOpMap;
-};
 
 class OpParserBase {
 public:
@@ -366,10 +278,9 @@ static void parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOpera
     if (param != NULL) {
         op->setParam(param);
     }
-    //ALOGI("parse op name:%s", node.name());
     //op->setName(node.name());
     //TODO:(gavinchen) some model this is null
-    op->setName(node.op_type());
+    op->setName(node.op_type() + "_" + node.output(0));
     for(int32 i = 0; i < node.input_size(); ++i) {
         //ALOGI("name:%s input:%s", node.name().c_str(), node.input(i).c_str());
         op->addInputName(node.input(i));
@@ -794,6 +705,13 @@ OP_PARSER(Concat) {
     parseAttrs(parser, node, CONCAT, onnxDataType, param, attrParsers);
 }
 
+OP_PARSER(Dropout) {
+    //TODO:(gavinchen) This is a workround for some models.
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::INT64;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
+    parseAttrs(parser, node, DROPOUT, onnxDataType, NULL/*param*/, attrParsers);
+}
+
 OP_PARSER(Gather) {
     //TODO: This is a workround for some models.
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::INT64;
@@ -876,91 +794,84 @@ OP_PARSER(GlobalAveragePool) {
     parseAttrs(parser, node, GLOBAL_AVG_POOL, onnxDataType, NULL/*param*/, attrParsers);
 }
 
-OnnxNetwork::OnnxNetwork(const std::string& netPath) {
-    Op::CPU::CPURegister cpuRegister;
-    OnnxParser parser(this);
-    parser.parse(netPath);
+OnnxParser::OnnxParser(NeuralNetwork* network) : mOnnxNetwork(network) {
 }
 
-MAI_STATUS OnnxNetwork::init() {
-    ALOGI("init ");
-    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
-        (*it)->init();
+void OnnxParser::parse(const std::string& netPath) {
+    if (!openGraph(netPath)) {
+        return;
     }
-    return MAI_SUCCESS;
-}
-
-MAI_STATUS OnnxNetwork::run() {
-    ALOGI("OnnxNetwork::run");
-    // tensor to file
-#if 1
-    const std::string kOutputDir = "output";
-    for(int32 i = 0; i < mModelInputs.size(); ++i) {
-        getTensor(mModelInputs[i])->toFile(kOutputDir);
-    }
-#endif
-    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
-        ALOGI("run op:%s, outputFile:%s", (*it)->name().c_str(), (*it)->getOutputTensor(0)->name().c_str());
-        (*it)->run();
-#if 1
-        for (int32 i = 0; i < (*it)->outputNames().size(); ++i) {
-            (*it)->getOutputTensor(i)->toFile(kOutputDir);
-        }
-#endif
-    }
-
-#if 0
-    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
-        for (int32 i = 0; i < (*it)->outputNames().size(); ++i) {
-            (*it)->getOutputTensor(i)->toFile(kOutputDir);
+    ALOGI("Model value_infos:%d", mOnnxGraphProto.value_info_size());
+    ALOGI("Model inputs:%d", mOnnxGraphProto.input_size());
+    ALOGI("Model initializer:%d", mOnnxGraphProto.initializer_size());
+    ALOGI("Model outputs:%d, %s", mOnnxGraphProto.output_size(), mOnnxGraphProto.output(0).name().c_str());
+    std::vector<std::string> modelConstInputs(mOnnxGraphProto.initializer_size());
+    // 1. parse model const tensor
+    for (int32 i = 0; i < mOnnxGraphProto.initializer_size(); ++i) {
+        auto& tensorProto = mOnnxGraphProto.initializer(i);
+        std::vector<shape_t> tensorShape(tensorProto.dims().begin(), tensorProto.dims().end());
+        modelConstInputs[i] = tensorProto.name();
+        if (!tensorShape.empty()) {
+            std::unique_ptr<Tensor> tensor(new Tensor(onnx2MIDataType(tensorProto.data_type()), new CPUAllocator()));
+            tensor->setName(tensorProto.name());
+            tensor->setDataFormat(OIHW);// TODO:(gavinchen) setDataFormat should be done in node parser
+            tensor->allocateBuffer(tensorShape);
+            const void* tensorData = getTensorData(tensorProto);
+            MAI_CHECK_NULL(tensorData);
+            tensor->copy(tensorData, tensor->size());
+            mOnnxNetwork->addTensor(tensor);
+        } else {
+            ALOGE("Unparsed tensor:%s", tensorProto.name().c_str());
         }
     }
-#endif
-    return MAI_SUCCESS;
-}
-
-MAI_STATUS OnnxNetwork::addOperator(std::unique_ptr<Operator>& op) {
-    op->setNeuralNetwork(this);
-    mOperators.emplace_back(std::move(op));
-    return MAI_SUCCESS;
-}
-
-MAI_STATUS OnnxNetwork::addTensor(std::unique_ptr<Tensor>& tensor) {
-    MAI_CHECK(mTensors.find(tensor->name()) == mTensors.end(), "%s has exists", tensor->name().c_str());
-    mTensors.emplace(tensor->name(), std::move(tensor));
-    return MAI_SUCCESS;
-}
-
-Tensor* OnnxNetwork::getTensor(const std::string& name) {
-    return mTensors[name].get();
-}
-
-Operator* OnnxNetwork::getOperator(const std::string& name) {
-    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
-        if ((*it)->name() == name) {
-            return it->get();
+    ALOGD("before parse model input & output");
+    // 2. parse model input & output
+    for (int32 i = 0; i < mOnnxGraphProto.input_size(); ++i) {
+        auto& input = mOnnxGraphProto.input(i);
+        if (std::find(modelConstInputs.begin(), modelConstInputs.end(), input.name()) == modelConstInputs.end()) {// This is a placeholder
+            const onnx::TypeProto_Tensor& tensor = input.type().tensor_type();
+            std::vector<shape_t> inputShape(tensor.shape().dim_size());
+            for (int32 d = 0; d < tensor.shape().dim_size(); ++d) {
+                int32 dim = tensor.shape().dim(d).dim_value();
+                inputShape[d] = (dim == 0 || dim == -1) ? 1 : dim; //TODO:(gavinchen) receive input size from command line
+            }
+            mOnnxNetwork->addModelInput(input.name(),
+                    onnx2MIDataType(tensor.elem_type()), NCHW, inputShape);
         }
     }
-    return NULL;
+    // 3. parse operator
+    ALOGI("op count:%d", mOnnxGraphProto.node_size());
+    int nodeCount = mOnnxGraphProto.node_size();
+    for (int32 i = 0; i < nodeCount; ++i) {
+        const onnx::NodeProto& node = mOnnxGraphProto.node(i);
+        const std::string& opType = node.op_type();
+        if (opParsers.find(opType) != opParsers.end()) {
+            opParsers[opType](*this, mOnnxGraphProto, node);
+        } else {
+            ALOGE("Unrecognize op:%s", opType.c_str());
+        }
+    }
 }
 
-void OnnxNetwork::addModelInput(const std::string& inputName,
-        DataType dataType,
-        const std::vector<shape_t>& inputShape) {
-    mModelInputs.emplace_back(inputName);
-    std::unique_ptr<Tensor> tensor(new Tensor(dataType, new CPUAllocator()));
-    tensor->setDataFormat(NCHW);
-    tensor->setName(inputName);
-    tensor->allocateBuffer(inputShape);
-    ALOGI("add model input tensor: %s", tensor->name().c_str());
-    addTensor(tensor);
+bool OnnxParser::openGraph(const std::string& netPath) {
+    std::ifstream ifs(netPath, std::ifstream::in | std::ifstream::binary);
+    if (!ifs.is_open()) {
+        ALOGE("Cannot open graph:%s", netPath.c_str());
+        return false;
+    }
+    google::protobuf::io::IstreamInputStream input(&ifs);
+    google::protobuf::io::CodedInputStream codedStream(&input);
+    bool success = mOnnxModelProto.ParseFromCodedStream(&codedStream);
+    if (!success) {
+        ALOGE("Cannot parse graph:%s", netPath.c_str());
+        return false;
+    }
+
+    ifs.close();
+    mOnnxGraphProto = mOnnxModelProto.graph();
+    return success;
 }
 
-void OnnxNetwork::addModelOutput(const std::string& outputName) {
-    mModelOutputs.emplace_back(outputName);
-}
-
-void OnnxNetwork::builGraph() {
-}
-
+} // namespace ONNX
+} // namespace Converter
 } // namespace MAI

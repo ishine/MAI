@@ -53,6 +53,7 @@ DECLARE_REGISTER_OP(Pad);
 DECLARE_REGISTER_OP(Gemm);
 DECLARE_REGISTER_OP(Gather);
 DECLARE_REGISTER_OP(Add);
+DECLARE_REGISTER_OP(Dropout);
 
 class CPURegister {
 public:
@@ -86,6 +87,7 @@ public:
         REGISTER_OP(Gemm);
         REGISTER_OP(Gather);
         REGISTER_OP(Add);
+        REGISTER_OP(Dropout);
     }
     ~CPURegister() = default;
 };

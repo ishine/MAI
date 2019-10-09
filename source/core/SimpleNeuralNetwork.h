@@ -30,10 +30,18 @@ public:
     virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor);
     virtual Tensor* getTensor(const std::string& name);
     virtual Operator* getOperator(const std::string& name);
+    virtual std::vector<std::string> getModelInputs();
+    virtual std::vector<std::string> getModelOutputs();
     virtual void builGraph();
+    virtual void addModelInput(const std::string& inputName,
+            DataType dataType, DataFormat dataFormat,
+            const std::vector<shape_t>& inputShape);
+    virtual void addModelOutput(const std::string& outputName);
 private:
     std::vector<std::unique_ptr<Operator> > mOperators;
     std::map<std::string, std::unique_ptr<Tensor> > mTensors;
+    std::vector<std::string> mModelInputs;
+    std::vector<std::string> mModelOutputs;
 
 };
 

@@ -51,6 +51,7 @@ private:
             *data++ = randomFunc();
         }
     }
+    NeuralNetwork::NetworkFormat strToFormat(const std::string& format);
 private:
     CmdParser* mCmdParser;
     std::unique_ptr<NeuralNetwork> mNetwork;

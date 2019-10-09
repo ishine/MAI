@@ -23,8 +23,13 @@ namespace CPU {
 template<typename T>
 class Squeeze : public Operator {
 public:
-    Squeeze() = default;
-    ~Squeeze() = default;
+    Squeeze() : mParam(NULL), mRunFirst(true) {}
+    ~Squeeze() {
+        if (mParam) {
+            delete mParam;
+            mParam = NULL;
+        }
+    }
 
     MAI_STATUS init() override {
         return MAI_SUCCESS;
@@ -35,6 +40,7 @@ public:
     }
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
         const Tensor* inputPtr = getInputTensor(0);
         Tensor* outputPtr = getOutputTensor(0);
         MAI_CHECK_NULL(inputPtr);
@@ -66,10 +72,12 @@ public:
 
         outputPtr->reuse(inputPtr);
         outputPtr->reshape(shape);
+        MAI_OP_RUN_FIRST_END
         return MAI_SUCCESS;
     }
 private:
     SqueezeParam* mParam;
+    bool mRunFirst;
 };
 
 void registerSqueeze() {

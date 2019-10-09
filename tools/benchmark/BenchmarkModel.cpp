@@ -6,17 +6,17 @@ namespace Benchmark {
 void BenchmarkModel::run() {
     init();
     mListener.onBenchmarkStart();
-    //run(mCmdParser->get<uint32>("warm_up"), WARM_UP_RUN);
+    run(mCmdParser->get<uint32>("warm_up"), WARM_UP_RUN);
     run(mCmdParser->get<uint32>("num_runs"), NORMAL_RUN);
 
     mListener.onBenchmarkEnd();
 }
 
 void BenchmarkModel::init() {
-   mNetwork = std::move(NeuralNetwork::getNeuralNetwork(NeuralNetwork::TENSORFLOW,
-               "tools/converter/tensorflow/models/mobilenet-v1-1.0.pb"));
-   mNetwork->init();
-   mNetwork->setProfiler(&mProfiler);
+    mNetwork = std::move(NeuralNetwork::getNeuralNetwork(strToFormat(mCmdParser->get<std::string>("model_format")),
+                mCmdParser->get<std::string>("model_path")));
+    mNetwork->init();
+    mNetwork->setProfiler(&mProfiler);
 }
 
 void BenchmarkModel::run(uint32 count, RUN_TYPE runType) {
@@ -40,14 +40,30 @@ void BenchmarkModel::prepareInput(MAI::Tensor* tensor) {
     }
 }
 
+NeuralNetwork::NetworkFormat BenchmarkModel::strToFormat(const std::string& formatStr) {
+    NeuralNetwork::NetworkFormat format = NeuralNetwork::TENSORFLOW;
+    if (formatStr == "TENSORFLOW") {
+        format = NeuralNetwork::TENSORFLOW;
+    } else if (formatStr == "ONNX") {
+        format = NeuralNetwork::ONNX;
+    } else if (formatStr == "MAI") {
+        format = NeuralNetwork::MAI;
+    }
+    return format;
+}
+
 BenchmarkListener::BenchmarkListener(Profiling::Profiler& profiler,
         Profiling::OperatorStatsCalculator& calc) : mProfiler(profiler), mCalc(calc) {
 }
 
 void BenchmarkListener::onSingleRunStart(RUN_TYPE runType) {
     if (runType == NORMAL_RUN) {
+        mProfiler.setEnable(true);
         mProfiler.reset();
         mProfiler.startProfiling();
+    } else if (runType == WARM_UP_RUN) {
+        mProfiler.reset();
+        mProfiler.setEnable(false);
     }
 }
 

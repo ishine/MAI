@@ -114,7 +114,6 @@ bool isShapeCompatible(const std::vector<shape_t>& shape1, const std::vector<sha
 std::vector<shape_t> broadcastShape(
         const std::vector<shape_t>& shape1, const std::vector<shape_t>& shape2) {
     std::vector<shape_t> outputShape(shape1.size() > shape2.size() ? shape1.size() : shape2.size());
-    ALOGI("outputShape size:%d, s1:%d, s2:%d", outputShape.size(), shape1.size(), shape2.size());
     for (int32 i = static_cast<int32>(outputShape.size() - 1); i >= 0; --i) {
         if ((outputShape.size() - i) > shape1.size()) {
             outputShape[i] = shape2[i];
@@ -123,7 +122,6 @@ std::vector<shape_t> broadcastShape(
         } else {
             outputShape[i] = shape1[i] == 1 ? shape2[i] : shape1[i];
         }
-        ALOGI("i:%d v:%d", i, outputShape[i]);
     }
     return outputShape;
 }

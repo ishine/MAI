@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class Reshape : public Operator {
 public:
-    Reshape() = default;
+    Reshape() : mRunFirst(true) {}
     ~Reshape() = default;
 
     MAI_STATUS init() override {
@@ -31,9 +31,11 @@ public:
     }
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
         const Tensor* inputPtr = getInputTensor(0);
         const Tensor* shapePtr = getInputTensor(1);
         Tensor* outputPtr = getOutputTensor(0);
+
         MAI_CHECK_NULL(inputPtr);
         MAI_CHECK_NULL(shapePtr);
         std::vector<shape_t> outputShape(shapePtr->elementSize());
@@ -77,8 +79,12 @@ public:
 
         outputPtr->reuse(inputPtr);
         outputPtr->reshape(outputShape);
+        MAI_OP_RUN_FIRST_END
+
         return MAI_SUCCESS;
     }
+private:
+    bool mRunFirst;
 };
 
 void registerReshape() {

@@ -22,7 +22,7 @@ namespace CPU {
 
 class ExpandDims : public Operator {
 public:
-    ExpandDims() = default;
+    ExpandDims() : mRunFirst(true) {}
     ~ExpandDims() = default;
 
     MAI_STATUS init() override {
@@ -38,6 +38,7 @@ public:
     }
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
         MAI_CHECK_NULL(input);
@@ -60,10 +61,12 @@ public:
         }
         output->reuse(input);
         output->reshape(outputShape);
+        MAI_OP_RUN_FIRST_END
         return MAI_SUCCESS;
     }
 private:
     std::vector<int32> mAxes;
+    bool mRunFirst;
 };
 
 void registerExpandDims() {

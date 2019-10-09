@@ -23,9 +23,12 @@ namespace CPU {
 template<typename T>
 class Conv2D : public Operator {
 public:
-    Conv2D() = default;
+    Conv2D() : mParam(NULL), mRunFirst(true) {}
     ~Conv2D() {
-        delete mParam;
+        if (mParam != NULL) {
+            delete mParam;
+            mParam = NULL;
+        }
     }
 
     MAI_STATUS init() override {
@@ -45,6 +48,7 @@ public:
             const Conv2DParam* param,
             T* output,
             const std::vector<shape_t>& outputShape) {
+        #pragma omp parallel for collapse(4)
         for(shape_t n = 0; n < outputShape[0]; ++n) {
             for(shape_t h = 0; h < outputShape[1]; ++h) {
                 for(shape_t w = 0; w < outputShape[2]; ++w) {
@@ -86,6 +90,7 @@ public:
             const Conv2DParam* param,
             T* output,
             const std::vector<shape_t>& outputShape) {
+        #pragma omp parallel for collapse(2)
         for(shape_t n = 0; n < outputShape[0]; ++n) {
             for(shape_t o = 0; o < outputShape[1]; ++o) {
                 for(shape_t h = 0; h < outputShape[2]; ++h) {
@@ -124,6 +129,7 @@ public:
         //    __runFirst = false;
         //}
         //RUN_FIRST_START
+        MAI_OP_RUN_FIRST_START
         mInput = getInputTensor(INPUT);
         mFilter = getInputTensor(FILTER);
         mBias = getInputTensor(BIAS);
@@ -180,15 +186,22 @@ public:
                 mFunction = conv2DNCHW_OIHW;
             }
         }
+        if (mFunction == NULL) {
+            MAI_ABORT("Unsupported InputFormat:%s with FilterFormat:%s",
+                    getNameFromDataFormat(mInput->getDataFormat()).c_str(),
+                    getNameFromDataFormat(mFilter->getDataFormat()).c_str());
+        }
+
         mOutput->resize(outputShape);
-        mOutput->zero();
 
         if (mFunction == NULL) {
             MAI_CHECK(false, "Unsupported input data format: %s, with filter data format:%s",
                     getNameFromDataFormat(mInput->getDataFormat()).c_str(),
                     getNameFromDataFormat(mFilter->getDataFormat()).c_str());
         }
+        MAI_OP_RUN_FIRST_END
 
+        mOutput->zero();
         std::vector<shape_t> biasShape;
         if (mBias != NULL) {
             biasShape = mBias->shape();
@@ -213,6 +226,7 @@ private:
             const Conv2DParam*,
             T*, const std::vector<shape_t>&)> mFunction;
     Conv2DParam* mParam;
+    bool mRunFirst;
 };
 
 void registerConv2D() {

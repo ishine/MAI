@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class FusedBatchNorm : public Operator {
 public:
-    FusedBatchNorm() : mEpsilon(0.001f) {
+    FusedBatchNorm() : mEpsilon(0.001f), mRunFirst(true) {
     }
 
     ~FusedBatchNorm() = default;
@@ -35,6 +35,8 @@ public:
     static void fusedBatchNormNHWC(const T* input, const std::vector<shape_t>& inputShape,
             const std::vector<T>& scale, const std::vector<T>& offset, T* output) {
         int idx = 0;
+        // use openmp will cost more time?
+        //#pragma omp parallel for collapse(2)
         for (shape_t b = 0; b < inputShape[0]; ++b) {
             for (shape_t h = 0; h < inputShape[1]; ++h) {
                 for (shape_t w = 0; w < inputShape[2]; ++w) {
@@ -50,6 +52,8 @@ public:
     static void fusedBatchNormNCHW(const T* input, const std::vector<shape_t>& inputShape,
             const std::vector<T>& scale, const std::vector<T>& offset, T* output) {
         int idx = 0;
+        // use openmp will cost more time?
+        //#pragma omp parallel for collapse(2)
         for (shape_t b = 0; b < inputShape[0]; ++b) {
             for (shape_t c = 0; c < inputShape[1]; ++c) {
                 for (shape_t h = 0; h < inputShape[2]; ++h) {
@@ -68,32 +72,31 @@ public:
     }
 
     MAI_STATUS run() override {
-        const Tensor* input = getInputTensor(INPUT);
-        mInput = input;
+        MAI_OP_RUN_FIRST_START
+        mInput = getInputTensor(INPUT);
         const Tensor* scale = getInputTensor(SCALE);
         const Tensor* offset = getInputTensor(OFFSET);
         const Tensor* mean = getInputTensor(MEAN);
         const Tensor* var = getInputTensor(VAR);
 
-        MAI_CHECK(input->dimSize() ==  4, "rank of input must be 4, but not %d", input->dimSize());
+        MAI_CHECK(mInput->dimSize() ==  4, "rank of input must be 4, but not %d", mInput->dimSize());
         MAI_CHECK(scale->dimSize() ==  1, "rank of input must be 1, but not %d", scale->dimSize());
         MAI_CHECK(offset->dimSize() ==  1, "rank of input must be 1, but not %d", offset->dimSize());
         MAI_CHECK(mean->dimSize() ==  1, "rank of input must be 1, but not %d", mean->dimSize());
         MAI_CHECK(var->dimSize() ==  1, "rank of input must be 1, but not %d", var->dimSize());
 
-        Tensor* output = getOutputTensor(OUTPUT);
-        mOutput = output;
-        output->resize(input->shape());
+        mOutput = getOutputTensor(OUTPUT);
+        mOutput->resize(mInput->shape());
 
         shape_t channel = 0;
-        if (input->getDataFormat() == NHWC) {
+        if (mInput->getDataFormat() == NHWC) {
             mFunction = fusedBatchNormNHWC;
-            channel = input->dim(3);
-        } else if (input->getDataFormat() == NCHW) {
+            channel = mInput->dim(3);
+        } else if (mInput->getDataFormat() == NCHW) {
             mFunction = fusedBatchNormNCHW;
-            channel = input->dim(1);
+            channel = mInput->dim(1);
         } else {
-            MAI_CHECK(false, "Unsupported data format: %d", input->getDataFormat());
+            MAI_CHECK(false, "Unsupported data format: %d", mInput->getDataFormat());
         }
 
         mNewScale.resize(channel);
@@ -109,6 +112,7 @@ public:
             mNewScale[c] = scaleData[c] / std::sqrt(varData[c] + mEpsilon);
             mNewOffset[c] = offsetData[c] - mNewScale[c] * meanData[c];
         }
+        MAI_OP_RUN_FIRST_END
 
         mFunction(mInput->data<T>(), mInput->shape(), mNewScale,
             mNewOffset, mOutput->mutableData<T>());
@@ -123,6 +127,7 @@ private:
     std::vector<T> mNewOffset;
     const Tensor* mInput;
     Tensor* mOutput;
+    bool mRunFirst;
 };
 
 void registerFusedBatchNorm() {

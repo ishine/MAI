@@ -65,6 +65,10 @@ public:
     virtual std::vector<std::string> getModelInputs() = 0;
     virtual std::vector<std::string> getModelOutputs() = 0;
 
+    virtual void addModelInput(const std::string& inputName,
+            DataType dataType, DataFormat dataFormat,
+            const std::vector<shape_t>& inputShape) = 0;
+    virtual void addModelOutput(const std::string& outputName) = 0;
 private:
     std::vector<std::unique_ptr<Optimizer> > mOptimizers;
     Profiling::Profiler* mProfiler;

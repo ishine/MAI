@@ -17,16 +17,19 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include "source/ops/cpu/CPURegister.h"
-#include "TensorflowNetwork.h"
+#include "TensorflowParser.h"
 #include "Type.h"
 #include "source/core/Allocator.h"
 #include "source/core/OperatorRegister.h"
+#include "source/core/OpenMP.h"
 #include "source/util/MAIUtil.h"
 #include "tools/converter/tensorflow/protos/graph.pb.h"
 #include "tools/converter/tensorflow/protos/op_def.pb.h"
 #include "tools/profiling/Profiler.h"
 
 namespace MAI {
+namespace Converter {
+namespace Tensorflow {
 std::string& trim(std::string &s)
 {
     if (s.empty())
@@ -98,74 +101,6 @@ bool registerOpParser(OpParserFunction functionParser, const std::string& names)
     }
     return r;
 }
-
-class TensorflowParser {
-public:
-    TensorflowParser(TensorflowNetwork* network) : mTFNetwork(network) {
-    }
-
-    void parse(const std::string& netPath) {
-        if (!openGraph(netPath)) {
-            return;
-        }
-        ALOGI("op count:%d", mTFGraphDef.node_size());
-        //ALOGI("op def count:%d", mOpList.op_size());
-        int nodeCount = mTFGraphDef.node_size();
-        for (int i = 0; i < nodeCount; ++i) {
-            const tensorflow::NodeDef& node = mTFGraphDef.node(i);
-            const std::string& opType = node.op();
-            //const tensorflow::OpDef& opDef = mOpList.op(mOpMap[opType]);
-            if (opParsers.find(opType) != opParsers.end()) {
-                opParsers[opType](*this, node);
-            } else {
-                ALOGE("Unrecognize op:%s", opType.c_str());
-            }
-        }
-    }
-
-private:
-    bool openGraph(const std::string& netPath) {
-        std::ifstream ifs(netPath, std::ifstream::in | std::ifstream::binary);
-        if (!ifs.is_open()) {
-            ALOGE("Cannot open graph:%s", netPath.c_str());
-            return false;
-        }
-        google::protobuf::io::IstreamInputStream input(&ifs);
-        google::protobuf::io::CodedInputStream codedStream(&input);
-        bool success = mTFGraphDef.ParseFromCodedStream(&codedStream);
-        if (!success) {
-            ALOGE("Cannot parse graph:%s", netPath.c_str());
-            return false;
-        }
-
-        ifs.close();
-        return success;
-    }
-
-    bool openOpTxt(const std::string& opDefPath) {
-        int fd = open(opDefPath.c_str(), O_RDONLY);
-        if (fd < 0) {
-            ALOGE("Cannot open opDef:%s", opDefPath.c_str());
-            return false;
-        }
-        google::protobuf::io::FileInputStream input(fd);
-        input.SetCloseOnDelete(true);
-        if (!google::protobuf::TextFormat::Parse(&input, &mOpList)) {
-            ALOGE("Cannot parse opDef:%s", opDefPath.c_str());
-            return false;
-        }
-        for (int i = 0; i < mOpList.op_size(); ++i) {
-            const tensorflow::OpDef& op = mOpList.op(i);
-            //mOpMap[op.name()] = i;
-        }
-        return true;
-    }
-public:
-    TensorflowNetwork* mTFNetwork;
-    tensorflow::GraphDef mTFGraphDef;
-    tensorflow::OpList mOpList;
-    std::map<std::string, int> mOpMap;
-};
 
 class OpParserBase {
 public:
@@ -504,84 +439,68 @@ OP_PARSER(Placeholder) {
             attrParserIt->second(it->second);
         }
     }
-    parser.mTFNetwork->addModelInput(node.name(), tf2MIDataType(tfDataType), shape);
+    parser.mTFNetwork->addModelInput(node.name(), tf2MIDataType(tfDataType), NHWC, shape);
 }
 
-TensorflowNetwork::TensorflowNetwork(const std::string& netPath) {
-    Op::CPU::CPURegister cpuRegister;
-    TensorflowParser parser(this);
-    parser.parse(netPath);
+TensorflowParser::TensorflowParser(NeuralNetwork* network) : mTFNetwork(network) {
 }
 
-MAI_STATUS TensorflowNetwork::init() {
-    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
-        (*it)->init();
+void TensorflowParser::parse(const std::string& netPath) {
+    if (!openGraph(netPath)) {
+        return;
     }
-    return MAI_SUCCESS;
-}
-
-MAI_STATUS TensorflowNetwork::run() {
-    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
-        ALOGI("run op:%s", (*it)->name().c_str());
-        SCOPED_OPERATOR_PROFILE(getProfiler(), (*it)->name(), getNameFromOperator((*it)->type()));
-        (*it)->run();
-    }
-
-#if 0
-    // tensor to file
-    const std::string kOutputDir = "output";
-    for(int32 i = 0; i < mModelInputs.size(); ++i) {
-        getTensor(mModelInputs[i])->toFile(kOutputDir);
-    }
-    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
-        for (int32 i = 0; i < (*it)->outputNames().size(); ++i) {
-            (*it)->getOutputTensor(i)->toFile(kOutputDir);
+    ALOGI("op count:%d", mTFGraphDef.node_size());
+    //ALOGI("op def count:%d", mOpList.op_size());
+    int nodeCount = mTFGraphDef.node_size();
+    for (int i = 0; i < nodeCount; ++i) {
+        const tensorflow::NodeDef& node = mTFGraphDef.node(i);
+        const std::string& opType = node.op();
+        //const tensorflow::OpDef& opDef = mOpList.op(mOpMap[opType]);
+        if (opParsers.find(opType) != opParsers.end()) {
+            opParsers[opType](*this, node);
+        } else {
+            ALOGE("Unrecognize op:%s", opType.c_str());
         }
     }
-#endif
-    return MAI_SUCCESS;
 }
 
-MAI_STATUS TensorflowNetwork::addOperator(std::unique_ptr<Operator>& op) {
-    op->setNeuralNetwork(this);
-    mOperators.emplace_back(std::move(op));
-    return MAI_SUCCESS;
-}
-
-MAI_STATUS TensorflowNetwork::addTensor(std::unique_ptr<Tensor>& tensor) {
-    MAI_CHECK(mTensors.find(tensor->name()) == mTensors.end(), "%s has exists", tensor->name().c_str());
-    mTensors.emplace(tensor->name(), std::move(tensor));
-    return MAI_SUCCESS;
-}
-
-Tensor* TensorflowNetwork::getTensor(const std::string& name) {
-    return mTensors[name].get();
-}
-
-Operator* TensorflowNetwork::getOperator(const std::string& name) {
-    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
-        if ((*it)->name() == name) {
-            return it->get();
-        }
+bool TensorflowParser::openGraph(const std::string& netPath) {
+    std::ifstream ifs(netPath, std::ifstream::in | std::ifstream::binary);
+    if (!ifs.is_open()) {
+        ALOGE("Cannot open graph:%s", netPath.c_str());
+        return false;
     }
-    return NULL;
+    google::protobuf::io::IstreamInputStream input(&ifs);
+    google::protobuf::io::CodedInputStream codedStream(&input);
+    bool success = mTFGraphDef.ParseFromCodedStream(&codedStream);
+    if (!success) {
+        ALOGE("Cannot parse graph:%s", netPath.c_str());
+        return false;
+    }
+
+    ifs.close();
+    return success;
 }
 
-void TensorflowNetwork::addModelInput(const std::string& inputName,
-        DataType dataType,
-        const std::vector<shape_t>& inputShape) {
-    mModelInputs.emplace_back(inputName);
-    std::unique_ptr<Tensor> tensor(new Tensor(dataType, new CPUAllocator()));
-    tensor->setName(inputName);
-    tensor->allocateBuffer(inputShape);
-    addTensor(tensor);
+bool TensorflowParser::openOpTxt(const std::string& opDefPath) {
+    int fd = open(opDefPath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        ALOGE("Cannot open opDef:%s", opDefPath.c_str());
+        return false;
+    }
+    google::protobuf::io::FileInputStream input(fd);
+    input.SetCloseOnDelete(true);
+    if (!google::protobuf::TextFormat::Parse(&input, &mOpList)) {
+        ALOGE("Cannot parse opDef:%s", opDefPath.c_str());
+        return false;
+    }
+    for (int i = 0; i < mOpList.op_size(); ++i) {
+        const tensorflow::OpDef& op = mOpList.op(i);
+        //mOpMap[op.name()] = i;
+    }
+    return true;
 }
 
-void TensorflowNetwork::addModelOutput(const std::string& outputName) {
-    mModelOutputs.emplace_back(outputName);
-}
-
-void TensorflowNetwork::builGraph() {
-}
-
+} // namespace Tensorflow
+} // namespace Converter
 } // namespace MAI

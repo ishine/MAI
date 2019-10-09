@@ -9,6 +9,9 @@ namespace MAI {
 namespace Profiling {
 
 void OperatorStatsCalculator::processSingleRunEvents(std::vector<ProfileEvent>& events) {
+    if (events.empty()) {
+        return;
+    }
     std::sort(events.begin(), events.end(),
             [](const ProfileEvent& a, const ProfileEvent& b) {
                 return a.beginTime < b.beginTime;

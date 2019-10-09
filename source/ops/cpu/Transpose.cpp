@@ -22,7 +22,7 @@ namespace CPU {
 template<typename T>
 class Transpose : public Operator {
 public:
-    Transpose() = default;
+    Transpose() : mRunFirst(true) {}
     ~Transpose() = default;
 
     MAI_STATUS init() override {
@@ -33,7 +33,8 @@ public:
         const Tensor* input = getInputTensor(INPUT);
         const Tensor* perm = getInputTensor(PERM);
         Tensor* output = getOutputTensor(OUTPUT);
-        // run first
+
+        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(perm);
         MAI_CHECK_NULL(output);
@@ -58,7 +59,8 @@ public:
             mOutputStrides[i] = gap;
             gap *= output->dim(i);
         }
-        // run first end
+        MAI_OP_RUN_FIRST_END
+
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
         shape_t loopCount = 1;
@@ -95,6 +97,7 @@ private:
     enum FLAG {INPUT, PERM, OUTPUT = 0};
     std::vector<shape_t> mStrides;
     std::vector<shape_t> mOutputStrides;
+    bool mRunFirst;
 };
 
 void registerTranspose() {

@@ -104,7 +104,7 @@ public:
 template<typename T>
 class Gemm : public Operator {
 public:
-    Gemm() : mGemmParam(NULL) {
+    Gemm() : mGemmParam(NULL), mRunFirst(true) {
     }
     ~Gemm() {
         if (mGemmParam != NULL) {
@@ -122,18 +122,19 @@ public:
     }
 
     MAI_STATUS run() override {
-        ALOGI("Gemm::run");
         //TODO:(gavinchen) support broadcast
         const Tensor* tensorA = getInputTensor(0);
         const Tensor* tensorB = getInputTensor(1);
         const Tensor* tensorC = getInputTensor(2);
         Tensor* output = getOutputTensor(0);
+        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(tensorA);
         MAI_CHECK_NULL(tensorB);
         MAI_CHECK(tensorC != NULL, "Gemm mat c must be exists");// TODO:(gavinchen) c can be NULL
         MAI_CHECK_NULL(output);
         MAI_CHECK(tensorA->dimSize() == 2, "Gemm mat a must be 2-d");
         MAI_CHECK(tensorB->dimSize() == 2, "Gemm mat b must be 2-d");
+        MAI_OP_RUN_FIRST_END
         const T* t1Data = tensorA->data<T>();
         const T* t2Data = tensorB->data<T>();
         const T* t3Data = tensorC->data<T>();
@@ -172,11 +173,11 @@ public:
             GemmImpl<T, true,true>::gemm(tensorA->shape(), t1Data, tensorB->shape(), t2Data,
                     tensorC->shape(), t3Data, outputShape, outputData);
         }
-        ALOGI("outputShape:%s", shapeToString(outputShape).c_str());
         return MAI_SUCCESS;
     }
 private:
     GemmParam* mGemmParam;
+    bool mRunFirst;
 };
 
 void registerGemm() {

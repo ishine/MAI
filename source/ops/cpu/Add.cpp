@@ -22,7 +22,7 @@ namespace CPU {
 template<typename T>
 class Add : public Operator {
 public:
-    Add() = default;
+    Add() : mRunFirst(true) {}
     ~Add() = default;
 
     MAI_STATUS init() override {
@@ -30,27 +30,29 @@ public:
     }
 
     MAI_STATUS run() override {
-        ALOGI("Add::run");
         //TODO:(gavinchen) support broadcast
         const Tensor* t1 = getInputTensor(0);
         const Tensor* t2 = getInputTensor(1);
         Tensor* output = getOutputTensor(0);
+        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(t1);
         MAI_CHECK_NULL(t2);
         MAI_CHECK_NULL(output);
         MAI_CHECK(isShapeSame(t1->shape(), t2->shape()), "t1->shape(%s) != t2->shape(%s)",
                 shapeToString(t1->shape()).c_str(), shapeToString(t2->shape()).c_str());
-        ALOGI("Add::run1");
-        const T* t1Data = t1->data<T>();
-        const T* t2Data = t2->data<T>();
         std::vector<shape_t> outputShape(t1->shape());
         output->resize(outputShape);
+        MAI_OP_RUN_FIRST_END
+        const T* t1Data = t1->data<T>();
+        const T* t2Data = t2->data<T>();
         T* outputData = output->mutableData<T>();
         for (shape_t i = 0; i < t1->elementSize(); ++i) {
             outputData[i] = t1Data[i] + t2Data[i];
         }
         return MAI_SUCCESS;
     }
+private:
+    bool mRunFirst;
 };
 
 void registerAdd() {

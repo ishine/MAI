@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cmath>
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
 
@@ -20,39 +19,35 @@ namespace MAI {
 namespace Op {
 namespace CPU {
 
-template<typename T>
-class Tanh : public Operator {
+class Dropout : public Operator {
 public:
-    Tanh() : mRunFirst(true) {}
-    ~Tanh() = default;
+    Dropout() : mRunFirst(true) {}
+    ~Dropout() = default;
 
     MAI_STATUS init() override {
         return MAI_SUCCESS;
     }
 
     MAI_STATUS run() override {
-        const Tensor* input = getInputTensor(0);
-        Tensor* output = getOutputTensor(0);
 
         MAI_OP_RUN_FIRST_START
+        const Tensor* input = getInputTensor(0);
+        Tensor* output = getOutputTensor(0);
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
-        output->resize(input->shape());
+        output->reuse(input);
+        output->reshape(input->shape());
         MAI_OP_RUN_FIRST_END
 
-        const T* inputData = input->data<T>();
-        T* outputData = output->mutableData<T>();
-        for (shape_t i = 0; i < input->elementSize(); ++i) {
-            outputData[i] = std::tanh(inputData[i]);
-        }
-        return MAI_SUCCESS;
+        return MAI_FAILED;
     }
+
 private:
     bool mRunFirst;
 };
 
-void registerTanh() {
-    MAI_REGISTER_OP((OpContext{.opType=TANH,}), float, Tanh);
+void registerDropout() {
+    MAI_REGISTER_OP((OpContext{.opType=DROPOUT,}), Dropout);
 }
 
 } // namespace CPU

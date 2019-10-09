@@ -90,7 +90,7 @@ public:
 template<typename T>
 class Mul : public Operator {
 public:
-    Mul() = default;
+    Mul() : mRunFirst(true) {}
     ~Mul() = default;
 
     MAI_STATUS init() override {
@@ -98,39 +98,40 @@ public:
     }
 
     MAI_STATUS run() override {
-        ALOGI("Mul::run");
-        //TODO:(gavinchen) support broadcast
         const Tensor* t1 = getInputTensor(0);
         const Tensor* t2 = getInputTensor(1);
         Tensor* output = getOutputTensor(0);
+
+        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(t1);
         MAI_CHECK_NULL(t2);
         MAI_CHECK_NULL(output);
-        //MAI_CHECK(isShapeSame(t1->shape(), t2->shape()), "t1->shape(%s) != t2->shape(%s)",
-        //        shapeToString(t1->shape()).c_str(), shapeToString(t2->shape()).c_str());
-        ALOGI("Mul::run22");
-        bool isSame = isShapeSame(t1->shape(), t2->shape());
-        const T* t1Data = t1->data<T>();
-        const T* t2Data = t2->data<T>();
-        if (isSame) {
-            ALOGI("Mul::run sameShape");
+        mShapeSame = isShapeSame(t1->shape(), t2->shape());
+        if (mShapeSame) {
             std::vector<shape_t> outputShape(t1->shape());
             output->resize(outputShape);
-            T* outputData = output->mutableData<T>();
-            MulImpl<T>::mul(t1->shape(), t1Data, t2->shape(), t2Data, outputShape, outputData);
         } else {
-            ALOGI("Mul::run not sameShape");
             std::vector<shape_t> outputShape = broadcastShape(t1->shape(), t2->shape());
-            ALOGI("Mul::run not sameShape shape:%s", shapeToString(outputShape).c_str());
             output->resize(outputShape);
             if (outputShape.size() != 4) {//TODO:(gavinchen) support more rank
                 MAI_ABORT("Unsupport broadcast now for shape not equal to 4");
             }
-            T* outputData = output->mutableData<T>();
-            MulImpl<T, 4, false>::mul(t1->shape(), t1Data, t2->shape(), t2Data, outputShape, outputData);
+        }
+        MAI_OP_RUN_FIRST_END
+
+        const T* t1Data = t1->data<T>();
+        const T* t2Data = t2->data<T>();
+        T* outputData = output->mutableData<T>();
+        if (mShapeSame) {
+            MulImpl<T>::mul(t1->shape(), t1Data, t2->shape(), t2Data, output->shape(), outputData);
+        } else {
+            MulImpl<T, 4, false>::mul(t1->shape(), t1Data, t2->shape(), t2Data, output->shape(), outputData);
         }
         return MAI_SUCCESS;
     }
+private:
+    bool mShapeSame;
+    bool mRunFirst;
 };
 
 void registerMul() {

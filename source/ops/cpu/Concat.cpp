@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class Concat : public Operator {
 public:
-    Concat() : mNum(0) {}
+    Concat() : mNum(0), mAxis(0), mOuterSize(1), mInnerSize(1), mRunFirst(true) {}
     ~Concat() = default;
 
     MAI_STATUS init() override {
@@ -41,13 +41,17 @@ public:
 
 
     MAI_STATUS run() override {
+        Tensor* output = getOutputTensor(0);
+        MAI_OP_RUN_FIRST_START
+        const Tensor* input0 = getInputTensor(0);
+        ALOGI("Concat 1 axis:%d, mNum=%d", mAxis, mNum);
         MAI_CHECK((mNum != 0 && inputNames().size() == mNum),
             "Input size(%d) or mNum(%d) is not equal", inputNames().size(), mNum);
-        const Tensor* input0 = getInputTensor(0);
         MAI_CHECK(mAxis >= -(input0->dimSize()) && mAxis < input0->dimSize(), "Invalid axis:%d", mAxis);
         if (mAxis < 0) {
             mAxis += input0->dimSize();
         }
+        ALOGI("Concat 2 ");
         MAI_CHECK(input0 != NULL, "input0 is NULL");
         std::vector<shape_t> outputShape(input0->shape());
         for(int32 i = 1; i < mNum; ++i) {
@@ -63,35 +67,43 @@ public:
                 }
             }
         }
-        Tensor* output = getOutputTensor(0);
         MAI_CHECK_NULL(output);
         output->resize(outputShape);
+        ALOGI("outputShape:%s", shapeToString(outputShape).c_str());
 
-        shape_t outerSize = 1;
-        shape_t innerSize = 1;
         for (shape_t i = 0; i < outputShape.size(); ++i) {
             if (i < (shape_t)mAxis) {
-                outerSize *= outputShape[i];
+                mOuterSize *= outputShape[i];
             } else if (i > (shape_t)mAxis) {
-                innerSize *= outputShape[i];
+                mInnerSize *= outputShape[i];
             }
         }
+        MAI_OP_RUN_FIRST_END
+        ALOGI("Concat 3 ");
 
         T* outputData = output->mutableData<T>();
+        ALOGI("Concat 4 outputData=%p, mOuterSize=%d, mInnerSize=%d", outputData, mOuterSize, mInnerSize);
         shape_t outputOffset = 0;
-        for (shape_t o = 0; o < outerSize; ++o) {
+        for (shape_t o = 0; o < mOuterSize; ++o) {
             for (int32 i = 0; i < mNum; ++i) {
                 const Tensor* tmpTensor = getInputTensor(i);
-                shape_t copySize = tmpTensor->dim(mAxis) * innerSize;
+                ALOGI("tensor:%d shape:%s", i, shapeToString(tmpTensor->shape()).c_str());
+                MAI_CHECK_NULL(tmpTensor);
+                shape_t copySize = tmpTensor->dim(mAxis) * mInnerSize;
+                ALOGI("copySize:%d, outputOffset=%d", copySize, outputOffset);
                 memcpy(outputData + outputOffset, tmpTensor->data<T>() + o * copySize, copySize * sizeof(T));
                 outputOffset += copySize;
             }
         }
+        ALOGI("Concat 5 ");
         return MAI_SUCCESS;
     }
 private:
     int32 mNum;
     int32 mAxis;
+    shape_t mOuterSize;
+    shape_t mInnerSize;
+    bool mRunFirst;
 };
 
 void registerConcat() {

@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class BiasAdd : public Operator {
 public:
-    BiasAdd() = default;
+    BiasAdd() : mRunFirst(true) {}
     ~BiasAdd() = default;
 
     MAI_STATUS init() override {
@@ -31,7 +31,7 @@ public:
     }
 
     void setParam(Param* param) override {
-        //mParam = reinterpret_cast<SqueezeParam*>(param);
+        MAI_ABORT("Unsupported setParam for BiasAdd");
     }
 
     static void biasAddNHWC(const T* input,
@@ -72,6 +72,7 @@ public:
     }
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
         mInput = getInputTensor(INPUT);
         mBias = getInputTensor(BIAS);
         mOutput = getOutputTensor(OUTPUT);
@@ -87,6 +88,7 @@ public:
         } else {
             MAI_CHECK(false, "Unsupported data format: %d", mInput->getDataFormat());
         }
+        MAI_OP_RUN_FIRST_END
 
         mFunction(mInput->data<T>(), mInput->shape(), mBias->data<T>(), mBias->shape(), mOutput->mutableData<T>(), mOutput->shape());
         return MAI_SUCCESS;
@@ -100,7 +102,7 @@ private:
     std::function<void(const T*, const std::vector<shape_t>&,
             const T*, const std::vector<shape_t>&,
             T*, const std::vector<shape_t>&)> mFunction;
-    SqueezeParam* mParam;
+    bool mRunFirst;
 };
 
 void registerBiasAdd() {

@@ -23,9 +23,12 @@ namespace CPU {
 template<typename T>
 class DepthwiseConv2d : public Operator {
 public:
-    DepthwiseConv2d() = default;
+    DepthwiseConv2d() : mParam(NULL), mRunFirst(true) {}
     ~DepthwiseConv2d() {
-        delete mParam;
+        if (mParam != NULL) {
+            delete mParam;
+            mParam = NULL;
+        }
     }
 
     MAI_STATUS init() override {
@@ -45,6 +48,7 @@ public:
             const DepthwiseConv2dParam* param,
             T* output,
             const std::vector<shape_t>& outputShape) {
+        #pragma omp parallel for collapse(4)
         for(shape_t n = 0; n < outputShape[0]; ++n) {
             for(shape_t h = 0; h < outputShape[1]; ++h) {
                 for(shape_t w = 0; w < outputShape[2]; ++w) {
@@ -83,6 +87,7 @@ public:
             const DepthwiseConv2dParam* param,
             T* output,
             const std::vector<shape_t>& outputShape) {
+        #pragma omp parallel for collapse(2)
         for(shape_t n = 0; n < outputShape[0]; ++n) {
             for(shape_t o = 0; o < outputShape[1]; ++o) {
                 for(shape_t h = 0; h < outputShape[2]; ++h) {
@@ -115,6 +120,7 @@ public:
 
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
         mInput = getInputTensor(INPUT);
         mFilter = getInputTensor(FILTER);
         mBias = getInputTensor(BIAS);
@@ -177,13 +183,14 @@ public:
             MAI_ABORT("Unsupport data format");
         }
         mOutput->resize(outputShape);
-        mOutput->zero();
 
         if (mFunction == NULL) {
             MAI_CHECK(false, "Unsupported input data format: %d, with filter data format:%d", mInput->getDataFormat(),
                     mFilter->getDataFormat());
         }
+        MAI_OP_RUN_FIRST_END
 
+        mOutput->zero();
         std::vector<shape_t> biasShape;
         if (mBias != NULL) {
             biasShape = mBias->shape();
@@ -208,6 +215,7 @@ private:
             const DepthwiseConv2dParam*,
             T*, const std::vector<shape_t>&)> mFunction;
     DepthwiseConv2dParam* mParam;
+    bool mRunFirst;
 };
 
 void registerDepthwiseConv2d() {

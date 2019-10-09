@@ -47,7 +47,7 @@ void cast(const Tensor* input, Tensor* output) {
 
 class Cast : public Operator {
 public:
-    Cast() = default;
+    Cast() : mRunFirst(true) {}
     ~Cast() = default;
 
     MAI_STATUS init() override {
@@ -57,9 +57,11 @@ public:
     MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
+        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
         output->resize(input->shape());
+        MAI_OP_RUN_FIRST_END
 
         CAST_TYPE(float, int8);
         CAST_TYPE(float, int32);
@@ -83,6 +85,8 @@ public:
                 getNameFromDataType(output->dataType()).c_str());
         return MAI_FAILED;
     }
+private:
+    bool mRunFirst;
 };
 
 void registerCast() {

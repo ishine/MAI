@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class Gather : public Operator {
 public:
-    Gather() : mAxis(0) {}
+    Gather() : mAxis(0), mRunFirst(true) {}
     ~Gather() = default;
 
     MAI_STATUS init() override {
@@ -42,6 +42,7 @@ public:
         const Tensor* input = getInputTensor(0);
         const Tensor* indices = getInputTensor(1);
         Tensor* output = getOutputTensor(0);
+        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(indices);
         MAI_CHECK_NULL(output);
@@ -95,22 +96,22 @@ public:
             }
         }
         output->resize(outputShape);
+        const auto& inputShape = input->shape();
+        mOuterSize = std::accumulate(inputShape.begin(), inputShape.begin() + mAxis, 1, std::multiplies<shape_t>());
+        mInnerSize = std::accumulate(inputShape.begin() + mAxis + 1, inputShape.end(), 1, std::multiplies<shape_t>());
+        MAI_OP_RUN_FIRST_END
 
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
-        //shape_t outerSize = std::accumulate(input->shape().begin(), input->shape().begin() + mAxis, 1, std::multiplies<shape_t>());
-        const auto& inputShape = input->shape();
-        shape_t outerSize = std::accumulate(inputShape.begin(), inputShape.begin() + mAxis, 1, std::multiplies<shape_t>());
-        shape_t innerSize = std::accumulate(inputShape.begin() + mAxis + 1, inputShape.end(), 1, std::multiplies<shape_t>());
         shape_t index = 0;
         shape_t inputOffset = 0;
         shape_t outputOffset = 0;
-        for (int32 i = 0; i < outerSize; ++i) {
+        for (int32 i = 0; i < mOuterSize; ++i) {
             for (int32 j = 0; j < mIndex.size(); ++j) {
                 index = mIndex[j];
-                inputOffset = (i * input->dim(mAxis) + index) * innerSize;
-                memcpy(outputData + outputOffset, inputData + inputOffset, innerSize * sizeof(T));
-                outputOffset += innerSize;
+                inputOffset = (i * input->dim(mAxis) + index) * mInnerSize;
+                memcpy(outputData + outputOffset, inputData + inputOffset, mInnerSize * sizeof(T));
+                outputOffset += mInnerSize;
             }
         }
         return MAI_SUCCESS;
@@ -118,6 +119,9 @@ public:
 private:
     int32 mAxis;
     std::vector<int32> mIndex;
+    shape_t mInnerSize;
+    shape_t mOuterSize;
+    bool mRunFirst;
 };
 
 void registerGather() {

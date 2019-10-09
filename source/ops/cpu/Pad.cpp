@@ -69,11 +69,6 @@ static void pad(const T* input, const std::vector<shape_t>& inputShape,
 
                 memcpy(output, input + inputOffset, inputShape[3] * sizeof(T));
                 output += inputShape[3];
-                //for (shape_t c = paddingDim2Begin; w < outputShape[3] - paddingDim3End; ++c) {
-                //    // level 3
-                //    *output++ = input + offset4D(inputShape,
-                //            (n - paddingDim0Begin), (h - paddingDim1Begin), (w - paddingDim2Begin), (c - paddingDim3Begin));
-                //}
                 for (shape_t c = 0; c < paddingDim3End; ++c) {
                     *output++ = constantValue;
                 }
@@ -97,7 +92,7 @@ static void pad(const T* input, const std::vector<shape_t>& inputShape,
 template<typename T>
 class Pad : public Operator {
 public:
-    Pad() : mConstantValue(0) {}
+    Pad() : mConstantValue(0), mRunFirst(true) {}
     ~Pad() = default;
 
     MAI_STATUS init() override {
@@ -114,6 +109,7 @@ public:
     }
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
         if (inputNames().size() > 1) {// paddings list is dynamic tensor
             MAI_CHECK(mPaddings.size() == 0, "Paddings is dynamic tensor but param is not empty");
             const Tensor* paddingTensor = getInputTensor(PADDINGS);
@@ -135,6 +131,7 @@ public:
             }
         }
         const Tensor* input = getInputTensor(INPUT);
+        mInput = input;
         MAI_CHECK_NULL(input);
         MAI_CHECK(mPaddings.size() == (input->dimSize() * 2), "Invalid paddings size:%d input dimSize:%d",
                 mPaddings.size(), input->dimSize());
@@ -145,13 +142,16 @@ public:
             outputShape[i] += (mPaddings[2 * i] + mPaddings[2 * i + 1]);
         }
         Tensor* output = getOutputTensor(OUTPUT);
+        mOutput = output;
         MAI_CHECK_NULL(output);
         output->resize(outputShape);
-        T* outputData = output->mutableData<T>();
-        if (input->dimSize() == 4) {
-            PadImpl<T, 4>::pad(input->data<T>(), input->shape(), mConstantValue, mPaddings, outputData, outputShape);
+        MAI_OP_RUN_FIRST_END
+
+        T* outputData = mOutput->mutableData<T>();
+        if (mInput->dimSize() == 4) {
+            PadImpl<T, 4>::pad(mInput->data<T>(), mInput->shape(), mConstantValue, mPaddings, outputData, mOutput->shape());
         } else {
-            MAI_ABORT("Unsupported dim size:%d", input->dimSize());
+            MAI_ABORT("Unsupported dim size:%d", mInput->dimSize());
         }
 
         return MAI_SUCCESS;
@@ -160,6 +160,9 @@ private:
     enum FLAG{INPUT, PADDINGS, OUTPUT = 0};
     T mConstantValue;
     std::vector<int32> mPaddings;
+    const Tensor* mInput;
+    Tensor* mOutput;
+    bool mRunFirst;
 };
 
 void registerPad() {

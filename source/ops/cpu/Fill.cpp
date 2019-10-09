@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class Fill : public Operator {
 public:
-    Fill() = default;
+    Fill() : mRunFirst(true) {}
     ~Fill() = default;
 
     MAI_STATUS init() override {
@@ -31,10 +31,11 @@ public:
     }
 
     MAI_STATUS run() override {
-        const Tensor* dims = getInputTensor(0);
-        const Tensor* value = getInputTensor(1);
-        Tensor* output = getOutputTensor(0);
+        const Tensor* value = getInputTensor(INPUT);
+        Tensor* output = getOutputTensor(OUTPUT);
 
+        MAI_OP_RUN_FIRST_START
+        const Tensor* dims = getInputTensor(DIMS);
         MAI_CHECK_NULL(dims);
         MAI_CHECK_NULL(output);
         MAI_CHECK(dims->dimSize() == 1, "dimSize of dims must be 1 but not %d", dims->dimSize());
@@ -46,12 +47,16 @@ public:
             outputShape[i] = dimsData[i];
         }
         output->resize(outputShape);
+        MAI_OP_RUN_FIRST_END
 
         const T* valueData = value->data<T>();
         T* outputData = output->mutableData<T>();
         std::fill(outputData, outputData + output->elementSize(), *valueData);
         return MAI_SUCCESS;
     }
+private:
+    enum FLAG {DIMS, INPUT, OUTPUT = 0};
+    bool mRunFirst;
 };
 
 void registerFill() {

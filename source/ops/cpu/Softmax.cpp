@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class Softmax : public Operator {
 public:
-    Softmax() : mAxis(-1), mBeta(1.f) {
+    Softmax() : mAxis(-1), mBeta(1.f), mRunFirst(true) {
     }
     ~Softmax() = default;
 
@@ -69,14 +69,15 @@ public:
     MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
-        // run first
+
+        MAI_OP_RUN_FIRST_START
         if (mAxis < 0) {
             mAxis += input->shape().size();
         }
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
         output->resize(input->shape());
-        // run first end
+        MAI_OP_RUN_FIRST_END
 
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
@@ -99,6 +100,7 @@ public:
 private:
     int32 mAxis;// TODO: gavinchen axis is not support now
     float mBeta;
+    bool mRunFirst;
 };
 
 void registerSoftmax() {

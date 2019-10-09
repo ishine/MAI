@@ -13,11 +13,17 @@
 // limitations under the License.
 
 #include "core/SimpleNeuralNetwork.h"
+#include "source/core/OpenMP.h"
+#include "Allocator.h"
 #include "util/MAIType.h"
+#include "source/ops/cpu/CPURegister.h"
+#include "tools/profiling/Profiler.h"
 
 namespace MAI {
 
 SimpleNeuralNetwork::SimpleNeuralNetwork() {
+    Op::CPU::CPURegister cpuRegister;
+    OpenMP::setNumThreads(OpenMP::getNumCPUCores());
 }
 
 MAI_STATUS SimpleNeuralNetwork::init() {
@@ -28,9 +34,25 @@ MAI_STATUS SimpleNeuralNetwork::init() {
 }
 
 MAI_STATUS SimpleNeuralNetwork::run() {
+#if 1
+    const std::string kOutputDir = "output";
+    for(int32 i = 0; i < mModelInputs.size(); ++i) {
+        getTensor(mModelInputs[i])->toFile(kOutputDir);
+    }
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        ALOGI("run %s", (*it)->name().c_str());
+        (*it)->run();
+        for (int32 i = 0; i < (*it)->outputNames().size(); ++i) {
+            (*it)->getOutputTensor(i)->toFile(kOutputDir);
+        }
+    }
+#else
+    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        //ALOGI("run %s", (*it)->name().c_str());
+        SCOPED_OPERATOR_PROFILE(getProfiler(), (*it)->name(), getNameFromOperator((*it)->type()));
         (*it)->run();
     }
+#endif
     return MAI_SUCCESS;
 }
 
@@ -57,6 +79,29 @@ Operator* SimpleNeuralNetwork::getOperator(const std::string& name) {
         }
     }
     return NULL;
+}
+
+std::vector<std::string> SimpleNeuralNetwork::getModelInputs() {
+    return mModelInputs;
+}
+
+std::vector<std::string> SimpleNeuralNetwork::getModelOutputs() {
+    return mModelOutputs;
+}
+
+void SimpleNeuralNetwork::addModelInput(const std::string& inputName,
+        DataType dataType, DataFormat dataFormat,
+        const std::vector<shape_t>& inputShape) {
+    mModelInputs.emplace_back(inputName);
+    std::unique_ptr<Tensor> tensor(new Tensor(dataType, new CPUAllocator()));
+    tensor->setName(inputName);
+    tensor->setDataFormat(dataFormat);
+    tensor->allocateBuffer(inputShape);
+    addTensor(tensor);
+}
+
+void SimpleNeuralNetwork::addModelOutput(const std::string& outputName) {
+    mModelOutputs.emplace_back(outputName);
 }
 
 void SimpleNeuralNetwork::builGraph() {
