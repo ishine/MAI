@@ -140,44 +140,26 @@ public:
         }
 
         std::vector<shape_t> outputShape(4);
+        outputShape[mInput->n()] = mInput->dimN();
+        outputShape[mInput->c()] = mInput->dimC();
+        std::vector<int32> outputHW = calculateHW(
+                {mInput->dimH(), mInput->dimW()},
+                {mFilter->dimH(), mFilter->dimW()},
+                {mParam->strides[mInput->h()], mParam->strides[mInput->w()]},
+                mParam->paddings, mParam->paddingMode);
+        outputShape[mInput->h()] = outputHW[0];
+        outputShape[mInput->w()] = outputHW[1];
+        if (mParam->paddingMode != INVALID) {
+            mParam->paddings = calcPaddings(mParam->paddingMode,
+                {mFilter->dimH(), mFilter->dimW()});
+        }
         if (mInput->getDataFormat() == NHWC) {
             if (mFilter->getDataFormat() == HWIO) {
-                outputShape[0] = mInput->dim(0);
-                outputShape[3] = mInput->dim(3);
-                std::vector<int32> outputHW = calculateHW(
-                        {mInput->dim(DataFormatIndex<NHWC>::H), mInput->dim(DataFormatIndex<NHWC>::W)},
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)},
-                        {mParam->strides[DataFormatIndex<NHWC>::H], mParam->strides[DataFormatIndex<NHWC>::W]},
-                        mParam->paddings, mParam->paddingMode);
-                outputShape[1] = outputHW[0];
-                outputShape[2] = outputHW[1];
                 mFunction = depthwiseConv2dNHWC_HWIO;
-            }
-            if (mParam->paddingMode != INVALID) {
-                mParam->paddings = calcPaddings(mParam->paddingMode,
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)});
             }
         } else if (mInput->getDataFormat() == NCHW) {
             if (mFilter->getDataFormat() == IOHW) {
-                outputShape[0] = mInput->dim(0);
-                outputShape[1] = mInput->dim(1);
-                std::vector<int32> outputHW = calculateHW(
-                        {mInput->dim(DataFormatIndex<NCHW>::H), mInput->dim(DataFormatIndex<NCHW>::W)},
-                        {mFilter->dim(DataFormatIndex<IOHW>::H), mFilter->dim(DataFormatIndex<IOHW>::W)},
-                        {mParam->strides[DataFormatIndex<NCHW>::H], mParam->strides[DataFormatIndex<NCHW>::W]},
-                        mParam->paddings, mParam->paddingMode);
-                outputShape[2] = outputHW[0];
-                outputShape[3] = outputHW[1];
                 mFunction = depthwiseConv2dNCHW_IOHW;
-                //ALOGI("strides:%s", shapeToString(mParam->strides).c_str());
-                //ALOGI("paddings:%s", shapeToString(mParam->paddings).c_str());
-                //ALOGI("filter:%s", shapeToString(mFilter->shape()).c_str());
-                //ALOGI("input:%s", shapeToString(mInput->shape()).c_str());
-                //ALOGI("output:%s", shapeToString(mOutput->shape()).c_str());
-            }
-            if (mParam->paddingMode != INVALID) {
-                mParam->paddings = calcPaddings(mParam->paddingMode,
-                        {mFilter->dim(DataFormatIndex<IOHW>::H), mFilter->dim(DataFormatIndex<IOHW>::W)});
             }
         } else {
             MAI_ABORT("Unsupport data format");

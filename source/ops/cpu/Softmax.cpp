@@ -90,6 +90,12 @@ public:
             MAI_CHECK((mAxis == 0 || mAxis == 1), "axis must be 0 or 1 when rank of input is 2, \
                     but not : %d", mAxis);
             softmax2D(inputData, input->dim(0), input->dim(1), outputData);
+        } else if (input->shape().size() == 4) {
+            if (mAxis == 1 && input->dim(2) == 1 && input->dim(3) == 1) {
+                softmax2D(inputData, input->dim(0), input->dim(1), outputData);
+            } else {
+                MAI_ABORT("Unsupport shape size");
+            }
         } else {
             MAI_ABORT("Unsupport shape size");
         }

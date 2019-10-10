@@ -104,14 +104,15 @@ public:
     std::vector<int32> strides;//4-d format associated with input format(NHWC or NCHW)
     std::vector<int32> paddings;//4-d TOP-BOTTON-LEFT-RIGHT
     PaddingMode paddingMode;
+    int32 group;//default is 1
 };
 
-struct DepthwiseConv2dParam : public Conv2DParam {
+struct DepthwiseConv2dParam : public Param {
 public:
-    //std::vector<int32> dilations;//4-d TOP-BOTTON-LEFT-RIGHT
-    //std::vector<int32> strides;//4-d format associated with input format(NHWC or NCHW)
-    //std::vector<int32> paddings;//4-d TOP-BOTTON-LEFT-RIGHT
-    //PaddingMode paddingMode;
+    std::vector<int32> dilations;//4-d TOP-BOTTON-LEFT-RIGHT
+    std::vector<int32> strides;//4-d format associated with input format(NHWC or NCHW)
+    std::vector<int32> paddings;//4-d TOP-BOTTON-LEFT-RIGHT
+    PaddingMode paddingMode;
 };
 
 struct PoolParam : public Param {

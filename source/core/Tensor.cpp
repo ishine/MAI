@@ -26,7 +26,8 @@ Tensor::Tensor(DataType dataType) :
     mDataFormat(NHWC),
     mBuffer(NULL),
     mAllocator(NULL),
-    mFlag(MEMORY_OWNER | ALLOCATOR_OWNER) {
+    mFlag(MEMORY_OWNER | ALLOCATOR_OWNER),
+    mN(-1), mH(-1), mW(-1), mC(-1), mI(-1), mO(-1) {
 }
 
 Tensor::Tensor(DataType dataType, Allocator* allocator) :
@@ -35,7 +36,8 @@ Tensor::Tensor(DataType dataType, Allocator* allocator) :
     mDataFormat(NHWC),
     mBuffer(NULL),
     mAllocator(allocator),
-    mFlag(0) {
+    mFlag(0),
+    mN(-1), mH(-1), mW(-1), mC(-1), mI(-1), mO(-1) {
 }
 
 Tensor::~Tensor() {
@@ -148,6 +150,8 @@ void Tensor::toFile(const std::string& dir, const std::string& file) {
             for(int32 i = 0; i < elementSize(); ++i) {
                 fprintf(outputFile, "[%d]: %d\n", i, *(data<EnumToDataType<DT_INT32>::Type>() + i));
             }
+        } else {
+            ALOGE("DataType(%s) of Tensor to file is not supported", getNameFromDataType(dataType()).c_str());
         }
         fclose(outputFile);
     } else {
@@ -155,4 +159,84 @@ void Tensor::toFile(const std::string& dir, const std::string& file) {
     }
 }
 
+void Tensor::setDataFormat(DataFormat dataFormat) {
+    mDataFormat = dataFormat;
+#define __ASSIGN_DATA_FORMAT(DATA_FORMAT)     \
+    if (mDataFormat == DATA_FORMAT) {         \
+        mN = DataFormatIndex<DATA_FORMAT>::N; \
+        mH = DataFormatIndex<DATA_FORMAT>::H; \
+        mW = DataFormatIndex<DATA_FORMAT>::W; \
+        mC = DataFormatIndex<DATA_FORMAT>::C; \
+        mI = DataFormatIndex<DATA_FORMAT>::I; \
+        mO = DataFormatIndex<DATA_FORMAT>::O; \
+    }
+    __ASSIGN_DATA_FORMAT(NHWC);
+    __ASSIGN_DATA_FORMAT(NCHW);
+    __ASSIGN_DATA_FORMAT(HWIO);
+    __ASSIGN_DATA_FORMAT(OHWI);
+    __ASSIGN_DATA_FORMAT(HWIO);
+    __ASSIGN_DATA_FORMAT(OIHW);
+    __ASSIGN_DATA_FORMAT(IOHW);
+#undef __ASSIGN_DATA_FORMAT
+}
+
+int32 Tensor::n() const {
+    MAI_CHECK(mN != -1, "n is -1");
+    return mN;
+}
+
+int32 Tensor::h() const {
+    MAI_CHECK(mH != -1, "h is -1");
+    return mH;
+}
+
+int32 Tensor::w() const {
+    MAI_CHECK(mW != -1, "w is -1");
+    return mW;
+}
+
+int32 Tensor::c() const {
+    MAI_CHECK(mC != -1, "c is -1");
+    return mC;
+}
+
+int32 Tensor::i() const {
+    MAI_CHECK(mI != -1, "i is -1");
+    return mI;
+}
+
+int32 Tensor::o() const {
+    MAI_CHECK(mO != -1, "o is -1");
+    return mO;
+}
+
+int32 Tensor::dimN() const {
+    MAI_CHECK(mN != -1, "n is -1");
+    return dim(mN);
+}
+
+int32 Tensor::dimH() const {
+    MAI_CHECK(mH != -1, "h is -1");
+    return dim(mH);
+}
+
+int32 Tensor::dimW() const {
+    MAI_CHECK(mW != -1, "w is -1");
+    return dim(mW);
+}
+
+int32 Tensor::dimC() const {
+    MAI_CHECK(mC != -1, "c is -1");
+    return dim(mC);
+}
+
+int32 Tensor::dimI() const {
+    MAI_CHECK(mI != -1, "i is -1");
+    return dim(mI);
+}
+
+int32 Tensor::dimO() const {
+    MAI_CHECK(mO != -1, "o is -1");
+    return dim(mO);
+}
 } // namespace MAI

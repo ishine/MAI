@@ -48,6 +48,8 @@ public:
             const Conv2DParam* param,
             T* output,
             const std::vector<shape_t>& outputShape) {
+        int32 outputGroupChannelSize = outputShape[DataFormatIndex<NHWC>::C] / param->group;
+        int32 inputGroupChannelSize = inputShape[DataFormatIndex<NHWC>::C] / param->group;
         #pragma omp parallel for collapse(4)
         for(shape_t n = 0; n < outputShape[0]; ++n) {
             for(shape_t h = 0; h < outputShape[1]; ++h) {
@@ -56,7 +58,8 @@ public:
                         T* outputV = output + offset4D(outputShape, n, h, w, o);
                         shape_t inHBase = h * param->strides[DataFormatIndex<NHWC>::H] - param->paddings[0];
                         shape_t inWBase = w * param->strides[DataFormatIndex<NHWC>::W] - param->paddings[2];
-                        for(shape_t i = 0; i < inputShape[DataFormatIndex<NHWC>::C]; ++i) {
+                        int32 group = o / outputGroupChannelSize;// The group th of output channel
+                        for(shape_t i = group * inputGroupChannelSize; i < (group + 1) * inputGroupChannelSize; ++i) {
                             for(shape_t fh = 0; fh < filterShape[DataFormatIndex<HWIO>::H]; ++fh) {
                                 for(shape_t fw = 0; fw < filterShape[DataFormatIndex<HWIO>::H]; ++fw) {
                                     shape_t inHOffset = inHBase + fh;
@@ -64,7 +67,7 @@ public:
                                     if (inHOffset >= 0 && inHOffset < inputShape[DataFormatIndex<NHWC>::H]
                                             && inWOffset >= 0 && inWOffset < inputShape[DataFormatIndex<NHWC>::W]) {
                                         shape_t inputOffset = offset4D(inputShape, n, inHOffset, inWOffset, i);
-                                        shape_t filterOffset = offset4D(filterShape, fh, fw, i, o);
+                                        shape_t filterOffset = offset4D(filterShape, fh, fw, i % inputGroupChannelSize, o);
                                         const T* inputV = input + inputOffset;
                                         const T* filterV = filter + filterOffset;
                                         *outputV += (*inputV) * (*filterV);
@@ -90,6 +93,8 @@ public:
             const Conv2DParam* param,
             T* output,
             const std::vector<shape_t>& outputShape) {
+        int32 outputGroupChannelSize = outputShape[1] / param->group;
+        int32 inputGroupChannelSize = inputShape[1] / param->group;
         #pragma omp parallel for collapse(2)
         for(shape_t n = 0; n < outputShape[0]; ++n) {
             for(shape_t o = 0; o < outputShape[1]; ++o) {
@@ -98,7 +103,8 @@ public:
                         T* outputV = output + offset4D(outputShape, n, o, h, w);
                         shape_t inHBase = h * param->strides[DataFormatIndex<NCHW>::H] - param->paddings[0];
                         shape_t inWBase = w * param->strides[DataFormatIndex<NCHW>::W] - param->paddings[2];
-                        for(shape_t i = 0; i < inputShape[DataFormatIndex<NCHW>::C]; ++i) {
+                        int32 group = o / outputGroupChannelSize;// The group th of output channel
+                        for(shape_t i = group * inputGroupChannelSize; i < (group + 1) * inputGroupChannelSize; ++i) {
                             for(shape_t fh = 0; fh < filterShape[DataFormatIndex<OIHW>::H]; ++fh) {
                                 for(shape_t fw = 0; fw < filterShape[DataFormatIndex<OIHW>::W]; ++fw) {
                                     shape_t inHOffset = inHBase + fh;
@@ -106,7 +112,7 @@ public:
                                     if (inHOffset >= 0 && inHOffset < inputShape[DataFormatIndex<NCHW>::H]
                                             && inWOffset >= 0 && inWOffset < inputShape[DataFormatIndex<NCHW>::W]) {
                                         shape_t inputOffset = offset4D(inputShape, n, i, inHOffset, inWOffset);
-                                        shape_t filterOffset = offset4D(filterShape, o, i, fh, fw);
+                                        shape_t filterOffset = offset4D(filterShape, o, i % inputGroupChannelSize, fh, fw);
                                         const T* inputV = input + inputOffset;
                                         const T* filterV = filter + filterOffset;
                                         *outputV += (*inputV) * (*filterV);
@@ -124,11 +130,6 @@ public:
     }
 
     MAI_STATUS run() override {
-        //static __runFirst = true;
-        //if (__runFirst) {
-        //    __runFirst = false;
-        //}
-        //RUN_FIRST_START
         MAI_OP_RUN_FIRST_START
         mInput = getInputTensor(INPUT);
         mFilter = getInputTensor(FILTER);
@@ -149,40 +150,30 @@ public:
         }
 
         std::vector<shape_t> outputShape(4);
+        MAI_CHECK(mInput->dimC() == (mFilter->dimI() * mParam->group),
+                "input channel(%d) should be equal to filter channel(%d)", mInput->dimC(),
+                mFilter->dimI());
+        MAI_CHECK(mFilter->dimO() % mParam->group == 0, "filter output channel(%d) must be devided by group(%d)",
+                mFilter->dimO(), mParam->group);
+        outputShape[mInput->n()] = mInput->dimN();
+        outputShape[mInput->c()] = mFilter->dimO();
+        std::vector<int32> outputHW = calculateHW(
+                {mInput->dimH(), mInput->dimW()},
+                {mFilter->dimH(), mFilter->dimW()},
+                {mParam->strides[mInput->h()], mParam->strides[mInput->w()]},
+                mParam->paddings, mParam->paddingMode);
+        outputShape[mInput->h()] = outputHW[0];
+        outputShape[mInput->w()] = outputHW[1];
         if (mInput->getDataFormat() == NHWC) {
             if (mFilter->getDataFormat() == HWIO) {
-                MAI_CHECK(mInput->dim(DataFormatIndex<NHWC>::C) == mFilter->dim(DataFormatIndex<HWIO>::I),
-                        "input channel(%d) should be equal to filter channel(%d)", mInput->dim(DataFormatIndex<NHWC>::C),
-                        mFilter->dim(DataFormatIndex<HWIO>::I));
-                outputShape[0] = mInput->dim(0);
-                outputShape[3] = mFilter->dim(3);
-                std::vector<int32> outputHW = calculateHW(
-                        {mInput->dim(DataFormatIndex<NHWC>::H), mInput->dim(DataFormatIndex<NHWC>::W)},
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)},
-                        {mParam->strides[DataFormatIndex<NHWC>::H], mParam->strides[DataFormatIndex<NHWC>::W]},
-                        mParam->paddings, mParam->paddingMode);
-                outputShape[1] = outputHW[0];
-                outputShape[2] = outputHW[1];
                 mFunction = conv2DNHWC_HWIO;
             }
             if (mParam->paddingMode != INVALID) {
                 mParam->paddings = calcPaddings(mParam->paddingMode,
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)});
+                        {mFilter->dimH(), mFilter->dimW()});
             }
         } else if (mInput->getDataFormat() == NCHW) {
             if (mFilter->getDataFormat() == OIHW) {
-                MAI_CHECK(mInput->dim(DataFormatIndex<NCHW>::C) == mFilter->dim(DataFormatIndex<OIHW>::I),
-                        "input channel(%d) should be equal to filter channel(%d)", mInput->dim(DataFormatIndex<NCHW>::C),
-                         mFilter->dim(DataFormatIndex<OIHW>::I));
-                outputShape[0] = mInput->dim(0);
-                outputShape[1] = mFilter->dim(0);
-                std::vector<int32> outputHW = calculateHW(
-                        {mInput->dim(DataFormatIndex<NCHW>::H), mInput->dim(DataFormatIndex<NCHW>::W)},
-                        {mFilter->dim(DataFormatIndex<OIHW>::H), mFilter->dim(DataFormatIndex<OIHW>::W)},
-                        {mParam->strides[DataFormatIndex<NCHW>::H], mParam->strides[DataFormatIndex<NCHW>::W]},
-                        mParam->paddings, mParam->paddingMode);
-                outputShape[2] = outputHW[0];
-                outputShape[3] = outputHW[1];
                 mFunction = conv2DNCHW_OIHW;
             }
         }

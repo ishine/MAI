@@ -71,45 +71,33 @@ public:
         std::vector<shape_t> outputShape(4);
         if (mInput->getDataFormat() == NHWC) {
             if (mPoolType == GLOBAL_AVG_POOL) {
-                mParam->kernelSizes = {1, 1, mInput->dim(DataFormatIndex<NHWC>::H), mInput->dim(DataFormatIndex<NHWC>::W)};
+                mParam->kernelSizes = {1, mInput->dimH(), mInput->dimW(), 1};
             }
             MAI_CHECK(mParam->kernelSizes.size() == 4, "KernelSize must be 4-d format");
-            outputShape[0] = mInput->dim(0);
-            outputShape[3] = mInput->dim(3);
-            std::vector<int32> outputHW = calculateHW(
-                    {mInput->dim(1), mInput->dim(2)},
-                    {mParam->kernelSizes[1], mParam->kernelSizes[2]},
-                    {mParam->strides[DataFormatIndex<NHWC>::H], mParam->strides[DataFormatIndex<NHWC>::W]},
-                    mParam->paddings, mParam->paddingMode);
-            outputShape[1] = outputHW[0];
-            outputShape[2] = outputHW[1];
             mFunction = mFunctionNHWC;
-            if (mParam->paddingMode != INVALID) {
-                mParam->paddings = calcPaddings(mParam->paddingMode, mParam->kernelSizes);
-            }
         } else if (mInput->getDataFormat() == NCHW) {
             if (mPoolType == GLOBAL_AVG_POOL) {
-                mParam->kernelSizes = {1, 1, mInput->dim(DataFormatIndex<NCHW>::H), mInput->dim(DataFormatIndex<NCHW>::W)};
+                mParam->kernelSizes = {1, 1, mInput->dimH(), mInput->dimW()};
             }
             MAI_CHECK(mParam->kernelSizes.size() == 4, "KernelSize must be 4-d format");
-            outputShape[0] = mInput->dim(0);
-            outputShape[1] = mInput->dim(1);
-            std::vector<int32> outputHW = calculateHW(
-                    {mInput->dim(DataFormatIndex<NCHW>::H), mInput->dim(DataFormatIndex<NCHW>::W)},
-                    {mParam->kernelSizes[DataFormatIndex<NCHW>::H], mParam->kernelSizes[DataFormatIndex<NCHW>::W]},
-                    {mParam->strides[DataFormatIndex<NCHW>::H], mParam->strides[DataFormatIndex<NCHW>::W]},
-                    mParam->paddings, mParam->paddingMode);
-            outputShape[2] = outputHW[0];
-            outputShape[3] = outputHW[1];
             mFunction = mFunctionNCHW;
-            if (mParam->paddingMode != INVALID) {
-                mParam->paddings = calcPaddings(mParam->paddingMode, mParam->kernelSizes);
-            }
 
         } else {
             MAI_ABORT("Unsupported dataFormat:%s", getNameFromDataFormat(mInput->getDataFormat()));
         }
+        outputShape[mInput->n()] = mInput->dimN();
+        outputShape[mInput->c()] = mInput->dimC();
+        std::vector<int32> outputHW = calculateHW(
+                {mInput->dimH(), mInput->dimW()},
+                {mParam->kernelSizes[mInput->h()], mParam->kernelSizes[mInput->w()]},
+                {mParam->strides[mInput->h()], mParam->strides[mInput->w()]},
+                mParam->paddings, mParam->paddingMode);
+        outputShape[mInput->h()] = outputHW[0];
+        outputShape[mInput->w()] = outputHW[1];
         mOutput->resize(outputShape);
+        if (mParam->paddingMode != INVALID) {
+            mParam->paddings = calcPaddings(mParam->paddingMode, mParam->kernelSizes);
+        }
 
         if (mFunction == NULL) {
             MAI_CHECK(false, "Unsupported input data format: %s", getNameFromDataFormat(mInput->getDataFormat()).c_str());

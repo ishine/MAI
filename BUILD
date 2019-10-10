@@ -16,7 +16,7 @@ cc_library(
 
    ]) + ["//tools/converter/tensorflow:TensorflowParser.h"]
       + ["//tools/converter/onnx:OnnxParser.h"],
-   copts = ["-Wall", "-Wextra", "-std=c++11", "-fopenmp"],
+   copts = ["-Wall", "-Wextra", "-std=c++11", "-fopenmp", "-O3"],
    linkopts = ["-fopenmp"],
    includes = ["source", "include"],
    visibility = ["//visibility:public"],

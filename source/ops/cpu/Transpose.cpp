@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstring>
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
 
@@ -19,7 +20,6 @@ namespace MAI {
 namespace Op {
 namespace CPU {
 
-template<typename T>
 class Transpose : public Operator {
 public:
     Transpose() : mRunFirst(true) {}
@@ -38,7 +38,8 @@ public:
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(perm);
         MAI_CHECK_NULL(output);
-        MAI_CHECK(input->dimSize() == perm->elementSize(), "rank of input must be equal to perm data size");
+        MAI_CHECK(input->dimSize() == perm->elementSize(),
+                "rank of input(%d) must be equal to perm data size(%d)", input->dimSize(), perm->elementSize());
         const int32* permData = perm->data<int32>();
         std::vector<shape_t> outputShape(input->dimSize());
         std::vector<shape_t> inputStrides(input->dimSize());
@@ -61,8 +62,9 @@ public:
         }
         MAI_OP_RUN_FIRST_END
 
-        const T* inputData = input->data<T>();
-        T* outputData = output->mutableData<T>();
+        const void* inputData = input->data<void>();
+        const int32 sizeofElement = input->size() / input->elementSize();
+        void* outputData = output->mutableData<void>();
         shape_t loopCount = 1;
         std::vector<shape_t> indexes(output->dimSize(), 0);
         for (int32 i = output->dimSize() - 1; i >= 0; --i) {
@@ -88,7 +90,8 @@ public:
                 for (shape_t index = 0; index < indexes.size(); ++index) {
                     offset += indexes[index] * mStrides[index];
                 }
-                *outputData++ = *(inputData + offset);
+                memcpy(outputData, inputData + offset * sizeofElement, sizeofElement);
+                outputData += sizeofElement;
             }
         }
         return MAI_FAILED;
@@ -101,9 +104,10 @@ private:
 };
 
 void registerTranspose() {
-    MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), int32, Transpose);
-    MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), int64, Transpose);
-    MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), float, Transpose);
+    MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), Transpose);
+    //MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), int32, Transpose);
+    //MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), int64, Transpose);
+    //MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), float, Transpose);
 }
 
 } // namespace CPU

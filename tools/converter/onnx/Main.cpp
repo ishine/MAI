@@ -7,7 +7,8 @@ int main() {
     uint64_t startTime, endTime, totalTime;
     //const char* kModelPath = "tools/converter/onnx/models/onnx_model.onnx";
     //const char* kModelPath = "tools/converter/onnx/models/alexnet_opset_9/alexnet_opset_9.onnx";
-    const char* kModelPath = "tools/converter/onnx/models/squeezenet_opset_9/squeezenet_opset_9.onnx";
+    //const char* kModelPath = "tools/converter/onnx/models/squeezenet_opset_9/squeezenet_opset_9.onnx";
+    const char* kModelPath = "tools/converter/onnx/models/shufflenet_opset_9/shufflenet_opset_9.onnx";
     std::unique_ptr<NeuralNetwork> network = NeuralNetwork::getNeuralNetwork(NeuralNetwork::ONNX,
             kModelPath);
     startTime = nowMicros();

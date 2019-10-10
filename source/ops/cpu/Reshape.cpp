@@ -74,7 +74,11 @@ public:
 
         } else {
             shape_t shapeSize = shapeToSize(outputShape);
-            MAI_CHECK((inputPtr->elementSize() == shapeSize), "Error shape");
+            MAI_CHECK((inputPtr->elementSize() == shapeSize),
+                    "Error shape, InputShape:%s, OriginShape:%s, OutputShape:%s",
+                    shapeToString(inputPtr->shape()).c_str(),
+                    shapeToString(shape).c_str(),
+                    shapeToString(outputShape).c_str());
         }
 
         outputPtr->reuse(inputPtr);

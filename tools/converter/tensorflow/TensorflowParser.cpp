@@ -168,6 +168,7 @@ static void parseAttrs(TensorflowParser& parser, const tensorflow::NodeDef& node
 
 OP_PARSER(Conv2D) {
     Conv2DParam* param = new Conv2DParam();
+    param->group = 1;// TF Conv2D cannot support group convolution
     tensorflow::DataType tfDataType;
     std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
         {"strides", [&param](const tensorflow::AttrValue& attr)

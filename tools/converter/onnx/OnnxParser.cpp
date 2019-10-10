@@ -249,7 +249,7 @@ static onnx::TensorProto::DataType findOpDataType(const onnx::GraphProto& graphP
     return onnxDataType;
 }
 
-static void parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOperator opType, onnx::TensorProto::DataType& onnxDataType,
+static Operator* parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOperator opType, onnx::TensorProto::DataType& onnxDataType,
         Param* param, std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers) {
     std::map<std::string, bool> parserUsed;
     for (auto it = attrParsers.begin(); it != attrParsers.end(); ++it) {
@@ -278,9 +278,9 @@ static void parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOpera
     if (param != NULL) {
         op->setParam(param);
     }
-    //op->setName(node.name());
     //TODO:(gavinchen) some model this is null
-    op->setName(node.op_type() + "_" + node.output(0));
+    std::string opName = node.op_type() + "_" + node.output(0);
+    op->setName(opName);
     for(int32 i = 0; i < node.input_size(); ++i) {
         //ALOGI("name:%s input:%s", node.name().c_str(), node.input(i).c_str());
         op->addInputName(node.input(i));
@@ -294,6 +294,7 @@ static void parseAttrs(OnnxParser& parser, const onnx::NodeProto& node, MAIOpera
         parser.mOnnxNetwork->addTensor(tensor);
     }
     parser.mOnnxNetwork->addOperator(op);
+    return parser.mOnnxNetwork->getOperator(opName);
 }
 
 
@@ -338,24 +339,8 @@ OP_PARSER(Constant) {
 }
 
 OP_PARSER(Conv) {
-    //TODO:(gavinchen)
-    bool isDepthwiseConv = false;
-    auto& attrs = node.attribute();
-    for (auto it = attrs.begin(); it != attrs.end(); ++it) {
-        if ((*it).name() == "group") {
-            if ((*it).i() > 1) {
-                //TODO: check group size is equal to input channel size
-                isDepthwiseConv = true;
-            }
-        }
-    }
-
-    if (isDepthwiseConv) {
-        parser.mOnnxNetwork->getTensor(node.input(1))->setDataFormat(IOHW);
-    }
-
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
-    Conv2DParam* param = isDepthwiseConv ? new DepthwiseConv2dParam() : new Conv2DParam();
+    Conv2DParam* param = new Conv2DParam();
     std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
         {"strides",
             {
@@ -411,17 +396,28 @@ OP_PARSER(Conv) {
                 }
             }
         },
+
+        {"group",
+            {
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->group = attr.i();
+                },
+
+                [&param](const onnx::AttributeProto& attr)
+                {
+                    param->group = 1;// default is normal conv2d
+                },
+            }
+        },
     };
 
-    if (isDepthwiseConv) {
-        parseAttrs(parser, node, DEPTHWISE_CONV2D, onnxDataType, param, attrParsers);
-    } else {
-        parseAttrs(parser, node, CONV2D, onnxDataType, param, attrParsers);
-    }
+    parseAttrs(parser, node, CONV2D, onnxDataType, param, attrParsers);
 }
 
 OP_PARSER(DepthwiseConv2dNative) {
     DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
+    //DepthwiseConv2d means Conv2D with group = InputChannel and Filter O = group and Filter I = 1
 }
 
 OP_PARSER(AveragePool, MaxPool) {
@@ -563,6 +559,33 @@ OP_PARSER(Clip) {
     parseAttrs(parser, node, RELU6, onnxDataType, NULL/*param*/, attrParsers);
 }
 
+OP_PARSER(Transpose) {
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
+    std::vector<int32> perms;
+    std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
+        {"perm",
+            {
+                [&perms](const onnx::AttributeProto& attr)
+                {
+                    perms.insert(perms.end(), attr.ints().begin(), attr.ints().end());
+                }
+            }
+        },
+    };
+    Operator* op = parseAttrs(parser, node, TRANSPOSE, onnxDataType, NULL/*param*/, attrParsers);
+
+    // add perm tensor
+    std::unique_ptr<Tensor> tensor(new Tensor(DT_INT32, new CPUAllocator()));
+    std::string permName = op->name() + "_input2_perm__";
+    tensor->setName(permName);
+    tensor->setDataFormat(NCHW);
+    tensor->allocateBuffer({perms.size()});
+    tensor->copy(perms.data(), perms.size() * getDataTypeSize(DT_INT32));
+    parser.mOnnxNetwork->addTensor(tensor);
+
+    op->addInputName(permName);
+}
+
 OP_PARSER(Squeeze) {
     SqueezeParam* param = new SqueezeParam();
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
@@ -594,7 +617,7 @@ OP_PARSER(Shape) {
 OP_PARSER(Softmax) {
     SoftmaxParam* param = new SoftmaxParam();
     param->beta = 1.f;
-    param->axis = -1;
+    param->axis = 1;//according to the onnx document, axis default is 1, as the 0th dim is batch
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
     std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
         {"axis",
@@ -688,8 +711,8 @@ OP_PARSER(Unsqueeze) {
 }
 
 OP_PARSER(Concat) {
-    //TODO:(gavinchen) This is a workround for some models.
-    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::INT64;
+    // DataType for Concat is invalid, as runtime can receive any data type
+    onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
     ConcatParam* param = new ConcatParam();
     param->num = node.input_size();
     std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers = {
@@ -706,7 +729,7 @@ OP_PARSER(Concat) {
 }
 
 OP_PARSER(Dropout) {
-    //TODO:(gavinchen) This is a workround for some models.
+    // DataType for Concat is invalid, as runtime can receive any data type
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::INT64;
     std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
     parseAttrs(parser, node, DROPOUT, onnxDataType, NULL/*param*/, attrParsers);
@@ -764,7 +787,7 @@ OP_PARSER(Pad) {
     parseAttrs(parser, node, PAD, onnxDataType, param, attrParsers);
 }
 
-OP_PARSER(Add) {
+OP_PARSER(Add, Sum) {
     onnx::TensorProto::DataType onnxDataType = onnx::TensorProto::FLOAT;
     std::map<std::string, std::vector<std::function<void(const onnx::AttributeProto&)>>> attrParsers;
     parseAttrs(parser, node, ADD, onnxDataType, NULL/*param*/, attrParsers);
