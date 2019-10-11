@@ -12,7 +12,7 @@ MAI是一个神经网络推理引擎，以跨平台为目标，开发目标：Li
 | ---                               | ---      | ---      |            
 |mobilenetv1                        | yes      |   yes    |        
 |squeezenet                        | [yes](https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz)     |   no    |
-
+|shufflenet                        | [yes](https://s3.amazonaws.com/download.onnx/models/opset_9/shufflenet.tar.gz)     |   no    |
 
 ## Supported operators
 <table>
