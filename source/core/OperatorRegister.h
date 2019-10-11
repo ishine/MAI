@@ -23,10 +23,7 @@ namespace MAI {
 
 class OperatorRegister {
 public:
-    static OperatorRegister* getInstance() {
-        static OperatorRegister instance;
-        return &instance;
-    }
+    static OperatorRegister* getInstance();
 
     typedef std::function<std::unique_ptr<Operator>()> OperatorCreator;
 

@@ -13,6 +13,7 @@ cc_library(
        "source/util/*.h",
        "source/ops/cpu/*.h",
        "tools/profiling/*.h",
+       "source/ops/cpu/ref/*.h",
 
    ]) + ["//tools/converter/tensorflow:TensorflowParser.h"]
       + ["//tools/converter/onnx:OnnxParser.h"],

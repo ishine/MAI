@@ -27,7 +27,7 @@ struct Param {
 class NeuralNetwork;
 class Operator {
 public:
-    ~Operator() = default;
+    virtual ~Operator() = default;
     virtual MAI_STATUS init() = 0;
     virtual MAI_STATUS run() = 0;
 

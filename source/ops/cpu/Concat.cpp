@@ -76,7 +76,7 @@ public:
         }
         MAI_OP_RUN_FIRST_END
 
-        void* outputData = output->mutableData<void>();
+        char* outputData = output->mutableData<char>();
         int32 sizeofElement = getInputTensor(0)->size() / getInputTensor(0)->elementSize();
         shape_t outputOffset = 0;
         for (shape_t o = 0; o < mOuterSize; ++o) {
@@ -84,7 +84,7 @@ public:
                 const Tensor* tmpTensor = getInputTensor(i);
                 MAI_CHECK_NULL(tmpTensor);
                 shape_t copySize = tmpTensor->dim(mAxis) * mInnerSize * sizeofElement;
-                memcpy(outputData + outputOffset, tmpTensor->data<void>() + o * copySize, copySize);
+                memcpy(outputData + outputOffset, tmpTensor->data<char>() + o * copySize, copySize);
                 outputOffset += copySize;
             }
         }

@@ -42,6 +42,7 @@ public:
             const NetworkFormat networkFormat, const std::string& modelPath);
 
     NeuralNetwork() : mProfiler(NULL) {}
+    virtual ~NeuralNetwork() = default;
 
     inline void setProfiler(Profiling::Profiler* profiler) {
         mProfiler = profiler;

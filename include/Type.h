@@ -258,4 +258,6 @@ struct OpContext {
     }
 };
 
+#define MAI_DYNAMIC_DIM -1
+
 } // namespace MAI

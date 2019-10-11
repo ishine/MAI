@@ -35,7 +35,9 @@ public:
         Tensor* output = getOutputTensor(0);
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
-        output->resize({input->shape().size()});
+        std::vector<shape_t> outputShape(1);
+        outputShape[0] = static_cast<shape_t>(input->shape().size());
+        output->resize(outputShape);
         T* outputData = output->mutableData<T>();
         for (shape_t i = 0; i < input->shape().size(); ++i) {
             outputData[i] = input->shape()[i];

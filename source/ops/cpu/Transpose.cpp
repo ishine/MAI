@@ -15,6 +15,7 @@
 #include <cstring>
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
+#include "ref/TransposeRef.h"
 
 namespace MAI {
 namespace Op {
@@ -34,80 +35,34 @@ public:
         const Tensor* perm = getInputTensor(PERM);
         Tensor* output = getOutputTensor(OUTPUT);
 
+        const int32* permData = perm->data<int32>();
         MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(perm);
         MAI_CHECK_NULL(output);
         MAI_CHECK(input->dimSize() == perm->elementSize(),
                 "rank of input(%d) must be equal to perm data size(%d)", input->dimSize(), perm->elementSize());
-        const int32* permData = perm->data<int32>();
         std::vector<shape_t> outputShape(input->dimSize());
-        std::vector<shape_t> inputStrides(input->dimSize());
-        shape_t gap = 1;
-        for (int32 i = input->dimSize() - 1; i >= 0; --i) {
-            inputStrides[i] = gap;
-            gap *= input->dim(i);
-        }
-        mStrides.resize(input->dimSize());
         for (shape_t i = 0; i < input->dimSize(); ++i) {
             outputShape[i] = input->dim(permData[i]);
-            mStrides[i] = inputStrides[permData[i]];
         }
         output->resize(outputShape);
-        mOutputStrides.resize(input->dimSize());
-        gap = 1;
-        for (int32 i = output->dimSize() - 1; i >= 0; --i) {
-            mOutputStrides[i] = gap;
-            gap *= output->dim(i);
-        }
         MAI_OP_RUN_FIRST_END
 
-        const void* inputData = input->data<void>();
+        const uint8* inputData = input->data<uint8>();
         const int32 sizeofElement = input->size() / input->elementSize();
-        void* outputData = output->mutableData<void>();
-        shape_t loopCount = 1;
-        std::vector<shape_t> indexes(output->dimSize(), 0);
-        for (int32 i = output->dimSize() - 1; i >= 0; --i) {
-            for (shape_t k = 0; k < i; ++k) {
-                indexes[k] = 0;
-            }
-            shape_t innerSize = 1;
-            if (i == output->dimSize() - 1) {
-                innerSize = 0;
-            } else {
-                for (shape_t k = i + 1; k < output->dimSize(); ++k) {
-                    innerSize *= output->dim(k);
-                }
-            }
-            loopCount *= output->dim(i);
-            for (shape_t j = innerSize; j < loopCount; ++j) {
-                shape_t tmpLoopCount = j;
-                for(shape_t k = i; k < output->dimSize(); ++k) {
-                    indexes[k] = tmpLoopCount / mOutputStrides[k];
-                    tmpLoopCount %= mOutputStrides[k];
-                }
-                shape_t offset = 0;
-                for (shape_t index = 0; index < indexes.size(); ++index) {
-                    offset += indexes[index] * mStrides[index];
-                }
-                memcpy(outputData, inputData + offset * sizeofElement, sizeofElement);
-                outputData += sizeofElement;
-            }
-        }
+        uint8* outputData = output->mutableData<uint8>();
+        Ref::Transpose<uint8, MAI_DYNAMIC_DIM>::transpose(input->shape(), inputData,
+                permData, output->shape(), outputData, sizeofElement);
         return MAI_FAILED;
     }
 private:
     enum FLAG {INPUT, PERM, OUTPUT = 0};
-    std::vector<shape_t> mStrides;
-    std::vector<shape_t> mOutputStrides;
     bool mRunFirst;
 };
 
 void registerTranspose() {
     MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), Transpose);
-    //MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), int32, Transpose);
-    //MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), int64, Transpose);
-    //MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), float, Transpose);
 }
 
 } // namespace CPU

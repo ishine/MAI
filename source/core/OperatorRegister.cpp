@@ -17,6 +17,12 @@
 
 namespace MAI {
 
+OperatorRegister* OperatorRegister::getInstance() {
+    static OperatorRegister instance;
+    return &instance;
+}
+
+
 void OperatorRegister::registerOperator(const OpContext opContext, const OperatorCreator creator) {
     auto it = mOps.find(opContext);
     MAI_CHECK(it == mOps.end(), "Operator(%s) is already registered", opContext.toString().c_str());

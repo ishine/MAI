@@ -27,7 +27,7 @@ class Tensor {
 public:
     Tensor(DataType dataType);
     Tensor(DataType dataType, Allocator* allocator);
-    ~Tensor();
+    virtual ~Tensor();
 
 
     inline DataType dataType() const {

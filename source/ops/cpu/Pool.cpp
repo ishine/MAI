@@ -83,7 +83,7 @@ public:
             mFunction = mFunctionNCHW;
 
         } else {
-            MAI_ABORT("Unsupported dataFormat:%s", getNameFromDataFormat(mInput->getDataFormat()));
+            MAI_ABORT("Unsupported dataFormat:%s", getNameFromDataFormat(mInput->getDataFormat()).c_str());
         }
         outputShape[mInput->n()] = mInput->dimN();
         outputShape[mInput->c()] = mInput->dimC();

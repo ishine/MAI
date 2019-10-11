@@ -109,6 +109,7 @@ bool isShapeCompatible(const std::vector<shape_t>& shape1, const std::vector<sha
             return false;
         }
     }
+    return true;
 }
 
 std::vector<shape_t> broadcastShape(
