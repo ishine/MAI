@@ -33,93 +33,93 @@ MAI是一个神经网络推理引擎，以跨平台为目标，开发目标：Li
       <td>NPU</td>
    </tr>
    <tr>
-      <td>Add</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Add</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>BiasAdd</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>BiasAdd</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Cast</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Cast</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Concat</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Concat</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Conv2D</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Conv2D</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>DepthwiseConv2d</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>DepthwiseConv2d</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
   <tr>
-      <td>Dropout</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Dropout</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>ExpandDims</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>ExpandDims</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Exp</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Exp</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Fill</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Fill</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Floor</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Floor</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>FusedBatchNorm</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>FusedBatchNorm</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
   <tr>
-      <td>Gather</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Gather</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Gemm</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Gemm</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Mul</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Mul</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Pad</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Pad</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>MaxPool</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>MaxPool</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>AveragePool</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>AveragePool</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>GlobalAveragePool</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>GlobalAveragePool</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Relu</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Relu</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Relu1</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Relu1</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Relu6</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Relu6</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Reshape</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Reshape</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Shape</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Shape</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Sigmoid</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Sigmoid</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Softmax</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Softmax</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Split</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Split</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Squeeze</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Squeeze</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Tanh</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Tanh</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>Transpose</td> <td>yes</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+      <td>Transpose</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
 </table>
