@@ -54,6 +54,7 @@ public:
     virtual MAI_STATUS init() = 0;
     virtual MAI_STATUS run() = 0;
     virtual MAI_STATUS addOperator(std::unique_ptr<Operator>& op) = 0;
+    virtual MAI_STATUS removeOperator(const std::string& opName) = 0;
     virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor) = 0;
     virtual Tensor* getTensor(const std::string& name) = 0;
     virtual Operator* getOperator(const std::string& name) = 0;

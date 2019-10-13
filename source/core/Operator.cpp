@@ -41,12 +41,40 @@ void Operator::addOutputNames(const std::vector<std::string>& names) {
     mOutputNames.insert(mOutputNames.end(), names.begin(), names.end());
 }
 
+void Operator::replaceInputName(const std::string& oriName, const std::string& dstName) {
+    for (auto it = mInputNames.begin(); it != mInputNames.end(); ++it) {
+        if ((*it) == oriName) {
+            (*it) = dstName;
+        }
+    }
+}
+
+void Operator::replaceOutputName(const std::string& oriName, const std::string& dstName) {
+    for (auto it = mOutputNames.begin(); it != mOutputNames.end(); ++it) {
+        if ((*it) == oriName) {
+            (*it) = dstName;
+        }
+    }
+}
+
 std::vector<std::string>& Operator::inputNames() {
     return mInputNames;
 }
 
 std::vector<std::string>& Operator::outputNames() {
     return mOutputNames;
+}
+
+std::string& Operator::inputName(int i) {
+    MAI_CHECK(i < mInputNames.size(),
+            "%d overflow as max input size is %d", i, mInputNames.size());
+    return mInputNames[i];
+}
+
+std::string& Operator::outputName(int i) {
+    MAI_CHECK(i < mOutputNames.size(),
+            "%d overflow as max output size is %d", i, mOutputNames.size());
+    return mOutputNames[i];
 }
 
 void Operator::setName(const std::string& name) {

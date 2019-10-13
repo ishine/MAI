@@ -26,6 +26,7 @@ Tensor::Tensor(DataType dataType) :
     mDataFormat(NHWC),
     mBuffer(NULL),
     mAllocator(NULL),
+    mIsConst(false),
     mFlag(MEMORY_OWNER | ALLOCATOR_OWNER),
     mN(-1), mH(-1), mW(-1), mC(-1), mI(-1), mO(-1) {
 }
@@ -36,6 +37,7 @@ Tensor::Tensor(DataType dataType, Allocator* allocator) :
     mDataFormat(NHWC),
     mBuffer(NULL),
     mAllocator(allocator),
+    mIsConst(false),
     mFlag(0),
     mN(-1), mH(-1), mW(-1), mC(-1), mI(-1), mO(-1) {
 }
@@ -86,6 +88,14 @@ void Tensor::zero() {
     MAI_CHECK(mBuffer != NULL,
         "Tensor cannot been reset to zero as buffer is null");
     mBuffer->zero();
+}
+
+void Tensor::setConst(bool isConst) {
+    mIsConst = isConst;
+}
+
+bool Tensor::isConst() {
+    return mIsConst;
 }
 
 std::vector<shape_t> Tensor::shape() const {

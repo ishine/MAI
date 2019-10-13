@@ -39,6 +39,9 @@ public:
 
     void addOutputNames(const std::vector<std::string>& names);
 
+    void replaceInputName(const std::string& oriName, const std::string& dstName);
+    void replaceOutputName(const std::string& oriName, const std::string& dstName);
+
     void setName(const std::string& name);
 
     std::string name() const;
@@ -48,6 +51,9 @@ public:
     std::vector<std::string>& inputNames();
 
     std::vector<std::string>& outputNames();
+
+    std::string& inputName(int i);
+    std::string& outputName(int i);
 
     void setNeuralNetwork(NeuralNetwork* network);
 

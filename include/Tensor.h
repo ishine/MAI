@@ -56,6 +56,8 @@ public:
     virtual void allocateBuffer(const std::vector<shape_t>& shape);
     virtual void resize(const std::vector<shape_t>& shape);
     virtual void zero();
+    virtual void setConst(bool isConst);
+    virtual bool isConst();
 
     template<typename T>
     inline const T* data() const {
@@ -101,6 +103,7 @@ private:
     Buffer* mBuffer;
     std::vector<shape_t> mShape;
     Allocator* mAllocator;
+    bool mIsConst;
     int32 mFlag;
     int32 mN;
     int32 mH;

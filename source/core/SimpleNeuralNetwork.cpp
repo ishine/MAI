@@ -62,6 +62,45 @@ MAI_STATUS SimpleNeuralNetwork::addOperator(std::unique_ptr<Operator>& op) {
     return MAI_SUCCESS;
 }
 
+MAI_STATUS SimpleNeuralNetwork::removeOperator(const std::string& opName) {
+    Operator* op = getOperator(opName);
+    if (NULL == op) {
+        return MAI_FAILED;
+    }
+
+    if (op->outputNames().size() != 1) {
+        MAI_ABORT("Unsupported to remove op(%s) with multi output names(%d)",
+                opName.c_str(), op->outputNames().size());
+        MAI_FAILED;
+    }
+
+    if (op->inputNames().size() != 1) {
+        MAI_ABORT("Unsupported to remove op(%s) with multi input names(%d)",
+                opName.c_str(), op->inputNames().size());
+        MAI_FAILED;
+    }
+
+    auto& outputName = op->outputName(0);
+    // find op which of input name is output name of current op
+    for (int32 i = 0; i < mOperators.size(); ++i) {
+        auto tmpOp = mOperators[i].get();
+        for (int32 j = 0; j < tmpOp->inputNames().size(); ++j) {
+            auto& tmpInputName = tmpOp->inputName(j);
+            if (tmpInputName == outputName) {
+                tmpOp->replaceOutputName(tmpInputName, outputName);
+            }
+        }
+    }
+
+    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        if ((*it)->name() == opName) {
+            mOperators.erase(it);
+            break;
+        }
+    }
+    return MAI_SUCCESS;
+}
+
 MAI_STATUS SimpleNeuralNetwork::addTensor(std::unique_ptr<Tensor>& tensor) {
     MAI_CHECK(mTensors.find(tensor->name()) == mTensors.end(), "%s has exists", tensor->name().c_str());
     mTensors.emplace(tensor->name(), std::move(tensor));
