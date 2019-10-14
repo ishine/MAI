@@ -15,8 +15,14 @@
 #include "NeuralNetwork.h"
 #include "source/util/MAIType.h"
 #include "source/core/SimpleNeuralNetwork.h"
+
+#ifdef MAI_TENSORFLOW_ENABLED
 #include "tools/converter/tensorflow/TensorflowParser.h"
+#endif
+
+#ifdef MAI_ONNX_ENABLED
 #include "tools/converter/onnx/OnnxParser.h"
+#endif
 
 namespace MAI {
 
@@ -24,19 +30,22 @@ namespace MAI {
 std::unique_ptr<NeuralNetwork> NeuralNetwork::getNeuralNetwork(
         const NetworkFormat networkFormat, const std::string& modelPath) {
     switch (networkFormat) {
+#ifdef MAI_TENSORFLOW_ENABLED
     case TENSORFLOW: {
-        //std::unique_ptr<NeuralNetwork> network(new Converter::Tensorflow::TensorflowNetwork(modelPath));
         std::unique_ptr<NeuralNetwork> network(new SimpleNeuralNetwork());
         Converter::Tensorflow::TensorflowParser parser(network.get());
         parser.parse(modelPath);
         return network;
     }
+#endif
+#ifdef MAI_ONNX_ENABLED
     case ONNX: {
         std::unique_ptr<NeuralNetwork> network(new SimpleNeuralNetwork());
         Converter::ONNX::OnnxParser parser(network.get());
         parser.parse(modelPath);
         return network;
     }
+#endif
     case MAI:
     default:
         MAI_ABORT("Unsupported network format:%d", networkFormat);

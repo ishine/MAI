@@ -15,6 +15,10 @@ public:
         TOP_BY_TIME,
     };
     void processSingleRunEvents(std::vector<ProfileEvent>& events);
+
+    inline Stat<uint64_t> getTotalTime() const {
+        return mTotalTime;
+    }
     std::string toString() const;
 private:
     struct StatInfo {

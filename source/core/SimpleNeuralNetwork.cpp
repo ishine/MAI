@@ -34,7 +34,7 @@ MAI_STATUS SimpleNeuralNetwork::init() {
 }
 
 MAI_STATUS SimpleNeuralNetwork::run() {
-#if 1
+#if 0
     const std::string kOutputDir = "output";
     for(int32 i = 0; i < mModelInputs.size(); ++i) {
         getTensor(mModelInputs[i])->toFile(kOutputDir);
