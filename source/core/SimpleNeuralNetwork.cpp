@@ -58,37 +58,16 @@ MAI_STATUS SimpleNeuralNetwork::run() {
 
 MAI_STATUS SimpleNeuralNetwork::addOperator(std::unique_ptr<Operator>& op) {
     op->setNeuralNetwork(this);
+    mOperatorNames.emplace_back(op->name());
     mOperators.emplace_back(std::move(op));
     return MAI_SUCCESS;
 }
 
 MAI_STATUS SimpleNeuralNetwork::removeOperator(const std::string& opName) {
-    Operator* op = getOperator(opName);
-    if (NULL == op) {
-        return MAI_FAILED;
-    }
-
-    if (op->outputNames().size() != 1) {
-        MAI_ABORT("Unsupported to remove op(%s) with multi output names(%d)",
-                opName.c_str(), op->outputNames().size());
-        MAI_FAILED;
-    }
-
-    if (op->inputNames().size() != 1) {
-        MAI_ABORT("Unsupported to remove op(%s) with multi input names(%d)",
-                opName.c_str(), op->inputNames().size());
-        MAI_FAILED;
-    }
-
-    auto& outputName = op->outputName(0);
-    // find op which of input name is output name of current op
-    for (int32 i = 0; i < mOperators.size(); ++i) {
-        auto tmpOp = mOperators[i].get();
-        for (int32 j = 0; j < tmpOp->inputNames().size(); ++j) {
-            auto& tmpInputName = tmpOp->inputName(j);
-            if (tmpInputName == outputName) {
-                tmpOp->replaceOutputName(tmpInputName, outputName);
-            }
+    for (auto it = mOperatorNames.begin(); it != mOperatorNames.end(); ++it) {
+        if ((*it) == opName) {
+            mOperatorNames.erase(it);
+            break;
         }
     }
 
@@ -98,17 +77,41 @@ MAI_STATUS SimpleNeuralNetwork::removeOperator(const std::string& opName) {
             break;
         }
     }
+
     return MAI_SUCCESS;
 }
 
 MAI_STATUS SimpleNeuralNetwork::addTensor(std::unique_ptr<Tensor>& tensor) {
     MAI_CHECK(mTensors.find(tensor->name()) == mTensors.end(), "%s has exists", tensor->name().c_str());
+    mTensorNames.emplace_back(tensor->name());
     mTensors.emplace(tensor->name(), std::move(tensor));
+    return MAI_SUCCESS;
+}
+
+MAI_STATUS SimpleNeuralNetwork::removeTensor(const std::string& tensorName) {
+    for (auto it = mTensorNames.begin(); it != mTensorNames.end(); ++it) {
+        if ((*it) == tensorName) {
+            mTensorNames.erase(it);
+            break;
+        }
+    }
+
+    for (auto it = mTensors.begin(); it != mTensors.end(); ++it) {
+        if (it->first == tensorName) {
+            mTensors.erase(it);
+            break;
+        }
+    }
+
     return MAI_SUCCESS;
 }
 
 Tensor* SimpleNeuralNetwork::getTensor(const std::string& name) {
     return mTensors[name].get();
+}
+
+std::vector<std::string> SimpleNeuralNetwork::getTensorNames() {
+    return mOperatorNames;
 }
 
 Operator* SimpleNeuralNetwork::getOperator(const std::string& name) {
@@ -118,6 +121,10 @@ Operator* SimpleNeuralNetwork::getOperator(const std::string& name) {
         }
     }
     return NULL;
+}
+
+std::vector<std::string> SimpleNeuralNetwork::getOperatorNames() {
+    return mOperatorNames;
 }
 
 std::vector<std::string> SimpleNeuralNetwork::getModelInputs() {

@@ -30,6 +30,7 @@ struct Transpose {
             const std::vector<shape_t>& outputShape, T* output, int32 sizeOfElement = sizeof(T));
 };
 
+//min = 236 max = 647 avg = 283.51 std = 65.7872 for perf test TransposePerfTest.transpose0312
 template<>
 struct Transpose<int32, 2> {
     static void transpose(const std::vector<shape_t>& inputShape, const int32* input,
@@ -38,9 +39,16 @@ struct Transpose<int32, 2> {
         shape_t height = inputShape[0];
         shape_t width = inputShape[1];
         int h = 0;
+        int w = 0;
         for (; h + 3 < height; h += 4) {
-            int w = 0;
+            w = 0;
             for (; w + 3 < width; w += 4) {
+//#define PFDIST 8
+//                //__builtin_prefetch(input + (h + 0) * width + w + PFDIST);
+//                //__builtin_prefetch(input + (h + 1) * width + w + PFDIST);
+//                //__builtin_prefetch(input + (h + 2) * width + w + PFDIST);
+//                //__builtin_prefetch(input + (h + 3) * width + w + PFDIST);
+//#undef PFDIST
                 int32x4_t i0 = vld1q_s32(input + h * width + w);
                 int32x4_t i1 = vld1q_s32(input + (h + 1) * width + w);
                 int32x4_t i2 = vld1q_s32(input + (h + 2) * width + w);
@@ -59,7 +67,7 @@ struct Transpose<int32, 2> {
             }
         }
         for (; h < height; ++h) {
-            for (int w = 0; w < width; ++w) {
+            for (w = 0; w < width; ++w) {
                 output[w * height + h] = input[h * width + w];
             }
         }

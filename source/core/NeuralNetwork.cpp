@@ -15,6 +15,7 @@
 #include "NeuralNetwork.h"
 #include "source/util/MAIType.h"
 #include "source/core/SimpleNeuralNetwork.h"
+#include "source/core/optimizers/BNConvOptimizer.h"
 
 #ifdef MAI_TENSORFLOW_ENABLED
 #include "tools/converter/tensorflow/TensorflowParser.h"
@@ -64,7 +65,7 @@ void NeuralNetwork::addOptimizer(OptimizerRule rule) {
 Optimizer* NeuralNetwork::createOptimizer(OptimizerRule rule) {
     switch(rule) {
     case FOLD_BN_INTO_CONV2D:
-        return NULL;
+        return new BNConvOptimizer(this);
     case FOLD_ACTIVATION_INTO_CONV2D:
         return NULL;
     }

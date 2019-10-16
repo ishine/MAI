@@ -20,7 +20,7 @@ namespace Test {
 class TransposePerfTest : public OperatorTest {
 };
 
-TEST_F(TransposePerfTest, transpose0312) {
+TEST_F(TransposePerfTest, transposeInt32_1_224_224_4) {
     std::unique_ptr<PerformanceRunner> runner = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(TRANSPOSE)
@@ -34,5 +34,21 @@ TEST_F(TransposePerfTest, transpose0312) {
         .buildPerformanceRunner();
     runner->run();
 }
+
+TEST_F(TransposePerfTest, transposefloat32_1_224_224_4) {
+    std::unique_ptr<PerformanceRunner> runner = NetworkBuilder()
+        .addOperator(OperatorBuilder()
+            .setType(TRANSPOSE)
+            .setDataType(DT_FLOAT)
+            .setInputNames({"input", "perm"})
+            .setOutputNames({"output"})
+            .build())
+        .addRandomTensor<float>("input", {1, 224, 224, 4})
+        .addTensor<int32>("perm", {4}, {0,3,1,2})
+        .addTensor<float>("output", {}, {})
+        .buildPerformanceRunner();
+    runner->run();
+}
+
 } // namespace Test
 } // namespace MAI

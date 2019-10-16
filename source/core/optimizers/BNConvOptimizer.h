@@ -14,18 +14,18 @@
 
 #pragma once
 
+#include "Optimizer.h"
+#include "Operator.h"
+
 namespace MAI {
-
-class NeuralNetwork;
-class Optimizer {
+class BNConvOptimizer : public Optimizer {
 public:
-    Optimizer(NeuralNetwork* network) : mNeuralNetwork(network) {}
-    virtual ~Optimizer() = default;
-
-    virtual void optimize() = 0;
-
-protected:
-    NeuralNetwork* mNeuralNetwork;
+    BNConvOptimizer(NeuralNetwork* network) : Optimizer(network) {}
+    virtual ~BNConvOptimizer() = default;
+    void optimize();
+private:
+    void foldBatchnormIntoConv2d(Operator* conv2d, Operator* batchnorm);
+    void foldBiasaddIntoConv2d(Operator* conv2d, Operator* batchnorm);
 };
 
 } // namespace MAI

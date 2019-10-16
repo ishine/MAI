@@ -29,8 +29,11 @@ public:
     virtual MAI_STATUS addOperator(std::unique_ptr<Operator>& op);
     virtual MAI_STATUS removeOperator(const std::string& opName);
     virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor);
+    virtual MAI_STATUS removeTensor(const std::string& tensorName);
     virtual Tensor* getTensor(const std::string& name);
+    virtual std::vector<std::string> getTensorNames();
     virtual Operator* getOperator(const std::string& name);
+    virtual std::vector<std::string> getOperatorNames();
     virtual std::vector<std::string> getModelInputs();
     virtual std::vector<std::string> getModelOutputs();
     virtual void builGraph();
@@ -40,7 +43,9 @@ public:
     virtual void addModelOutput(const std::string& outputName);
 private:
     std::vector<std::unique_ptr<Operator> > mOperators;
+    std::vector<std::string> mOperatorNames;
     std::map<std::string, std::unique_ptr<Tensor> > mTensors;
+    std::vector<std::string> mTensorNames;
     std::vector<std::string> mModelInputs;
     std::vector<std::string> mModelOutputs;
 

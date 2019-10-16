@@ -23,10 +23,15 @@ namespace CPU {
 template<typename T>
 class FusedBatchNorm : public Operator {
 public:
-    FusedBatchNorm() : mEpsilon(0.001f), mRunFirst(true) {
+    FusedBatchNorm() : mEpsilon(0.001f), mRunFirst(true), mParam(NULL) {
     }
 
-    ~FusedBatchNorm() = default;
+    ~FusedBatchNorm() {
+        if (mParam != NULL) {
+            delete mParam;
+            mParam = NULL;
+        }
+    }
 
     MAI_STATUS init() override {
         return MAI_SUCCESS;
@@ -67,8 +72,12 @@ public:
     }
 
     void setParam(Param* param) override {
-        FusedBatchNormParam* fParam = reinterpret_cast<FusedBatchNormParam*>(param);
-        mEpsilon = fParam->epsilon;
+        mParam = reinterpret_cast<FusedBatchNormParam*>(param);
+        mEpsilon = mParam->epsilon;
+    }
+
+    Param* getParam() override {
+        return mParam;
     }
 
     MAI_STATUS run() override {
@@ -128,6 +137,7 @@ private:
     const Tensor* mInput;
     Tensor* mOutput;
     bool mRunFirst;
+    FusedBatchNormParam* mParam;
 };
 
 void registerFusedBatchNorm() {

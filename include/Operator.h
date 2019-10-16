@@ -64,6 +64,7 @@ public:
     Tensor* getOutputTensor(int outputIdx);
 
     virtual void setParam(Param* param);
+    virtual Param* getParam();
 private:
     NeuralNetwork* mNeuralNetwork;
     std::vector<std::string> mInputNames;

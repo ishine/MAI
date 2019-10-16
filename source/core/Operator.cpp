@@ -113,4 +113,9 @@ void Operator::setParam(Param* param) {
     // do nothing
 }
 
+Param* Operator::getParam() {
+    // implement be sub class
+    return NULL;
+}
+
 } // namespace MAI
