@@ -88,6 +88,11 @@ public:
         const Tensor* mean = getInputTensor(MEAN);
         const Tensor* var = getInputTensor(VAR);
 
+        MAI_CHECK_NULL(mInput);
+        MAI_CHECK_NULL(scale);
+        MAI_CHECK_NULL(offset);
+        MAI_CHECK_NULL(mean);
+        MAI_CHECK_NULL(var);
         MAI_CHECK(mInput->dimSize() ==  4, "rank of input must be 4, but not %d", mInput->dimSize());
         MAI_CHECK(scale->dimSize() ==  1, "rank of input must be 1, but not %d", scale->dimSize());
         MAI_CHECK(offset->dimSize() ==  1, "rank of input must be 1, but not %d", offset->dimSize());

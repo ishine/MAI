@@ -73,6 +73,9 @@ Optimizer* NeuralNetwork::createOptimizer(OptimizerRule rule) {
 }
 
 void NeuralNetwork::startOptimize() {
+    for (auto it = mOptimizers.begin(); it != mOptimizers.end(); ++it) {
+        (*it)->optimize();
+    }
 }
 
 } // namespace MAI

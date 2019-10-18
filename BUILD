@@ -37,6 +37,7 @@ cc_library(
    name = "mai",
    srcs = glob([
        "source/core/*.cpp",
+       "source/core/optimizers/*.cpp",
        "source/ops/cpu/*.cpp",
        "source/util/*.cpp",
    ]) + if_tensorflow_enabled(["//tools/converter/tensorflow:TensorflowParser.cpp"])
@@ -45,6 +46,7 @@ cc_library(
        "include/OperatorType.def",
        "include/*.h",
        "source/core/*.h",
+       "source/core/optimizers/*.h",
        "source/util/*.h",
        "source/ops/cpu/*.h",
        "tools/profiling/*.h",

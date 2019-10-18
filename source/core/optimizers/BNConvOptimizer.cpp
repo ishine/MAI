@@ -39,7 +39,6 @@ void foldBatchnormIntoConv2dByType<float> (
     FusedBatchNormParam* param = reinterpret_cast<FusedBatchNormParam*>(batchnorm->getParam());
     for (shape_t o = 0; o < filter->dimO(); ++o) {
         scaleData[o] = scaleData[o] / std::sqrt(varData[o] + param->epsilon);
-        offsetData[o] = offsetData[o] - scaleData[o] * meanData[o];
     }
     shape_t outerSize = 1;
     shape_t innerSize = 1;
@@ -54,38 +53,54 @@ void foldBatchnormIntoConv2dByType<float> (
         for (shape_t o = 0; o < filter->dim(filter->o()); ++o) {
             for (shape_t inner = 0; inner < innerSize; ++inner) {
                 *filterData = *filterData * scaleData[o];
+                filterData++;
             }
         }
     }
 
     if (conv2d->inputNames().size() == 2) {
+        for (shape_t o = 0; o < filter->dimO(); ++o) {
+            offsetData[o] = offsetData[o] - scaleData[o] * meanData[o];
+        }
         std::string newBiasName = conv2d->name() + "__bias";
         conv2d->addInputName(batchnorm->getInputTensor(2)->name()/*offset*/);
-        network->removeTensor(scale->name());
-        network->removeTensor(mean->name());
-        network->removeTensor(var->name());
-    } else if (conv2d->inputNames().size() == 3) {
+    } else if (conv2d->inputNames().size() == 3) {// This just for test
         // Model should optimize as batch norm append to conv2d which with bias is meanless
-        MAI_ABORT("batch norm append to conv2d which with bias is meanless");
+        ALOGW("batch norm append to conv2d which with bias is meanless");
+        Tensor* bias = conv2d->getInputTensor(2);
+        float* biasData = bias->mutableData<float>();
+        for (shape_t o = 0; o < bias->dim(0); ++o) {
+            biasData[o] = offsetData[o] + scaleData[o] * (biasData[o] - meanData[o]);
+        }
+        network->removeTensor(offset->name());
     }
+    // use output tensor of batchnorm instead of original output tensor of conv2d
+    conv2d->replaceOutputName(conv2d->outputName(0), batchnorm->outputName(0));
+    network->removeTensor(scale->name());
+    network->removeTensor(mean->name());
+    network->removeTensor(var->name());
+    network->removeOperator(batchnorm->name());
 }
 
 void BNConvOptimizer::optimize() {
     std::vector<std::string> opNames = mNeuralNetwork->getOperatorNames();
-    for (int32 i = 0; i < opNames.size(); ++i) {
+    for (std::vector<std::string>::size_type i = 0; i < opNames.size(); ++i) {
         std::string& opName = opNames[i];
         Operator* op = mNeuralNetwork->getOperator(opName);
-        if (op->type() == CONV2D) {
-            std::string& nextOpName = opNames[i + 1];
-            Operator* nextOp = mNeuralNetwork->getOperator(nextOpName);
-            if (nextOp->type() == BIAS_ADD) {
-                i++;
-                foldBiasaddIntoConv2d(op, nextOp);
-            } else if (nextOp->type() == FUSED_BATCH_NORM) {
-                i++;
-                foldBatchnormIntoConv2d(op, nextOp);
-            } else {
-                continue;
+        //TODO:(gavinchen) check group conv2d is ok
+        if (op->type() == CONV2D || op->type() == DEPTHWISE_CONV2D) {
+            while(i  + 1 < opNames.size()) {
+                std::string& nextOpName = opNames[i + 1];
+                Operator* nextOp = mNeuralNetwork->getOperator(nextOpName);
+                if (nextOp->type() == BIAS_ADD) {
+                    i++;
+                    foldBiasaddIntoConv2d(op, nextOp);
+                } else if (nextOp->type() == FUSED_BATCH_NORM) {
+                    i++;
+                    foldBatchnormIntoConv2d(op, nextOp);
+                } else {
+                    break;
+                }
             }
         }
     }
@@ -108,10 +123,12 @@ void BNConvOptimizer::foldBatchnormIntoConv2d(Operator* conv2d, Operator* batchn
 }
 
 void BNConvOptimizer::foldBiasaddIntoConv2d(
-        Operator* conv2d, Operator* batchnorm) {
+        Operator* conv2d, Operator* biasAdd) {
     if(conv2d->inputNames().size() == 2) {
-        conv2d->addInputName(batchnorm->inputName(1));
+        conv2d->addInputName(biasAdd->inputName(1));
+        conv2d->replaceOutputName(conv2d->outputName(0), biasAdd->outputName(0));
         //TODO:(gavinchen) remove biasadd op
+        mNeuralNetwork->removeOperator(biasAdd->name());
     } else if (conv2d->inputNames().size() == 3) { // already have bias, this should never happen
         MAI_ABORT("BiasAdd cannot append to conv2d which has bias already");
     }
