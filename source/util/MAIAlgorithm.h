@@ -26,12 +26,10 @@ void dfs(const std::vector<T>& srcNodes, std::stack<T>& dstNodes,
         visited[index] = true;
         for(typename std::vector<T>::size_type i = 0; i < srcNodes.size(); ++i) {
             if(hasEdge(srcNodes[index], srcNodes[i])) {
-                printf("HasEdge: src:%d, dst:%d\n", srcNodes[index], srcNodes[i]);
                 dfs(srcNodes, dstNodes, i, visited, hasEdge);
             }
         }
         dstNodes.push(srcNodes[index]);
-        printf("push value into stack: %d\n", srcNodes[index]);
     }
 }
 
