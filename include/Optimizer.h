@@ -16,13 +16,11 @@
 
 namespace MAI {
 
+class NeuralNetwork;
 class Optimizer {
 public:
-    ~Optimizer() = default;
-
-    inline void setNeuralNetwork(NeuralNetwork* network) {
-        mNeuralNetwork = network;
-    }
+    Optimizer(NeuralNetwork* network) : mNeuralNetwork(network) {}
+    virtual ~Optimizer() = default;
 
     virtual void optimize() = 0;
 

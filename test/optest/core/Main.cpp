@@ -16,10 +16,30 @@
 
 #include <gtest/gtest.h>
 #include "core/MAIEnvironment.h"
+#include "PerformanceRunner.h"
+#include "source/util/CmdParser.h"
 
-int main(int argc, char **argv) {
-  printf("Running main() from %s\n", __FILE__);
-  testing::AddGlobalTestEnvironment(new MAI::Test::MAIEnvironment);
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+namespace MAI {
+namespace Test {
+
+int Main(int argc, char** argv) {
+    printf("Running main() from %s\n", __FILE__);
+    testing::AddGlobalTestEnvironment(new MAI::Test::MAIEnvironment);
+    testing::InitGoogleTest(&argc, argv);
+    CmdParser* parser = new CmdParser();
+    (*parser)
+        .add("help", 'h', "Help Info")
+        .add<int32>("loop_count", "Loop run times", false, 100);
+    parser->parse(argc, argv);
+    int32 loopCount = parser->get<int32>("loop_count");
+    PerformanceRunner::setLoopCount(loopCount);
+    delete parser;
+    return RUN_ALL_TESTS();
+}
+
+} // namespace Test
+} // namespace MAI
+
+int main(int argc, char** argv) {
+    return MAI::Test::Main(argc, argv);
 }

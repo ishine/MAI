@@ -43,3 +43,10 @@
         abort(); \
     } while(0) \
 
+
+#define MAI_OP_RUN_FIRST_START \
+    if (mRunFirst) {
+
+#define MAI_OP_RUN_FIRST_END \
+        mRunFirst = false; \
+    }

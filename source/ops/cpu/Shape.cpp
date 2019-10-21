@@ -22,7 +22,7 @@ namespace CPU {
 template<typename T>
 class Shape : public Operator {
 public:
-    Shape() = default;
+    Shape() : mRunFirst(true) {}
     ~Shape() = default;
 
     MAI_STATUS init() override {
@@ -30,17 +30,23 @@ public:
     }
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
-        output->resize({input->shape().size()});
+        std::vector<shape_t> outputShape(1);
+        outputShape[0] = static_cast<shape_t>(input->shape().size());
+        output->resize(outputShape);
         T* outputData = output->mutableData<T>();
         for (shape_t i = 0; i < input->shape().size(); ++i) {
             outputData[i] = input->shape()[i];
         }
+        MAI_OP_RUN_FIRST_END
         return MAI_SUCCESS;
     }
+private:
+    bool mRunFirst;
 };
 
 void registerShape() {

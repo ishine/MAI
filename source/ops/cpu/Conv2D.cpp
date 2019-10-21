@@ -15,6 +15,11 @@
 #include <algorithm>
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
+//#ifdef MAI_NEON_ENABLED
+//#include "neon/TransposeNeon.h"
+//#else
+#include "ref/Conv2DRef.h"
+//#endif
 
 namespace MAI {
 namespace Op {
@@ -23,12 +28,24 @@ namespace CPU {
 template<typename T>
 class Conv2D : public Operator {
 public:
-    Conv2D() = default;
+    Conv2D() : mParam(NULL), mRunFirst(true) {}
     ~Conv2D() {
-        delete mParam;
+        if (mParam != NULL) {
+            delete mParam;
+            mParam = NULL;
+        }
     }
 
     MAI_STATUS init() override {
+        return MAI_SUCCESS;
+    }
+
+    void setParam(Param* param) override {
+        mParam = reinterpret_cast<Conv2DParam*>(param);
+    }
+
+    MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
         mInput = getInputTensor(INPUT);
         mFilter = getInputTensor(FILTER);
         mBias = getInputTensor(BIAS);
@@ -41,87 +58,56 @@ public:
         MAI_CHECK(checkVectorValues(mParam->dilations, 1), "Cannot support dilations greater than 1 now");
         if (mParam->paddingMode != INVALID) {
             MAI_CHECK(mParam->paddings.size() == 0,
-                "Cannot use explicit padding when paddingMode is :%d", mParam->paddingMode);
+                "Cannot use explicit padding when paddingMode is :%d, size:%d", mParam->paddingMode, mParam->paddings.size());
         } else {
             MAI_CHECK(mParam->paddings.size() == 4,
                 "Explicit padding size must be 4 but not: %d", mParam->paddings.size());
         }
 
         std::vector<shape_t> outputShape(4);
+        MAI_CHECK(mInput->dimC() == (mFilter->dimI() * mParam->group),
+                "input channel(%d) should be equal to filter channel(%d)", mInput->dimC(),
+                mFilter->dimI());
+        MAI_CHECK(mFilter->dimO() % mParam->group == 0, "filter output channel(%d) must be devided by group(%d)",
+                mFilter->dimO(), mParam->group);
+        outputShape[mInput->n()] = mInput->dimN();
+        outputShape[mInput->c()] = mFilter->dimO();
+        std::vector<int32> outputHW = calculateHW(
+                {mInput->dimH(), mInput->dimW()},
+                {mFilter->dimH(), mFilter->dimW()},
+                {mParam->strides[mInput->h()], mParam->strides[mInput->w()]},
+                mParam->paddings, mParam->paddingMode);
+        outputShape[mInput->h()] = outputHW[0];
+        outputShape[mInput->w()] = outputHW[1];
         if (mInput->getDataFormat() == NHWC) {
             if (mFilter->getDataFormat() == HWIO) {
-                outputShape[0] = mInput->dim(0);
-                outputShape[3] = mFilter->dim(3);
-                std::vector<int32> outputHW = calculateHW(
-                        {mInput->dim(DataFormatIndex<NHWC>::H), mInput->dim(DataFormatIndex<NHWC>::W)},
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)},
-                        mParam->strides, mParam->paddings, mParam->paddingMode);
-                outputShape[1] = outputHW[0];
-                outputShape[2] = outputHW[1];
-                mFunction = conv2DNHWC_HWIO;
+                mFunction = Ref::Conv2D<T, NHWC, HWIO>::conv2d;
             }
             if (mParam->paddingMode != INVALID) {
                 mParam->paddings = calcPaddings(mParam->paddingMode,
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)});
+                        {mFilter->dimH(), mFilter->dimW()});
+            }
+        } else if (mInput->getDataFormat() == NCHW) {
+            if (mFilter->getDataFormat() == OIHW) {
+                mFunction = Ref::Conv2D<T, NCHW, OIHW>::conv2d;
             }
         }
+        if (mFunction == NULL) {
+            MAI_ABORT("Unsupported InputFormat:%s with FilterFormat:%s",
+                    getNameFromDataFormat(mInput->getDataFormat()).c_str(),
+                    getNameFromDataFormat(mFilter->getDataFormat()).c_str());
+        }
+
         mOutput->resize(outputShape);
-        mOutput->zero();
 
         if (mFunction == NULL) {
-            MAI_CHECK(false, "Unsupported input data format: %d, with filter data format:%d", mInput->getDataFormat(),
-                    mFilter->getDataFormat());
+            MAI_CHECK(false, "Unsupported input data format: %s, with filter data format:%s",
+                    getNameFromDataFormat(mInput->getDataFormat()).c_str(),
+                    getNameFromDataFormat(mFilter->getDataFormat()).c_str());
         }
+        MAI_OP_RUN_FIRST_END
 
-        return MAI_SUCCESS;
-    }
-
-    void setParam(Param* param) override {
-        mParam = reinterpret_cast<Conv2DParam*>(param);
-    }
-
-    static void conv2DNHWC_HWIO(const T* input,
-            const std::vector<shape_t>& inputShape,
-            const T* filter,
-            const std::vector<shape_t>& filterShape,
-            const T* bias,
-            const std::vector<shape_t>& biasShape,
-            const Conv2DParam* param,
-            T* output,
-            const std::vector<shape_t>& outputShape) {
-        for(shape_t n = 0; n < outputShape[0]; ++n) {
-            for(shape_t h = 0; h < outputShape[1]; ++h) {
-                for(shape_t w = 0; w < outputShape[2]; ++w) {
-                    for(shape_t o = 0; o < outputShape[3]; ++o) {
-                        T* outputV = output + offset4D(outputShape, n, h, w, o);
-                        shape_t inHBase = h * param->strides[1] - param->paddings[0];
-                        shape_t inWBase = w * param->strides[2] - param->paddings[2];
-                        for(shape_t i = 0; i < inputShape[3]; ++i) {
-                            for(shape_t fh = 0; fh < filterShape[0]; ++fh) {
-                                for(shape_t fw = 0; fw < filterShape[1]; ++fw) {
-                                    shape_t inHOffset = inHBase + fh;
-                                    shape_t inWOffset = inWBase + fw;
-                                    if (inHOffset >= 0 && inHOffset < inputShape[1]
-                                            && inWOffset >= 0 && inWOffset < inputShape[2]) {
-                                        shape_t inputOffset = offset4D(inputShape, n, inHOffset, inWOffset, i);
-                                        shape_t filterOffset = offset4D(filterShape, fh, fw, i, o);
-                                        const T* inputV = input + inputOffset;
-                                        const T* filterV = filter + filterOffset;
-                                        *outputV += (*inputV) * (*filterV);
-                                    }
-                                }
-                            }
-                        }
-                        if (bias != NULL) {
-                            *outputV += *(bias + o);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    MAI_STATUS run() override {
+        mOutput->zero();
         std::vector<shape_t> biasShape;
         if (mBias != NULL) {
             biasShape = mBias->shape();
@@ -146,6 +132,7 @@ private:
             const Conv2DParam*,
             T*, const std::vector<shape_t>&)> mFunction;
     Conv2DParam* mParam;
+    bool mRunFirst;
 };
 
 void registerConv2D() {

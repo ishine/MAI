@@ -13,8 +13,46 @@
 // limitations under the License.
 
 #include "NeuralNetwork.h"
+#include "source/util/MAIType.h"
+#include "source/core/SimpleNeuralNetwork.h"
+#include "source/core/optimizers/BNConvOptimizer.h"
+
+#ifdef MAI_TENSORFLOW_ENABLED
+#include "tools/converter/tensorflow/TensorflowParser.h"
+#endif
+
+#ifdef MAI_ONNX_ENABLED
+#include "tools/converter/onnx/OnnxParser.h"
+#endif
 
 namespace MAI {
+
+/*static*/
+std::unique_ptr<NeuralNetwork> NeuralNetwork::getNeuralNetwork(
+        const NetworkFormat networkFormat, const std::string& modelPath) {
+    switch (networkFormat) {
+#ifdef MAI_TENSORFLOW_ENABLED
+    case TENSORFLOW: {
+        std::unique_ptr<NeuralNetwork> network(new SimpleNeuralNetwork());
+        Converter::Tensorflow::TensorflowParser parser(network.get());
+        parser.parse(modelPath);
+        return network;
+    }
+#endif
+#ifdef MAI_ONNX_ENABLED
+    case ONNX: {
+        std::unique_ptr<NeuralNetwork> network(new SimpleNeuralNetwork());
+        Converter::ONNX::OnnxParser parser(network.get());
+        parser.parse(modelPath);
+        return network;
+    }
+#endif
+    case MAI:
+    default:
+        MAI_ABORT("Unsupported network format:%d", networkFormat);
+        return NULL;
+    }
+}
 
 void NeuralNetwork::addOptimizer(std::unique_ptr<Optimizer> optimizer) {
     mOptimizers.emplace_back(std::move(optimizer));
@@ -27,7 +65,7 @@ void NeuralNetwork::addOptimizer(OptimizerRule rule) {
 Optimizer* NeuralNetwork::createOptimizer(OptimizerRule rule) {
     switch(rule) {
     case FOLD_BN_INTO_CONV2D:
-        return NULL;
+        return new BNConvOptimizer(this);
     case FOLD_ACTIVATION_INTO_CONV2D:
         return NULL;
     }
@@ -35,6 +73,9 @@ Optimizer* NeuralNetwork::createOptimizer(OptimizerRule rule) {
 }
 
 void NeuralNetwork::startOptimize() {
+    for (auto it = mOptimizers.begin(); it != mOptimizers.end(); ++it) {
+        (*it)->optimize();
+    }
 }
 
 } // namespace MAI

@@ -23,56 +23,15 @@ namespace CPU {
 template<typename T>
 class DepthwiseConv2d : public Operator {
 public:
-    DepthwiseConv2d() = default;
+    DepthwiseConv2d() : mParam(NULL), mRunFirst(true) {}
     ~DepthwiseConv2d() {
-        delete mParam;
+        if (mParam != NULL) {
+            delete mParam;
+            mParam = NULL;
+        }
     }
 
     MAI_STATUS init() override {
-        mInput = getInputTensor(INPUT);
-        mFilter = getInputTensor(FILTER);
-        mBias = getInputTensor(BIAS);
-        mOutput = getOutputTensor(OUTPUT);
-        MAI_CHECK_NULL(mInput);
-        MAI_CHECK_NULL(mFilter);
-        MAI_CHECK_NULL(mOutput);
-        MAI_CHECK_NULL(mParam);
-        MAI_CHECK(mInput->shape().size() == 4, "Input shape must be 4-d");
-        MAI_CHECK(checkVectorValues(mParam->dilations, 1), "Cannot support dilations greater than 1 now");
-        if (mParam->paddingMode != INVALID) {
-            MAI_CHECK(mParam->paddings.size() == 0,
-                "Cannot use explicit padding when paddingMode is :%d", mParam->paddingMode);
-        } else {
-            MAI_CHECK(mParam->paddings.size() == 4,
-                "Explicit padding size must be 4 but not: %d", mParam->paddings.size());
-        }
-
-        std::vector<shape_t> outputShape(4);
-        if (mInput->getDataFormat() == NHWC) {
-            if (mFilter->getDataFormat() == HWIO) {
-                outputShape[0] = mInput->dim(0);
-                outputShape[3] = mInput->dim(3);
-                std::vector<int32> outputHW = calculateHW(
-                        {mInput->dim(DataFormatIndex<NHWC>::H), mInput->dim(DataFormatIndex<NHWC>::W)},
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)},
-                        mParam->strides, mParam->paddings, mParam->paddingMode);
-                outputShape[1] = outputHW[0];
-                outputShape[2] = outputHW[1];
-                mFunction = depthwiseConv2dNHWC_HWIO;
-            }
-            if (mParam->paddingMode != INVALID) {
-                mParam->paddings = calcPaddings(mParam->paddingMode,
-                        {mFilter->dim(DataFormatIndex<HWIO>::H), mFilter->dim(DataFormatIndex<HWIO>::W)});
-            }
-        }
-        mOutput->resize(outputShape);
-        mOutput->zero();
-
-        if (mFunction == NULL) {
-            MAI_CHECK(false, "Unsupported input data format: %d, with filter data format:%d", mInput->getDataFormat(),
-                    mFilter->getDataFormat());
-        }
-
         return MAI_SUCCESS;
     }
 
@@ -89,6 +48,7 @@ public:
             const DepthwiseConv2dParam* param,
             T* output,
             const std::vector<shape_t>& outputShape) {
+        #pragma omp parallel for collapse(4)
         for(shape_t n = 0; n < outputShape[0]; ++n) {
             for(shape_t h = 0; h < outputShape[1]; ++h) {
                 for(shape_t w = 0; w < outputShape[2]; ++w) {
@@ -118,8 +78,101 @@ public:
             }
         }
     }
+    static void depthwiseConv2dNCHW_IOHW(const T* input,
+            const std::vector<shape_t>& inputShape,
+            const T* filter,
+            const std::vector<shape_t>& filterShape,
+            const T* bias,
+            const std::vector<shape_t>& biasShape,
+            const DepthwiseConv2dParam* param,
+            T* output,
+            const std::vector<shape_t>& outputShape) {
+        #pragma omp parallel for collapse(2)
+        for(shape_t n = 0; n < outputShape[0]; ++n) {
+            for(shape_t o = 0; o < outputShape[1]; ++o) {
+                for(shape_t h = 0; h < outputShape[2]; ++h) {
+                    for(shape_t w = 0; w < outputShape[3]; ++w) {
+                        T* outputV = output + offset4D(outputShape, n, o, h, w);
+                        shape_t inHBase = h * param->strides[2] - param->paddings[0];
+                        shape_t inWBase = w * param->strides[3] - param->paddings[2];
+                        for(shape_t fh = 0; fh < filterShape[2]; ++fh) {
+                            for(shape_t fw = 0; fw < filterShape[3]; ++fw) {
+                                shape_t inHOffset = inHBase + fh;
+                                shape_t inWOffset = inWBase + fw;
+                                if (inHOffset >= 0 && inHOffset < inputShape[2]
+                                        && inWOffset >= 0 && inWOffset < inputShape[3]) {
+                                    shape_t inputOffset = offset4D(inputShape, n, o, inHOffset, inWOffset);
+                                    shape_t filterOffset = offset4D(filterShape, o, 0, fh, fw);
+                                    const T* inputV = input + inputOffset;
+                                    const T* filterV = filter + filterOffset;
+                                    *outputV += (*inputV) * (*filterV);
+                                }
+                            }
+                        }
+                        if (bias != NULL) {
+                            *outputV += *(bias + o);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
+        mInput = getInputTensor(INPUT);
+        mFilter = getInputTensor(FILTER);
+        mBias = getInputTensor(BIAS);
+        mOutput = getOutputTensor(OUTPUT);
+        MAI_CHECK_NULL(mInput);
+        MAI_CHECK_NULL(mFilter);
+        MAI_CHECK_NULL(mOutput);
+        MAI_CHECK_NULL(mParam);
+        MAI_CHECK(mInput->shape().size() == 4, "Input shape must be 4-d");
+        MAI_CHECK(checkVectorValues(mParam->dilations, 1), "Cannot support dilations greater than 1 now");
+        if (mParam->paddingMode != INVALID) {
+            MAI_CHECK(mParam->paddings.size() == 0,
+                "Cannot use explicit padding when paddingMode is :%d", mParam->paddingMode);
+        } else {
+            MAI_CHECK(mParam->paddings.size() == 4,
+                "Explicit padding size must be 4 but not: %d", mParam->paddings.size());
+        }
+
+        std::vector<shape_t> outputShape(4);
+        outputShape[mInput->n()] = mInput->dimN();
+        outputShape[mInput->c()] = mInput->dimC();
+        std::vector<int32> outputHW = calculateHW(
+                {mInput->dimH(), mInput->dimW()},
+                {mFilter->dimH(), mFilter->dimW()},
+                {mParam->strides[mInput->h()], mParam->strides[mInput->w()]},
+                mParam->paddings, mParam->paddingMode);
+        outputShape[mInput->h()] = outputHW[0];
+        outputShape[mInput->w()] = outputHW[1];
+        if (mParam->paddingMode != INVALID) {
+            mParam->paddings = calcPaddings(mParam->paddingMode,
+                {mFilter->dimH(), mFilter->dimW()});
+        }
+        if (mInput->getDataFormat() == NHWC) {
+            if (mFilter->getDataFormat() == HWIO) {
+                mFunction = depthwiseConv2dNHWC_HWIO;
+            }
+        } else if (mInput->getDataFormat() == NCHW) {
+            if (mFilter->getDataFormat() == IOHW) {
+                mFunction = depthwiseConv2dNCHW_IOHW;
+            }
+        } else {
+            MAI_ABORT("Unsupport data format");
+        }
+        mOutput->resize(outputShape);
+
+        if (mFunction == NULL) {
+            MAI_CHECK(false, "Unsupported input data format: %d, with filter data format:%d", mInput->getDataFormat(),
+                    mFilter->getDataFormat());
+        }
+        MAI_OP_RUN_FIRST_END
+
+        mOutput->zero();
         std::vector<shape_t> biasShape;
         if (mBias != NULL) {
             biasShape = mBias->shape();
@@ -144,6 +197,7 @@ private:
             const DepthwiseConv2dParam*,
             T*, const std::vector<shape_t>&)> mFunction;
     DepthwiseConv2dParam* mParam;
+    bool mRunFirst;
 };
 
 void registerDepthwiseConv2d() {

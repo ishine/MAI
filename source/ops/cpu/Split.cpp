@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class Split : public Operator {
 public:
-    Split() : mNumSplit(0) {}
+    Split() : mNumSplit(0), mAxis(0), mRunFirst(true) {}
     ~Split() = default;
 
     MAI_STATUS init() override {
@@ -40,40 +40,49 @@ public:
     MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         const Tensor* axisTensor = getInputTensor(1);
+
+        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(axisTensor);
         MAI_CHECK(mNumSplit == outputNames().size(), "NumSplit not equal to output tensors");
         // axis -> [-rank(input), rank(input))
-        int32 axis = *(axisTensor->data<int32>());
-        axis = axis < 0 ? axis + input->dimSize() : axis;
-        MAI_CHECK(input->dim(axis) % mNumSplit == 0, "dim of input cannot be divided by numSplit");
-        const T* inputData = input->data<T>();
+        mAxis = *(axisTensor->data<int32>());
+        mAxis = mAxis < 0 ? mAxis + input->dimSize() : mAxis;
+        MAI_CHECK(input->dim(mAxis) % mNumSplit == 0, "dim of input cannot be divided by numSplit");
         std::vector<shape_t> outputShape(input->shape());
-        outputShape[axis] = input->dim(axis) / mNumSplit;
+        outputShape[mAxis] = input->dim(mAxis) / mNumSplit;
         for (int32 i = 0; i < mNumSplit; ++i) {
             Tensor* output = getOutputTensor(i);
             MAI_CHECK_NULL(output);
             output->resize(outputShape);
         }
 
-        shape_t outerSize = std::accumulate(outputShape.begin(), outputShape.begin() + axis, 1,
+        mOuterSize = std::accumulate(outputShape.begin(), outputShape.begin() + mAxis, 1,
                 std::multiplies<shape_t>());
-        shape_t innerSize = std::accumulate(outputShape.begin() + axis + 1, outputShape.end(), 1,
+        mInnerSize = std::accumulate(outputShape.begin() + mAxis + 1, outputShape.end(), 1,
                 std::multiplies<shape_t>());
-        for (shape_t outerIdx = 0; outerIdx < outerSize; ++outerIdx) {
-            shape_t inputIdx = outerIdx * input->dim(axis) * innerSize;
-            shape_t outputIdx = outerIdx * outputShape[axis] * innerSize;
+        MAI_OP_RUN_FIRST_END
+
+        const T* inputData = input->data<T>();
+        Tensor* output0 = getOutputTensor(0);
+        for (shape_t outerIdx = 0; outerIdx < mOuterSize; ++outerIdx) {
+            shape_t inputIdx = outerIdx * input->dim(mAxis) * mInnerSize;
+            shape_t outputIdx = outerIdx * output0->dim(mAxis) * mInnerSize;
             for (shape_t i = 0; i < mNumSplit; ++i) {
                 Tensor* output = getOutputTensor(i);
                 MAI_CHECK_NULL(output);
                 T* outputData = output->mutableData<T>();
-                memcpy(outputData + outputIdx, inputData + inputIdx + i * outputShape[axis] * innerSize, innerSize * outputShape[axis] * sizeof(T));
+                memcpy(outputData + outputIdx, inputData + inputIdx + i * output->dim(mAxis) * mInnerSize, mInnerSize * output->dim(mAxis) * sizeof(T));
             }
         }
         return MAI_FAILED;
     }
 private:
     int32 mNumSplit;
+    int32 mAxis;
+    shape_t mInnerSize;
+    shape_t mOuterSize;
+    bool mRunFirst;
 };
 
 void registerSplit() {

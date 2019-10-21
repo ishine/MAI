@@ -24,6 +24,7 @@ namespace CPU {
 #define REGISTER_OP(op) \
     register##op();
 
+DECLARE_REGISTER_OP(Transpose);
 DECLARE_REGISTER_OP(Reshape);
 DECLARE_REGISTER_OP(Shape);
 DECLARE_REGISTER_OP(Squeeze);
@@ -45,10 +46,19 @@ DECLARE_REGISTER_OP(Conv2D);
 DECLARE_REGISTER_OP(DepthwiseConv2d);
 DECLARE_REGISTER_OP(MaxPool);
 DECLARE_REGISTER_OP(AvgPool);
+DECLARE_REGISTER_OP(GlobalAvgPool);
+DECLARE_REGISTER_OP(Concat);
+DECLARE_REGISTER_OP(Mul);
+DECLARE_REGISTER_OP(Pad);
+DECLARE_REGISTER_OP(Gemm);
+DECLARE_REGISTER_OP(Gather);
+DECLARE_REGISTER_OP(Add);
+DECLARE_REGISTER_OP(Dropout);
 
 class CPURegister {
 public:
     CPURegister() {
+        REGISTER_OP(Transpose);
         REGISTER_OP(Reshape);
         REGISTER_OP(Shape);
         REGISTER_OP(Squeeze);
@@ -67,9 +77,17 @@ public:
         REGISTER_OP(ExpandDims);
         REGISTER_OP(Split);
         REGISTER_OP(Conv2D);
+        REGISTER_OP(DepthwiseConv2d);
         REGISTER_OP(MaxPool);
         REGISTER_OP(AvgPool);
-        REGISTER_OP(DepthwiseConv2d);
+        REGISTER_OP(GlobalAvgPool);
+        REGISTER_OP(Concat);
+        REGISTER_OP(Mul);
+        REGISTER_OP(Pad);
+        REGISTER_OP(Gemm);
+        REGISTER_OP(Gather);
+        REGISTER_OP(Add);
+        REGISTER_OP(Dropout);
     }
     ~CPURegister() = default;
 };

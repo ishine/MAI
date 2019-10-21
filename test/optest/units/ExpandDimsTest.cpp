@@ -22,9 +22,9 @@ class ExpandDimsTest : public OperatorTest {
 
 static void expandDims(const std::vector<shape_t>& inputDims,
         const std::vector<shape_t>& outputDims,
-        const std::vector<int32>& data, int32 axis) {
+        const std::vector<int32>& data, const std::vector<int32>& axes) {
     ExpandDimsParam* param = new ExpandDimsParam();
-    param->axis = axis;
+    param->axes = axes;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(EXPAND_DIMS)
@@ -44,21 +44,25 @@ static void expandDims(const std::vector<shape_t>& inputDims,
 }
 
 TEST_F(ExpandDimsTest, MultiDims) {
-    expandDims({2,3,2}, {1,2,3,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, 0);
-    expandDims({2,3,2}, {2,1,3,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, 1);
-    expandDims({2,3,2}, {2,3,1,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, 2);
-    expandDims({2,3,2}, {2,3,2,1}, {1,2,3,4,5,6,7,8,9,10,11,12}, 3);
-    expandDims({2,3,2}, {2,3,2,1}, {1,2,3,4,5,6,7,8,9,10,11,12}, -1);
-    expandDims({2,3,2}, {2,3,1,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, -2);
-    expandDims({2,3,2}, {2,1,3,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, -3);
-    expandDims({2,3,2}, {1,2,3,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, -4);
+    expandDims({2,3,2}, {1,2,3,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, {0});
+    expandDims({2,3,2}, {2,1,3,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, {1});
+    expandDims({2,3,2}, {2,3,1,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, {2});
+    expandDims({2,3,2}, {2,3,2,1}, {1,2,3,4,5,6,7,8,9,10,11,12}, {3});
+    expandDims({2,3,2}, {2,3,2,1}, {1,2,3,4,5,6,7,8,9,10,11,12}, {-1});
+    expandDims({2,3,2}, {2,3,1,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, {-2});
+    expandDims({2,3,2}, {2,1,3,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, {-3});
+    expandDims({2,3,2}, {1,2,3,2}, {1,2,3,4,5,6,7,8,9,10,11,12}, {-4});
 }
 
 TEST_F(ExpandDimsTest, SingleDims) {
-    expandDims({2}, {1,2}, {3,2}, 0);
-    expandDims({2}, {2,1}, {3,2}, 1);
-    expandDims({2}, {2,1}, {3,2}, -1);
-    expandDims({2}, {1,2}, {3,2}, -2);
+    expandDims({2}, {1,2}, {3,2}, {0});
+    expandDims({2}, {2,1}, {3,2}, {1});
+    expandDims({2}, {2,1}, {3,2}, {-1});
+    expandDims({2}, {1,2}, {3,2}, {-2});
+}
+
+TEST_F(ExpandDimsTest, MultiAxes) {
+    expandDims({2,2,2}, {1,2,2,2,1}, {1,2,3,4,5,6,7,8}, {0,4});
 }
 
 } // namespace Test

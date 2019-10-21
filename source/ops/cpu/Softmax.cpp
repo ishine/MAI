@@ -23,14 +23,11 @@ namespace CPU {
 template<typename T>
 class Softmax : public Operator {
 public:
-    Softmax() : mAxis(-1), mBeta(1.f) {
+    Softmax() : mAxis(-1), mBeta(1.f), mRunFirst(true) {
     }
     ~Softmax() = default;
 
     MAI_STATUS init() override {
-        if (mAxis < 0) {
-            mAxis += getInputTensor(0)->shape().size();
-        }
         return MAI_SUCCESS;
     }
 
@@ -72,9 +69,15 @@ public:
     MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
+
+        MAI_OP_RUN_FIRST_START
+        if (mAxis < 0) {
+            mAxis += input->shape().size();
+        }
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
         output->resize(input->shape());
+        MAI_OP_RUN_FIRST_END
 
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
@@ -87,6 +90,14 @@ public:
             MAI_CHECK((mAxis == 0 || mAxis == 1), "axis must be 0 or 1 when rank of input is 2, \
                     but not : %d", mAxis);
             softmax2D(inputData, input->dim(0), input->dim(1), outputData);
+        } else if (input->shape().size() == 4) {
+            if (mAxis == 1 && input->dim(2) == 1 && input->dim(3) == 1) {
+                softmax2D(inputData, input->dim(0), input->dim(1), outputData);
+            } else {
+                MAI_ABORT("Unsupport shape size");
+            }
+        } else {
+            MAI_ABORT("Unsupport shape size");
         }
 
         return MAI_SUCCESS;
@@ -95,6 +106,7 @@ public:
 private:
     int32 mAxis;// TODO: gavinchen axis is not support now
     float mBeta;
+    bool mRunFirst;
 };
 
 void registerSoftmax() {

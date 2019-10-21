@@ -1,11 +1,12 @@
+exports_files(["TensorflowParser.h", "TensorflowParser.cpp"],
+        ["//visibility:public"])
+
 cc_binary(
     name = "tensorflow_converter",
     srcs = glob([
-        "*.cpp",
-        "*.h",
+        "Main.cpp",
     ]),
     includes = [
-    #    "tools/converter/tensorflow/",
         "protos",
     ],
     copts = ["-std=c++11"],

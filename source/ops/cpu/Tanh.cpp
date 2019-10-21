@@ -23,7 +23,7 @@ namespace CPU {
 template<typename T>
 class Tanh : public Operator {
 public:
-    Tanh() = default;
+    Tanh() : mRunFirst(true) {}
     ~Tanh() = default;
 
     MAI_STATUS init() override {
@@ -33,9 +33,12 @@ public:
     MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
+
+        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
         output->resize(input->shape());
+        MAI_OP_RUN_FIRST_END
 
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
@@ -44,6 +47,8 @@ public:
         }
         return MAI_SUCCESS;
     }
+private:
+    bool mRunFirst;
 };
 
 void registerTanh() {

@@ -16,6 +16,7 @@
 
 #include <sstream>
 #include <map>
+#include "Log.h"
 
 namespace MAI {
 
@@ -28,7 +29,7 @@ typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef unsigned long long uint64;
 
-typedef uint64 shape_t;
+typedef int64 shape_t;
 
 enum MAI_STATUS {
     MAI_SUCCESS,
@@ -171,8 +172,29 @@ enum DataFormat {
     HWIO, // TF conv2d filter
     OHWI, // ANN conv2d filter
     HWOI, // TF deconv2d filter
+    OIHW, // ONNX conv2d filter
+    IOHW, // ONNX depthwise conv2d filter
 };
 
+inline std::string getNameFromDataFormat(DataFormat format) {
+#define DATA_FORMAT_NAME(FORMAT) \
+    if (FORMAT == format) { \
+        return #FORMAT; \
+    }
+
+    DATA_FORMAT_NAME(NHWC);
+    DATA_FORMAT_NAME(NCHW);
+    DATA_FORMAT_NAME(HWIO);
+    DATA_FORMAT_NAME(OHWI);
+    DATA_FORMAT_NAME(HWOI);
+    DATA_FORMAT_NAME(OIHW);
+    DATA_FORMAT_NAME(IOHW);
+
+    ALOGF("Unknown format:%d", format);
+    return "";
+
+#undef DATA_FORMAT_NAME
+}
 
 template<DataFormat format>
 struct DataFormatIndex;
@@ -193,6 +215,8 @@ DATA_FORMAT_INDEX(NCHW,0,2,3,1,-1,1);
 DATA_FORMAT_INDEX(HWIO,-1,0,1,-1,2,3);
 DATA_FORMAT_INDEX(OHWI,-1,1,2,-1,3,0);
 DATA_FORMAT_INDEX(HWOI,-1,0,1,-1,3,2);
+DATA_FORMAT_INDEX(OIHW,-1,2,3,-1,1,0);
+DATA_FORMAT_INDEX(IOHW,-1,2,3,-1,0,1);
 
 enum PaddingMode {
     INVALID,
@@ -212,7 +236,12 @@ struct OpContext {
         }
 
         COMPARE(opType)
-        COMPARE(dataType)
+        if (dataType != opContext.dataType) {
+            if (dataType == DT_INVALID || opContext.dataType == DT_INVALID) {
+                return false;
+            }
+            return dataType < opContext.dataType;
+        }
 
 #undef COMPARE
         return false;
@@ -228,5 +257,7 @@ struct OpContext {
         return ss.str();
     }
 };
+
+#define MAI_DYNAMIC_DIM -1
 
 } // namespace MAI

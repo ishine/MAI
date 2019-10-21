@@ -22,7 +22,7 @@ namespace CPU {
 template<typename T>
 class Relu1 : public Operator {
 public:
-    Relu1() = default;
+    Relu1() : mRunFirst(true) {}
     ~Relu1() = default;
 
     MAI_STATUS init() override {
@@ -32,9 +32,12 @@ public:
     MAI_STATUS run() override {
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
+
+        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
         output->resize(input->shape());
+        MAI_OP_RUN_FIRST_END
 
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
@@ -44,6 +47,8 @@ public:
         }
         return MAI_SUCCESS;
     }
+private:
+    bool mRunFirst;
 };
 
 void registerRelu1() {

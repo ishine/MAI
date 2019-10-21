@@ -17,10 +17,10 @@
 namespace MAI {
 namespace Test {
 
-class DISABLED_PadTest : public OperatorTest {
+class PadTest : public OperatorTest {
 };
 
-TEST_F(DISABLED_PadTest, PadHW) {
+TEST_F(PadTest, PadHW) {
     PadParam* param = new PadParam();
     param->paddings = {0,0,1,1,1,1,0,0};
 
@@ -47,7 +47,7 @@ TEST_F(DISABLED_PadTest, PadHW) {
     ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
 }
 
-TEST_F(DISABLED_PadTest, PadChannel) {
+TEST_F(PadTest, PadChannel) {
     PadParam* param = new PadParam();
     param->paddings = {0,0,0,0,0,0,1,2};
 
@@ -73,7 +73,7 @@ TEST_F(DISABLED_PadTest, PadChannel) {
     ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
 }
 
-TEST_F(DISABLED_PadTest, PadBatch) {
+TEST_F(PadTest, PadBatch) {
     PadParam* param = new PadParam();
     param->paddings = {1,1,0,0,0,0,0,0};
 
@@ -105,7 +105,7 @@ TEST_F(DISABLED_PadTest, PadBatch) {
 }
 
 
-TEST_F(DISABLED_PadTest, PadAll) {
+TEST_F(PadTest, PadAll) {
     PadParam* param = new PadParam();
     param->paddings = {1,1,1,1,1,1,1,1};
 

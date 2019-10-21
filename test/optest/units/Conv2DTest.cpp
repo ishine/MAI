@@ -25,6 +25,7 @@ TEST_F(Conv2DTest, floatWithSingleChannelValid_NHWC_HWIO) {
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
     param->paddingMode = VALID;
+    param->group = 1;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(CONV2D)
@@ -52,6 +53,7 @@ TEST_F(Conv2DTest, floatWithSingleChannelSame_NHWC_HWIO) {
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
     param->paddingMode = SAME;
+    param->group = 1;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(CONV2D)
@@ -93,6 +95,7 @@ TEST_F(Conv2DTest, floatWithMultiChannelSame_NHWC_HWIO) {
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
     param->paddingMode = SAME;
+    param->group = 1;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(CONV2D)
@@ -120,6 +123,7 @@ TEST_F(Conv2DTest, floatWithMultiChannelValid_NHWC_HWIO) {
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
     param->paddingMode = VALID;
+    param->group = 1;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(CONV2D)
@@ -147,6 +151,7 @@ TEST_F(Conv2DTest, floatWithMultiChannelSameBias_NHWC_HWIO) {
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
     param->paddingMode = SAME;
+    param->group = 1;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(CONV2D)

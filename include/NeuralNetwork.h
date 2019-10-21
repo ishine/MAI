@@ -21,6 +21,9 @@
 
 namespace MAI {
 
+namespace Profiling {
+class Profiler;
+}
 class NeuralNetwork {
 public:
     enum OptimizerRule {
@@ -28,22 +31,52 @@ public:
         FOLD_ACTIVATION_INTO_CONV2D,
     };
 
+    enum NetworkFormat {
+        TENSORFLOW,
+        ONNX,
+        MAI,
+    };
+
 public:
+    static std::unique_ptr<NeuralNetwork> getNeuralNetwork(
+            const NetworkFormat networkFormat, const std::string& modelPath);
+
+    NeuralNetwork() : mProfiler(NULL) {}
+    virtual ~NeuralNetwork() = default;
+
+    inline void setProfiler(Profiling::Profiler* profiler) {
+        mProfiler = profiler;
+    }
+
+    inline Profiling::Profiler* getProfiler() {
+        return mProfiler;
+    }
     virtual MAI_STATUS init() = 0;
     virtual MAI_STATUS run() = 0;
     virtual MAI_STATUS addOperator(std::unique_ptr<Operator>& op) = 0;
+    virtual MAI_STATUS removeOperator(const std::string& opName) = 0;
     virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor) = 0;
     virtual Tensor* getTensor(const std::string& name) = 0;
+    virtual std::vector<std::string> getTensorNames() = 0;
+    virtual MAI_STATUS removeTensor(const std::string& tensorName) = 0;
     virtual Operator* getOperator(const std::string& name) = 0;
+    virtual std::vector<std::string> getOperatorNames() = 0;
 
     virtual void addOptimizer(std::unique_ptr<Optimizer> optimizer);
     virtual void addOptimizer(OptimizerRule rule);
     virtual Optimizer* createOptimizer(OptimizerRule rule);
     virtual void startOptimize();
     virtual void builGraph() = 0;
+    virtual std::vector<std::string> getModelInputs() = 0;
+    virtual std::vector<std::string> getModelOutputs() = 0;
 
+    virtual void addModelInput(const std::string& inputName,
+            DataType dataType, DataFormat dataFormat,
+            const std::vector<shape_t>& inputShape) = 0;
+    virtual void addModelOutput(const std::string& outputName) = 0;
 private:
     std::vector<std::unique_ptr<Optimizer> > mOptimizers;
+    Profiling::Profiler* mProfiler;
 };
 
 } // namespace MAI

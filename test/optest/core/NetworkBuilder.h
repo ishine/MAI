@@ -14,9 +14,13 @@
 
 #pragma once
 
+#include <random>
+#include <limits>
+#include <functional>
 #include "NeuralNetwork.h"
 #include "core/SimpleNeuralNetwork.h"
 #include "core/Allocator.h"
+#include "PerformanceRunner.h"
 
 namespace MAI {
 namespace Test {
@@ -24,18 +28,25 @@ namespace Test {
 class NetworkBuilder {
 public:
     NetworkBuilder() : mNetwork(new SimpleNeuralNetwork()) {
+        mNetwork->init();
     }
     virtual ~NetworkBuilder() = default;
 
-    NetworkBuilder& addOperator(std::unique_ptr<Operator>&& op) {
+    inline NetworkBuilder& addOperator(std::unique_ptr<Operator>&& op) {
         mNetwork->addOperator(op);
         return *this;
     }
 
     template<typename T>
+    NetworkBuilder& addRandomTensor(
+            const std::string& name,
+            const std::vector<shape_t>& dims,
+            const DataFormat dataFormat = NHWC);
+
+    template<typename T>
     NetworkBuilder& addTensor(
             const std::string& name,
-            const std::vector<uint64>& dims,
+            const std::vector<shape_t>& dims,
             const std::vector<T>& data,
             const DataFormat dataFormat = NHWC) {
         std::unique_ptr<Tensor> tensor(new Tensor(DataTypeToEnum<T>::value, new CPUAllocator()));
@@ -53,13 +64,32 @@ public:
         return *this;
     }
 
-    std::unique_ptr<NeuralNetwork> build() {
+    inline std::unique_ptr<NeuralNetwork> build() {
         return std::move(mNetwork);
+    }
+
+    inline std::unique_ptr<PerformanceRunner> buildPerformanceRunner() {
+        mNetwork->init();
+        mPerformanceRunner.reset(new PerformanceRunner(mNetwork));
+        return std::move(mPerformanceRunner);
     }
 
 private:
     std::unique_ptr<NeuralNetwork> mNetwork;
+    std::unique_ptr<PerformanceRunner> mPerformanceRunner;
 };
+
+template<>
+NetworkBuilder& NetworkBuilder::addRandomTensor<int32>(
+        const std::string& name,
+        const std::vector<shape_t>& dims,
+        const DataFormat dataFormat);
+
+template<>
+NetworkBuilder& NetworkBuilder::addRandomTensor<float>(
+        const std::string& name,
+        const std::vector<shape_t>& dims,
+        const DataFormat dataFormat);
 
 } // namespace Test
 } // namespace MAI

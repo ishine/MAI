@@ -23,60 +23,25 @@ namespace CPU {
 template<typename T>
 class FusedBatchNorm : public Operator {
 public:
-    FusedBatchNorm() : mEpsilon(0.001f) {
+    FusedBatchNorm() : mEpsilon(0.001f), mRunFirst(true), mParam(NULL) {
     }
 
-    ~FusedBatchNorm() = default;
+    ~FusedBatchNorm() {
+        if (mParam != NULL) {
+            delete mParam;
+            mParam = NULL;
+        }
+    }
 
     MAI_STATUS init() override {
-        const Tensor* input = getInputTensor(INPUT);
-        mInput = input;
-        const Tensor* scale = getInputTensor(SCALE);
-        const Tensor* offset = getInputTensor(OFFSET);
-        const Tensor* mean = getInputTensor(MEAN);
-        const Tensor* var = getInputTensor(VAR);
-
-        MAI_CHECK(input->dimSize() ==  4, "rank of input must be 4, but not %d", input->dimSize());
-        MAI_CHECK(scale->dimSize() ==  1, "rank of input must be 1, but not %d", scale->dimSize());
-        MAI_CHECK(offset->dimSize() ==  1, "rank of input must be 1, but not %d", offset->dimSize());
-        MAI_CHECK(mean->dimSize() ==  1, "rank of input must be 1, but not %d", mean->dimSize());
-        MAI_CHECK(var->dimSize() ==  1, "rank of input must be 1, but not %d", var->dimSize());
-
-        Tensor* output = getOutputTensor(OUTPUT);
-        mOutput = output;
-        output->resize(input->shape());
-
-        shape_t channel = 0;
-        if (input->getDataFormat() == NHWC) {
-            mFunction = fusedBatchNormNHWC;
-            channel = input->dim(3);
-        } else if (input->getDataFormat() == NCHW) {
-            mFunction = fusedBatchNormNCHW;
-            channel = input->dim(1);
-        } else {
-            MAI_CHECK(false, "Unsupported data format: %d", input->getDataFormat());
-        }
-
-        mNewScale.resize(channel);
-        mNewOffset.resize(channel);
-
-        const T* scaleData = scale->data<T>();
-        const T* offsetData = offset->data<T>();
-        const T* meanData = mean->data<T>();
-        const T* varData = var->data<T>();
-
-        // z = gamma * (y - mean) / sqrt(variance + epsilon) + beta
-        for (shape_t c = 0; c < channel; ++c) {
-            mNewScale[c] = scaleData[c] / std::sqrt(varData[c] + mEpsilon);
-            mNewOffset[c] = offsetData[c] - mNewScale[c] * meanData[c];
-        }
-
         return MAI_SUCCESS;
     }
 
     static void fusedBatchNormNHWC(const T* input, const std::vector<shape_t>& inputShape,
             const std::vector<T>& scale, const std::vector<T>& offset, T* output) {
         int idx = 0;
+        // use openmp will cost more time?
+        //#pragma omp parallel for collapse(2)
         for (shape_t b = 0; b < inputShape[0]; ++b) {
             for (shape_t h = 0; h < inputShape[1]; ++h) {
                 for (shape_t w = 0; w < inputShape[2]; ++w) {
@@ -92,10 +57,12 @@ public:
     static void fusedBatchNormNCHW(const T* input, const std::vector<shape_t>& inputShape,
             const std::vector<T>& scale, const std::vector<T>& offset, T* output) {
         int idx = 0;
+        // use openmp will cost more time?
+        //#pragma omp parallel for collapse(2)
         for (shape_t b = 0; b < inputShape[0]; ++b) {
-            for (shape_t c = 0; c < inputShape[3]; ++c) {
-                for (shape_t h = 0; h < inputShape[1]; ++h) {
-                    for (shape_t w = 0; w < inputShape[2]; ++w) {
+            for (shape_t c = 0; c < inputShape[1]; ++c) {
+                for (shape_t h = 0; h < inputShape[2]; ++h) {
+                    for (shape_t w = 0; w < inputShape[3]; ++w) {
                         output[idx] = input[idx] * scale[c] + offset[c];
                         idx++;
                     }
@@ -105,11 +72,62 @@ public:
     }
 
     void setParam(Param* param) override {
-        FusedBatchNormParam* fParam = reinterpret_cast<FusedBatchNormParam*>(param);
-        mEpsilon = fParam->epsilon;
+        mParam = reinterpret_cast<FusedBatchNormParam*>(param);
+        mEpsilon = mParam->epsilon;
+    }
+
+    Param* getParam() override {
+        return mParam;
     }
 
     MAI_STATUS run() override {
+        MAI_OP_RUN_FIRST_START
+        mInput = getInputTensor(INPUT);
+        const Tensor* scale = getInputTensor(SCALE);
+        const Tensor* offset = getInputTensor(OFFSET);
+        const Tensor* mean = getInputTensor(MEAN);
+        const Tensor* var = getInputTensor(VAR);
+
+        MAI_CHECK_NULL(mInput);
+        MAI_CHECK_NULL(scale);
+        MAI_CHECK_NULL(offset);
+        MAI_CHECK_NULL(mean);
+        MAI_CHECK_NULL(var);
+        MAI_CHECK(mInput->dimSize() ==  4, "rank of input must be 4, but not %d", mInput->dimSize());
+        MAI_CHECK(scale->dimSize() ==  1, "rank of input must be 1, but not %d", scale->dimSize());
+        MAI_CHECK(offset->dimSize() ==  1, "rank of input must be 1, but not %d", offset->dimSize());
+        MAI_CHECK(mean->dimSize() ==  1, "rank of input must be 1, but not %d", mean->dimSize());
+        MAI_CHECK(var->dimSize() ==  1, "rank of input must be 1, but not %d", var->dimSize());
+
+        mOutput = getOutputTensor(OUTPUT);
+        mOutput->resize(mInput->shape());
+
+        shape_t channel = 0;
+        if (mInput->getDataFormat() == NHWC) {
+            mFunction = fusedBatchNormNHWC;
+            channel = mInput->dim(3);
+        } else if (mInput->getDataFormat() == NCHW) {
+            mFunction = fusedBatchNormNCHW;
+            channel = mInput->dim(1);
+        } else {
+            MAI_CHECK(false, "Unsupported data format: %d", mInput->getDataFormat());
+        }
+
+        mNewScale.resize(channel);
+        mNewOffset.resize(channel);
+
+        const T* scaleData = scale->data<T>();
+        const T* offsetData = offset->data<T>();
+        const T* meanData = mean->data<T>();
+        const T* varData = var->data<T>();
+
+        // z = gamma * (y - mean) / sqrt(variance + epsilon) + beta
+        for (shape_t c = 0; c < channel; ++c) {
+            mNewScale[c] = scaleData[c] / std::sqrt(varData[c] + mEpsilon);
+            mNewOffset[c] = offsetData[c] - mNewScale[c] * meanData[c];
+        }
+        MAI_OP_RUN_FIRST_END
+
         mFunction(mInput->data<T>(), mInput->shape(), mNewScale,
             mNewOffset, mOutput->mutableData<T>());
         return MAI_SUCCESS;
@@ -123,6 +141,8 @@ private:
     std::vector<T> mNewOffset;
     const Tensor* mInput;
     Tensor* mOutput;
+    bool mRunFirst;
+    FusedBatchNormParam* mParam;
 };
 
 void registerFusedBatchNorm() {
