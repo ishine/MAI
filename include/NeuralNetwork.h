@@ -29,6 +29,7 @@ public:
     enum OptimizerRule {
         FOLD_BN_INTO_CONV2D,
         FOLD_ACTIVATION_INTO_CONV2D,
+        CONSTANT_FOLD,
     };
 
     enum NetworkFormat {

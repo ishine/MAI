@@ -136,6 +136,12 @@ public:
     int32 axis;//[-rank, rank - 1]
 };
 
+struct PackParam : public Param {
+public:
+    int32 num;
+    int32 axis;//[-rank-1, rank]
+};
+
 struct GemmParam : public Param {
 public:
     float alpha;

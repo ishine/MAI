@@ -48,12 +48,14 @@ DECLARE_REGISTER_OP(MaxPool);
 DECLARE_REGISTER_OP(AvgPool);
 DECLARE_REGISTER_OP(GlobalAvgPool);
 DECLARE_REGISTER_OP(Concat);
+DECLARE_REGISTER_OP(Pack);
 DECLARE_REGISTER_OP(Mul);
 DECLARE_REGISTER_OP(Pad);
 DECLARE_REGISTER_OP(Gemm);
 DECLARE_REGISTER_OP(Gather);
 DECLARE_REGISTER_OP(Add);
 DECLARE_REGISTER_OP(Dropout);
+DECLARE_REGISTER_OP(ResizeBilinear);
 
 class CPURegister {
 public:
@@ -82,12 +84,14 @@ public:
         REGISTER_OP(AvgPool);
         REGISTER_OP(GlobalAvgPool);
         REGISTER_OP(Concat);
+        REGISTER_OP(Pack);
         REGISTER_OP(Mul);
         REGISTER_OP(Pad);
         REGISTER_OP(Gemm);
         REGISTER_OP(Gather);
         REGISTER_OP(Add);
         REGISTER_OP(Dropout);
+        REGISTER_OP(ResizeBilinear);
     }
     ~CPURegister() = default;
 };

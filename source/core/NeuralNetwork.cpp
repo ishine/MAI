@@ -16,6 +16,7 @@
 #include "source/util/MAIType.h"
 #include "source/core/SimpleNeuralNetwork.h"
 #include "source/core/optimizers/BNConvOptimizer.h"
+#include "source/core/optimizers/ConstFoldOptimizer.h"
 
 #ifdef MAI_TENSORFLOW_ENABLED
 #include "tools/converter/tensorflow/TensorflowParser.h"
@@ -68,6 +69,8 @@ Optimizer* NeuralNetwork::createOptimizer(OptimizerRule rule) {
         return new BNConvOptimizer(this);
     case FOLD_ACTIVATION_INTO_CONV2D:
         return NULL;
+    case CONSTANT_FOLD:
+        return new ConstFoldOptimizer(this);
     }
     return NULL;
 }
