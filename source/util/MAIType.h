@@ -50,3 +50,10 @@
 #define MAI_OP_RUN_FIRST_END \
         mRunFirst = false; \
     }
+
+#define MAI_DELETE_PTR(PTR) \
+    if (PTR) {              \
+        delete PTR;         \
+        PTR = NULL;         \
+    }                       \
+

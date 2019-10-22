@@ -136,6 +136,7 @@ private:
 
 void registerMul() {
     MAI_REGISTER_OP((OpContext{.opType=MUL,}), float, Mul);
+    MAI_REGISTER_OP((OpContext{.opType=MUL,}), int32, Mul);
 }
 
 } // namespace CPU

@@ -155,4 +155,11 @@ public:
     int32 axis;
 };
 
+struct StridedSliceParam : public Param {
+public:
+    int32 beginMask;
+    int32 endMask;
+    int32 shrinkAxisMask;
+};
+
 } // namespace MAI

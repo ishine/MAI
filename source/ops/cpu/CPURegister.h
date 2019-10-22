@@ -56,6 +56,9 @@ DECLARE_REGISTER_OP(Gather);
 DECLARE_REGISTER_OP(Add);
 DECLARE_REGISTER_OP(Dropout);
 DECLARE_REGISTER_OP(ResizeBilinear);
+DECLARE_REGISTER_OP(StridedSlice);
+DECLARE_REGISTER_OP(Identity);
+DECLARE_REGISTER_OP(TransposeConv2d);
 
 class CPURegister {
 public:
@@ -92,6 +95,9 @@ public:
         REGISTER_OP(Add);
         REGISTER_OP(Dropout);
         REGISTER_OP(ResizeBilinear);
+        REGISTER_OP(StridedSlice);
+        REGISTER_OP(Identity);
+        REGISTER_OP(TransposeConv2d);
     }
     ~CPURegister() = default;
 };
