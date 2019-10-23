@@ -55,6 +55,7 @@ public:
         }
         if (!data.empty()) {
             tensor->copy(reinterpret_cast<const void*>(&data[0]), data.size() * sizeof(T));
+            tensor->setConst(true);
         }
 
         tensor->setDataFormat(dataFormat);

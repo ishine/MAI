@@ -17,6 +17,7 @@
 #include "core/BufferImpl.h"
 #include "core/Allocator.h"
 #include "util/MAIUtil.h"
+#include "util/MAIType.h"
 
 namespace MAI {
 
@@ -40,6 +41,34 @@ Tensor::Tensor(DataType dataType, Allocator* allocator) :
     mIsConst(false),
     mFlag(0),
     mN(-1), mH(-1), mW(-1), mC(-1), mI(-1), mO(-1) {
+}
+
+Tensor::Tensor(const Tensor* tensor, bool reuseBuffer) {
+    mName = tensor->mName;
+    mDataType = tensor->mDataType;
+    mDataFormat = tensor->mDataFormat;
+    mFlag = tensor->mFlag;
+    mAllocator = tensor->mAllocator;
+    if (reuseBuffer) {
+        MAI_CHECK(mBuffer != NULL, "Tensor(%s) cannot reuse buffer as buffer is null", mName.c_str());
+        mBuffer = tensor->mBuffer;
+        mFlag &= ~MEMORY_OWNER;
+    } else {
+        mBuffer = NULL;
+        if (tensor->mBuffer != NULL) {
+            allocateBuffer(tensor->mShape);
+            copy(tensor->mBuffer->data(), tensor->size());
+        }
+        mFlag |= MEMORY_OWNER;
+    }
+    mIsConst = tensor->mIsConst;
+    mFlag &= ~ALLOCATOR_OWNER;
+    mN = tensor->mN;
+    mH = tensor->mH;
+    mW = tensor->mW;
+    mC = tensor->mC;
+    mI = tensor->mI;
+    mO = tensor->mO;
 }
 
 Tensor::~Tensor() {
@@ -94,7 +123,7 @@ void Tensor::setConst(bool isConst) {
     mIsConst = isConst;
 }
 
-bool Tensor::isConst() {
+bool Tensor::isConst() const {
     return mIsConst;
 }
 
@@ -184,7 +213,7 @@ void Tensor::setDataFormat(DataFormat dataFormat) {
     __ASSIGN_DATA_FORMAT(NCHW);
     __ASSIGN_DATA_FORMAT(HWIO);
     __ASSIGN_DATA_FORMAT(OHWI);
-    __ASSIGN_DATA_FORMAT(HWIO);
+    __ASSIGN_DATA_FORMAT(HWOI);
     __ASSIGN_DATA_FORMAT(OIHW);
     __ASSIGN_DATA_FORMAT(IOHW);
 #undef __ASSIGN_DATA_FORMAT

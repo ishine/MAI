@@ -198,6 +198,38 @@ OP_PARSER(Conv2D) {
     parseAttrs(parser, node, CONV2D, tfDataType, param, attrParsers);
 }
 
+OP_PARSER(Conv2DBackpropInput) {
+    TransposeConv2dParam* param = new TransposeConv2dParam();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"strides", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->strides.insert(param->strides.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"dilations", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->dilations.insert(param->dilations.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"padding", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->paddingMode = tf2MIPaddingMode(attr.s());
+            }
+        },
+
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    parseAttrs(parser, node, TRANSPOSE_CONV2D, tfDataType, param, attrParsers);
+    parser.mTFNetwork->getTensor(node.input(1/*filter*/))->setDataFormat(HWOI);
+}
+
 OP_PARSER(DepthwiseConv2dNative) {
     DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
     tensorflow::DataType tfDataType;
@@ -346,6 +378,18 @@ OP_PARSER(Mul) {
     parseAttrs(parser, node, MUL, tfDataType, NULL/*param*/, attrParsers);
 }
 
+OP_PARSER(Sigmoid) {
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    parseAttrs(parser, node, SIGMOID, tfDataType, NULL/*param*/, attrParsers);
+}
+
 OP_PARSER(Relu) {
     tensorflow::DataType tfDataType;
     std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
@@ -473,6 +517,7 @@ OP_PARSER(Const) {
         }
         tensor->copy(value, getSizeFromDataType(dataType));
     }
+    tensor->setConst(true);
     parser.mTFNetwork->addTensor(tensor);
 }
 

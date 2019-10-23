@@ -36,8 +36,26 @@ public:
         }
     }
 
+    std::vector<T>& nodes() {
+        return mObjects;
+    }
+
+    std::vector<int>& nodeIds() {
+        return mIds;
+    }
+
     int subGraphCount() {
         return mSubGraphCount;
+    }
+
+    int nodeId(const T& node) {
+        auto it = std::find(mObjects.begin(), mObjects.end(), node);
+        if (it == mObjects.end()) {
+            return -1;
+        }
+        int offset = std::distance(mObjects.begin(), it);
+        while(mIds[offset] != offset) offset = mIds[offset];
+        return mIds[offset];
     }
 
     void pair(const T& p, const T& q) {

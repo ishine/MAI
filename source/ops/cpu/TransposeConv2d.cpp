@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <string.h>
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
 
@@ -23,7 +24,7 @@ namespace CPU {
 template<typename T>
 class TransposeConv2d : public Operator {
 public:
-    TransposeConv2d() : mParam(NULL), mRunFirst(true) {}
+    TransposeConv2d() : mParam(NULL), mStrides(2), mRunFirst(true) {}
     ~TransposeConv2d() {
         MAI_DELETE_PTR(mParam);
     }
@@ -33,10 +34,15 @@ public:
     }
 
     void setParam(Param* param) override {
-        //mParam = reinterpret_cast<TransposeConv2dParam*>(param);
+        ALOGI("setParam");
+        mParam = reinterpret_cast<TransposeConv2dParam*>(param);
+        mStrides[0] = mParam->strides[1];
+        mStrides[1] = mParam->strides[2];
+        ALOGI("setParam end");
     }
 
     MAI_STATUS run() override {
+        ALOGI("run");
         MAI_OP_RUN_FIRST_START
         mOutputShape = getInputTensor(OUTPUT_SHAPE);
         mFilter = getInputTensor(FILTER);
@@ -48,8 +54,71 @@ public:
         MAI_CHECK_NULL(mOutput);
         MAI_CHECK_NULL(mParam);
         MAI_CHECK(mInput->shape().size() == 4, "Input shape must be 4-d");
+        MAI_CHECK(mInput->getDataFormat() == NHWC, "Transpose Conv2d just support NHWC now");
+        MAI_CHECK(mFilter->getDataFormat() == HWOI, "Transpose Conv2d filter just support HWOI now but not %s",
+                getNameFromDataFormat(mFilter->getDataFormat()).c_str());
+        MAI_CHECK(mInput->dimC() == mFilter->dimI(), "Unexpected dim");
+        std::vector<shape_t> outputShape(mOutputShape->elementSize());
+        const int32* outputShapeData = mOutputShape->data<int32>();
+        for (int32 i = 0; i < outputShape.size(); ++i) {
+            outputShape[i] = outputShapeData[i];
+        }
+        mOutput->resize(outputShape);
         MAI_OP_RUN_FIRST_END
 
+        ALOGI("run1");
+        std::vector<int32> paddingTBLR = calcPaddings(
+                mParam->paddingMode,
+                {mFilter->dimH(), mFilter->dimW()});
+        T* outputData = mOutput->mutableData<T>();
+        memset(outputData, 0, mOutput->size());
+        const T* inputData = mInput->data<T>();
+        const T* filterData = mFilter->data<T>();
+        const shape_t IBatch = mInput->dimN();
+        const shape_t IHeight = mInput->dimH();
+        const shape_t IWidth = mInput->dimW();
+        const shape_t IChannel = mInput->dimC();
+
+        const shape_t OBatch = mOutput->dimN();
+        const shape_t OHeight = mOutput->dimH();
+        const shape_t OWidth = mOutput->dimW();
+        const shape_t OChannel = mOutput->dimC();
+
+        const shape_t FH = mFilter->dimH();
+        const shape_t FW = mFilter->dimW();
+        const shape_t FI = mFilter->dimI();
+        const shape_t FO = mFilter->dimO();
+
+        ALOGI("run2 inputShape:%s outputShape:%s filter:%s",
+                shapeToString(mInput->shape()).c_str(),
+                shapeToString(mOutput->shape()).c_str(),
+                shapeToString(mFilter->shape()).c_str());
+        for (shape_t b = 0; b < IBatch; ++b) {
+            for (shape_t h = 0; h < IHeight; ++h) {
+                for (shape_t w = 0; w < IWidth; ++w) {
+                    for (shape_t c = 0; c < IChannel; ++c) {
+                        const shape_t outHIndexBase = h * mStrides[0] - paddingTBLR[0];
+                        const shape_t outWIndexBase = w * mStrides[1] - paddingTBLR[2];
+                        for (shape_t fh = 0; fh < FH; ++fh) {
+                            for (shape_t fw = 0; fw < FW; ++fw) {
+                                for (shape_t oc = 0; oc < OChannel; ++oc) {
+                                    const shape_t outHIndex = outHIndexBase + fh;
+                                    const shape_t outWIndex = outWIndexBase + fw;
+                                    if (outHIndex >= 0 && outHIndex < OHeight &&
+                                            outWIndex >= 0 && outWIndex < OWidth) {
+                                        T inputValue = inputData[offset4D(mInput->shape(), b, h, w, c)];
+                                        T filterValue = filterData[offset4D(mFilter->shape(), fh, fw, oc, c)];
+                                        outputData[offset4D(mOutput->shape(), b, outHIndex, outWIndex, oc)] += inputValue * filterValue;
+                                        //ALOGI("b:%d h:%d w:%d c:%d fh:%d fw:%d oc:%d", b,h,w,c,fh,fw,oc);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        ALOGI("run end");
         return MAI_SUCCESS;
     }
 
@@ -59,7 +128,8 @@ private:
     const Tensor* mFilter;
     const Tensor* mInput;
     Tensor* mOutput;
-    Param* mParam;
+    TransposeConv2dParam* mParam;
+    std::vector<int32> mStrides;
     bool mRunFirst;
 };
 

@@ -15,6 +15,8 @@
 #include <cmath>
 #include "ConstFoldOptimizer.h"
 #include "NeuralNetwork.h"
+#include "source/core/SimpleNeuralNetwork.h"
+#include "source/core/OperatorRegister.h"
 
 namespace MAI {
 
@@ -27,23 +29,64 @@ void ConstFoldOptimizer::optimize() {
         dfs(op, visited, i);
     }
     // construct sub graph
+    printf("SubGraph:%d\n", mUnionFind.subGraphCount());
+    std::map<int32, std::vector<Node>> subGraphs;
+    auto& nodes = mUnionFind.nodes();
+    auto& nodeIds = mUnionFind.nodeIds();
+    for (int32 i = 0; i < nodes.size(); ++i) {
+        std::vector<Node>& subGraph = subGraphs[mUnionFind.nodeId(nodes[i])];
+        subGraph.emplace_back(nodes[i]);
+    }
+    for (auto kv : subGraphs) {
+        SimpleNeuralNetwork* subNetwork = new SimpleNeuralNetwork();
+        auto& vec = kv.second;
+        ALOGI(">>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        for (const Node& node : vec) {
+            if (node.nodeType == Node::TENSOR) {
+                const Tensor* originalTensor = mNeuralNetwork->getTensor(node.name);
+                ALOGI("addTensor:%s", node.name.c_str());
+                std::unique_ptr<Tensor> tensor(new Tensor(originalTensor, false));
+                subNetwork->addTensor(tensor);
+                //ALOGI("addTensor:%s end", node.name.c_str());
+            } else if (node.nodeType == Node::OPERATOR) {
+                Operator* originalOperator = mNeuralNetwork->getOperator(node.name);
+                ALOGI("addOperator:%s", node.name.c_str());
+
+                //FIXME: got a real data type
+                std::unique_ptr<Operator> op =
+                    OperatorRegister::getInstance()->createOperator({originalOperator->type(), DT_INT32});
+                op->addInputNames(originalOperator->inputNames());
+                op->addOutputNames(originalOperator->outputNames());
+                op->setName(originalOperator->name());
+                op->setType(originalOperator->type());
+                //FIXME: This param will be delete by twice
+                op->setParam(originalOperator->getParam());
+                subNetwork->addOperator(op);
+                //ALOGI("addOperator:%s end", node.name.c_str());
+            }
+            //ALOGI("node:%s", node.name.c_str());
+        }
+        subNetwork->init();
+        subNetwork->run();
+        ALOGI("<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+    }
     // remove input tensor
     // remove output of op
     // remove op
-    printf("SubGraph:%d\n", mUnionFind.subGraphCount());
 }
 
 void ConstFoldOptimizer::dfs(Operator* op, std::vector<bool>& visited, int32 index) {
-    ALOGI("dfs op:%s, visited:%d, index:%d", op->name().c_str(), visited[index] == false, index);
+    //ALOGI("dfs op:%s, visited:%d, index:%d", op->name().c_str(), visited[index] == false, index);
     if (visited[index]) {
         return;
     }
-    ALOGI("start visite:%s", op->name().c_str());
+    //ALOGI("start visite:%s", op->name().c_str());
 
     if (!isComputable(op)) {
         return;
     }
 
+    ALOGI("isComputable:%s", op->name().c_str());
     visited[index] = true;
     for (int32 j = 0; j < op->inputNames().size(); ++j) {
         Tensor* tensor = mNeuralNetwork->getTensor(op->inputName(j));
@@ -52,7 +95,8 @@ void ConstFoldOptimizer::dfs(Operator* op, std::vector<bool>& visited, int32 ind
 
     for (int32 j = 0; j < op->outputNames().size(); ++j) {
         Tensor* tensor = mNeuralNetwork->getTensor(op->outputName(j));
-        tensor->setConst(true);
+        //tensor->setConst(true);
+        mComputableTensors.emplace_back(tensor->name());
         mUnionFind.pair({Node::OPERATOR, op->name()}, {Node::TENSOR, tensor->name()});
     }
 
@@ -69,7 +113,8 @@ void ConstFoldOptimizer::dfs(Operator* op, std::vector<bool>& visited, int32 ind
 bool ConstFoldOptimizer::isComputable(Operator* op) {
     for (int32 j = 0; j < op->inputNames().size(); ++j) {
         Tensor* tensor = mNeuralNetwork->getTensor(op->inputName(j));
-        if (!tensor->isConst()) {
+        if (!tensor->isConst() && std::find(mComputableTensors.begin(),
+                mComputableTensors.end(), tensor->name()) == mComputableTensors.end()) {
             return false;
         }
     }

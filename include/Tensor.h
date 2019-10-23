@@ -27,6 +27,7 @@ class Tensor {
 public:
     Tensor(DataType dataType);
     Tensor(DataType dataType, Allocator* allocator);
+    Tensor(const Tensor* tensor, bool reuseBuffer = false);
     virtual ~Tensor();
 
 
@@ -57,7 +58,7 @@ public:
     virtual void resize(const std::vector<shape_t>& shape);
     virtual void zero();
     virtual void setConst(bool isConst);
-    virtual bool isConst();
+    virtual bool isConst() const;
 
     template<typename T>
     inline const T* data() const {

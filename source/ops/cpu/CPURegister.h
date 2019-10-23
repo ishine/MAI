@@ -62,6 +62,12 @@ DECLARE_REGISTER_OP(TransposeConv2d);
 
 class CPURegister {
 public:
+    inline static CPURegister* getInstance() {
+        static CPURegister cpuRegister;
+        return &cpuRegister;
+    }
+    ~CPURegister() = default;
+private:
     CPURegister() {
         REGISTER_OP(Transpose);
         REGISTER_OP(Reshape);
@@ -99,7 +105,6 @@ public:
         REGISTER_OP(Identity);
         REGISTER_OP(TransposeConv2d);
     }
-    ~CPURegister() = default;
 };
 
 } // namespace CPU

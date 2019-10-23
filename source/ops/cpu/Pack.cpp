@@ -22,20 +22,25 @@ namespace CPU {
 
 class Pack : public Operator {
 public:
-    Pack() : mNum(0), mAxis(0), mOuterSize(1), mInnerSize(1), mRunFirst(true) {}
-    ~Pack() = default;
+    Pack() : mNum(0), mAxis(0), mOuterSize(1), mInnerSize(1), mParam(NULL), mRunFirst(true) {}
+    ~Pack() {
+        MAI_DELETE_PTR(mParam);
+    }
 
     MAI_STATUS init() override {
         return MAI_SUCCESS;
     }
 
     void setParam(Param* param) override {
-        PackParam* packParam = reinterpret_cast<PackParam*>(param);
-        if (packParam) {
-            mNum = packParam->num;
-            mAxis = packParam->axis;
+        mParam = reinterpret_cast<PackParam*>(param);
+        if (mParam) {
+            mNum = mParam->num;
+            mAxis = mParam->axis;
         }
-        delete param;
+    }
+
+    Param* getParam() override {
+        return mParam;
     }
 
 
@@ -98,6 +103,7 @@ private:
     int32 mAxis;
     shape_t mOuterSize;
     shape_t mInnerSize;
+    PackParam* mParam;
     bool mRunFirst;
 };
 

@@ -53,6 +53,7 @@ private:
     void dfs(Operator* op, std::vector<bool>& visited, int32 index);
 
     WeightedUnionFind<Node> mUnionFind;
+    std::vector<std::string> mComputableTensors;
 };
 
 } // namespace MAI

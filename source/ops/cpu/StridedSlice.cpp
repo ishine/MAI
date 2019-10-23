@@ -54,9 +54,9 @@ public:
         MAI_CHECK_NULL(end);
         MAI_CHECK_NULL(strides);
         MAI_CHECK_NULL(output);
+        MAI_CHECK_NULL(mParam);
 
         const int32* beginData = begin->data<int32>();
-        ALOGI("beginData:%s :%d", begin->name().c_str(), beginData[0]);
         const int32* endData = end->data<int32>();
         const int32* stridesData = strides->data<int32>();
 

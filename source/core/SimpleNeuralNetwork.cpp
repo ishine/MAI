@@ -22,7 +22,8 @@
 namespace MAI {
 
 SimpleNeuralNetwork::SimpleNeuralNetwork() {
-    //Op::CPU::CPURegister cpuRegister;
+    Op::CPU::CPURegister::getInstance();
+
     OpenMP::setNumThreads(OpenMP::getNumCPUCores());
 }
 

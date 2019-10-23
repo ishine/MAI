@@ -48,8 +48,10 @@ public:
     void setType(MAIOperator opType);
     MAIOperator type() const;
 
+    std::vector<std::string> inputNames() const;
     std::vector<std::string>& inputNames();
 
+    std::vector<std::string> outputNames() const;
     std::vector<std::string>& outputNames();
 
     std::string& inputName(int i);
@@ -112,6 +114,14 @@ public:
     std::vector<int32> paddings;//4-d TOP-BOTTON-LEFT-RIGHT
     PaddingMode paddingMode;
     int32 group;//default is 1
+};
+
+struct TransposeConv2dParam : public Param {
+public:
+    std::vector<int32> dilations;//4-d TOP-BOTTON-LEFT-RIGHT
+    std::vector<int32> strides;//4-d format associated with input format(NHWC or NCHW)
+    std::vector<int32> paddings;//4-d TOP-BOTTON-LEFT-RIGHT
+    PaddingMode paddingMode;
 };
 
 struct DepthwiseConv2dParam : public Param {

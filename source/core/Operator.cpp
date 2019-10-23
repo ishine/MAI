@@ -17,6 +17,7 @@
 #include "util/MAIUtil.h"
 
 namespace MAI {
+
 void Operator::setType(MAIOperator opType) {
     mOpType = opType;
 }
@@ -55,6 +56,14 @@ void Operator::replaceOutputName(const std::string& oriName, const std::string& 
             (*it) = dstName;
         }
     }
+}
+
+std::vector<std::string> Operator::inputNames() const {
+    return mInputNames;
+}
+
+std::vector<std::string> Operator::outputNames() const {
+    return mOutputNames;
 }
 
 std::vector<std::string>& Operator::inputNames() {
