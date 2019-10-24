@@ -17,6 +17,8 @@
 #include "NeuralNetwork.h"
 #include "source/core/SimpleNeuralNetwork.h"
 #include "source/core/OperatorRegister.h"
+// remove this
+#include "source/util/MAIUtil.h"
 
 namespace MAI {
 
@@ -29,7 +31,7 @@ void ConstFoldOptimizer::optimize() {
         dfs(op, visited, i);
     }
     // construct sub graph
-    printf("SubGraph:%d\n", mUnionFind.subGraphCount());
+    //printf("SubGraph:%d\n", mUnionFind.subGraphCount());
     std::map<int32, std::vector<Node>> subGraphs;
     auto& nodes = mUnionFind.nodes();
     auto& nodeIds = mUnionFind.nodeIds();
@@ -44,13 +46,13 @@ void ConstFoldOptimizer::optimize() {
         for (const Node& node : vec) {
             if (node.nodeType == Node::TENSOR) {
                 const Tensor* originalTensor = mNeuralNetwork->getTensor(node.name);
-                ALOGI("addTensor:%s", node.name.c_str());
+                //ALOGI("addTensor:%s", node.name.c_str());
                 std::unique_ptr<Tensor> tensor(new Tensor(originalTensor, false));
                 subNetwork->addTensor(tensor);
                 //ALOGI("addTensor:%s end", node.name.c_str());
             } else if (node.nodeType == Node::OPERATOR) {
                 Operator* originalOperator = mNeuralNetwork->getOperator(node.name);
-                ALOGI("addOperator:%s", node.name.c_str());
+                //ALOGI("addOperator:%s", node.name.c_str());
 
                 //FIXME: got a real data type
                 std::unique_ptr<Operator> op =
@@ -68,11 +70,36 @@ void ConstFoldOptimizer::optimize() {
         }
         subNetwork->init();
         subNetwork->run();
+        // remove op
+        for (const Node& node : vec) {
+            if (node.nodeType == Node::OPERATOR) {
+                //ALOGI("remove op:%s", node.name.c_str());
+                mNeuralNetwork->removeOperator(node.name);
+            }
+        }
+        // remove tensor(out-degree is 0)
+        for (const Node& node : vec) {
+            if (node.nodeType == Node::TENSOR) {
+                int32 degree = mNeuralNetwork->getTensorOutDegree(node.name);
+                if (0 == degree) {
+                    //ALOGI("remove tensor:%s", node.name.c_str());
+                    mNeuralNetwork->removeTensor(node.name);
+                } else {
+                    Tensor* tensor = mNeuralNetwork->getTensor(node.name);
+                    if (!tensor->isConst()) {
+                        Tensor* subgraphTensor = subNetwork->getTensor(node.name);
+                        const int32* data1 = subgraphTensor->data<int32>();
+                        // set the output tensor of the subgraph const.
+                        tensor->setConst(true);
+                        // copy data;
+                        tensor->allocateBuffer(subgraphTensor->shape());
+                        tensor->copy(subgraphTensor->data<uint8*>(), subgraphTensor->size());
+                    }
+                }
+            }
+        }
         ALOGI("<<<<<<<<<<<<<<<<<<<<<<<<<<<");
     }
-    // remove input tensor
-    // remove output of op
-    // remove op
 }
 
 void ConstFoldOptimizer::dfs(Operator* op, std::vector<bool>& visited, int32 index) {
@@ -86,7 +113,7 @@ void ConstFoldOptimizer::dfs(Operator* op, std::vector<bool>& visited, int32 ind
         return;
     }
 
-    ALOGI("isComputable:%s", op->name().c_str());
+    //ALOGI("isComputable:%s", op->name().c_str());
     visited[index] = true;
     for (int32 j = 0; j < op->inputNames().size(); ++j) {
         Tensor* tensor = mNeuralNetwork->getTensor(op->inputName(j));
@@ -95,7 +122,6 @@ void ConstFoldOptimizer::dfs(Operator* op, std::vector<bool>& visited, int32 ind
 
     for (int32 j = 0; j < op->outputNames().size(); ++j) {
         Tensor* tensor = mNeuralNetwork->getTensor(op->outputName(j));
-        //tensor->setConst(true);
         mComputableTensors.emplace_back(tensor->name());
         mUnionFind.pair({Node::OPERATOR, op->name()}, {Node::TENSOR, tensor->name()});
     }

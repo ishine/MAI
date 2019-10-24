@@ -62,12 +62,12 @@ public:
 
     template<typename T>
     inline const T* data() const {
-        return reinterpret_cast<const T*>(mBuffer->data());
+        return mBuffer != NULL ? reinterpret_cast<const T*>(mBuffer->data()) : NULL;
     }
 
     template<typename T>
     inline T* mutableData() {
-        return reinterpret_cast<T*>(mBuffer->mutableData());
+        return mBuffer != NULL ? reinterpret_cast<T*>(mBuffer->mutableData()) : NULL;
     }
 
     virtual std::vector<shape_t> shape() const;//TODO: (gavinchen) use const std::vector<uint64>&

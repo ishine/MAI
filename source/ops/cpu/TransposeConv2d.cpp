@@ -34,15 +34,12 @@ public:
     }
 
     void setParam(Param* param) override {
-        ALOGI("setParam");
         mParam = reinterpret_cast<TransposeConv2dParam*>(param);
         mStrides[0] = mParam->strides[1];
         mStrides[1] = mParam->strides[2];
-        ALOGI("setParam end");
     }
 
     MAI_STATUS run() override {
-        ALOGI("run");
         MAI_OP_RUN_FIRST_START
         mOutputShape = getInputTensor(OUTPUT_SHAPE);
         mFilter = getInputTensor(FILTER);
@@ -60,13 +57,13 @@ public:
         MAI_CHECK(mInput->dimC() == mFilter->dimI(), "Unexpected dim");
         std::vector<shape_t> outputShape(mOutputShape->elementSize());
         const int32* outputShapeData = mOutputShape->data<int32>();
+        MAI_CHECK_NULL(outputShapeData);
         for (int32 i = 0; i < outputShape.size(); ++i) {
             outputShape[i] = outputShapeData[i];
         }
         mOutput->resize(outputShape);
         MAI_OP_RUN_FIRST_END
 
-        ALOGI("run1");
         std::vector<int32> paddingTBLR = calcPaddings(
                 mParam->paddingMode,
                 {mFilter->dimH(), mFilter->dimW()});
@@ -89,10 +86,6 @@ public:
         const shape_t FI = mFilter->dimI();
         const shape_t FO = mFilter->dimO();
 
-        ALOGI("run2 inputShape:%s outputShape:%s filter:%s",
-                shapeToString(mInput->shape()).c_str(),
-                shapeToString(mOutput->shape()).c_str(),
-                shapeToString(mFilter->shape()).c_str());
         for (shape_t b = 0; b < IBatch; ++b) {
             for (shape_t h = 0; h < IHeight; ++h) {
                 for (shape_t w = 0; w < IWidth; ++w) {
@@ -109,7 +102,6 @@ public:
                                         T inputValue = inputData[offset4D(mInput->shape(), b, h, w, c)];
                                         T filterValue = filterData[offset4D(mFilter->shape(), fh, fw, oc, c)];
                                         outputData[offset4D(mOutput->shape(), b, outHIndex, outWIndex, oc)] += inputValue * filterValue;
-                                        //ALOGI("b:%d h:%d w:%d c:%d fh:%d fw:%d oc:%d", b,h,w,c,fh,fw,oc);
                                     }
                                 }
                             }
@@ -118,7 +110,6 @@ public:
                 }
             }
         }
-        ALOGI("run end");
         return MAI_SUCCESS;
     }
 

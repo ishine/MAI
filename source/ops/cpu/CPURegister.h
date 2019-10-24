@@ -32,6 +32,8 @@ DECLARE_REGISTER_OP(BiasAdd);
 DECLARE_REGISTER_OP(Relu);
 DECLARE_REGISTER_OP(Relu1);
 DECLARE_REGISTER_OP(Relu6);
+DECLARE_REGISTER_OP(CRelu);
+DECLARE_REGISTER_OP(LeakyRelu);
 DECLARE_REGISTER_OP(Sigmoid);
 DECLARE_REGISTER_OP(Softmax);
 DECLARE_REGISTER_OP(FusedBatchNorm);
@@ -77,6 +79,8 @@ private:
         REGISTER_OP(Relu);
         REGISTER_OP(Relu1);
         REGISTER_OP(Relu6);
+        REGISTER_OP(CRelu);
+        REGISTER_OP(LeakyRelu);
         REGISTER_OP(Sigmoid);
         REGISTER_OP(Softmax);
         REGISTER_OP(FusedBatchNorm);

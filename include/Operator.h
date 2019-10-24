@@ -172,4 +172,9 @@ public:
     int32 shrinkAxisMask;
 };
 
+struct LeakyReluParam : public Param {
+public:
+    float alpha;
+};
+
 } // namespace MAI

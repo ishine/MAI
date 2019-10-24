@@ -58,6 +58,8 @@ public:
     virtual MAI_STATUS removeOperator(const std::string& opName) = 0;
     virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor) = 0;
     virtual Tensor* getTensor(const std::string& name) = 0;
+    virtual int32 getTensorInDegree(const std::string& name) = 0;
+    virtual int32 getTensorOutDegree(const std::string& name) = 0;
     virtual std::vector<std::string> getTensorNames() = 0;
     virtual MAI_STATUS removeTensor(const std::string& tensorName) = 0;
     virtual Operator* getOperator(const std::string& name) = 0;

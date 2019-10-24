@@ -102,6 +102,12 @@ MAI是一个神经网络推理引擎，以跨平台为目标，开发目标：Li
       <td>Relu6</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
+      <td>CRelu</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>LeakyRelu</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
       <td>Reshape</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>

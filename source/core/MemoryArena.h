@@ -13,23 +13,25 @@
 // limitations under the License.
 
 #pragma once
-
-#include <gtest/gtest.h>
-
-#include "Log.h"
-#include "source/ops/cpu/CPURegister.h"
+#include <memory>
 
 namespace MAI {
-namespace Test {
-class MAIEnvironment : public testing::Environment {
-public:
-    virtual void SetUp() {
-        Op::CPU::CPURegister::getInstance();
-    }
 
-    virtual void TearDown() {
-    }
+struct MemoryInfo {
+    uint8* ptr;
+    int64 offset;
+    uint64 size;
 };
 
-} // namespace Test
+// TODO:(gavinchen)
+class MemoryArena {
+public:
+    MemoryArena();
+    virtual ~MemoryArena() {}
+    virtual MemoryInfo allocate(uint64 bytes) = 0;
+    virtual void deallocate(const MemoryInfo& memInfo) = 0;
+private:
+    std::unique_ptr<char[]> mData;
+};
+
 } // namespace MAI

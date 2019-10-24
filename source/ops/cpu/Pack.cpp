@@ -96,6 +96,7 @@ public:
                 outputOffset += copySize;
             }
         }
+        const int32* dd = output->data<int32>();
         return MAI_SUCCESS;
     }
 private:
