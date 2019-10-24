@@ -135,6 +135,6 @@ MAI是一个神经网络推理引擎，以跨平台为目标，开发目标：Li
       <td>Pack</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
-      <td>StridedSlice</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+      <td>ResizeBilinear</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
 </table>
