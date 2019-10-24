@@ -50,7 +50,10 @@ MAI是一个神经网络推理引擎，以跨平台为目标，开发目标：Li
    <tr>
       <td>DepthwiseConv2d</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
-  <tr>
+   <tr>
+      <td>TransposeConv2D</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
       <td>Dropout</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
@@ -121,5 +124,17 @@ MAI是一个神经网络推理引擎，以跨平台为目标，开发目标：Li
    </tr>
    <tr>
       <td>Transpose</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>StridedSlice</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>Identity</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>Pack</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>StridedSlice</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
 </table>
