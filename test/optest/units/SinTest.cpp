@@ -12,24 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#include <gtest/gtest.h>
-
-#include "Log.h"
-#include "source/ops/cpu/CPURegister.h"
+#include "core/OperatorTest.h"
 
 namespace MAI {
 namespace Test {
-class MAIEnvironment : public testing::Environment {
-public:
-    virtual void SetUp() {
-        Op::CPU::CPURegister::getInstance();
-    }
 
-    virtual void TearDown() {
-    }
+class SinTest : public OperatorTest {
 };
+
+TEST_F(SinTest, SinBasic) {
+    std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
+        .addOperator(OperatorBuilder()
+            .setType(SIN)
+            .setDataType(DT_FLOAT)
+            .setInputNames({"input"})
+            .setOutputNames({"output"})
+            .build())
+        .addTensor<float>("input", {2}, {1.8f, 2.2f})
+        .addTensor<float>("output", {}, {})
+        .addTensor<float>("check", {2}, {0.97384763, 0.80849636})
+        .build();
+    network->init();
+    network->run();
+
+    ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
+}
 
 } // namespace Test
 } // namespace MAI

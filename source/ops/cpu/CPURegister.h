@@ -39,7 +39,6 @@ DECLARE_REGISTER_OP(Softmax);
 DECLARE_REGISTER_OP(FusedBatchNorm);
 DECLARE_REGISTER_OP(Cast);
 DECLARE_REGISTER_OP(Floor);
-DECLARE_REGISTER_OP(Tanh);
 DECLARE_REGISTER_OP(Exp);
 DECLARE_REGISTER_OP(Fill);
 DECLARE_REGISTER_OP(ExpandDims);
@@ -61,6 +60,23 @@ DECLARE_REGISTER_OP(ResizeBilinear);
 DECLARE_REGISTER_OP(StridedSlice);
 DECLARE_REGISTER_OP(Identity);
 DECLARE_REGISTER_OP(TransposeConv2d);
+DECLARE_REGISTER_OP(Pow);
+DECLARE_REGISTER_OP(Neg);
+DECLARE_REGISTER_OP(ArgMin);
+DECLARE_REGISTER_OP(ArgMax);
+DECLARE_REGISTER_OP(Abs);
+DECLARE_REGISTER_OP(Tan);
+DECLARE_REGISTER_OP(ATan);
+DECLARE_REGISTER_OP(Tanh);
+DECLARE_REGISTER_OP(ATanh);
+DECLARE_REGISTER_OP(Cos);
+DECLARE_REGISTER_OP(ACos);
+DECLARE_REGISTER_OP(Cosh);
+DECLARE_REGISTER_OP(ACosh);
+DECLARE_REGISTER_OP(Sin);
+DECLARE_REGISTER_OP(ASin);
+DECLARE_REGISTER_OP(Sinh);
+DECLARE_REGISTER_OP(ASinh);
 
 class CPURegister {
 public:
@@ -86,7 +102,6 @@ private:
         REGISTER_OP(FusedBatchNorm);
         REGISTER_OP(Cast);
         REGISTER_OP(Floor);
-        REGISTER_OP(Tanh);
         REGISTER_OP(Exp);
         REGISTER_OP(Fill);
         REGISTER_OP(ExpandDims);
@@ -108,6 +123,23 @@ private:
         REGISTER_OP(StridedSlice);
         REGISTER_OP(Identity);
         REGISTER_OP(TransposeConv2d);
+        REGISTER_OP(Pow);
+        REGISTER_OP(Neg);
+        REGISTER_OP(ArgMax);
+        REGISTER_OP(ArgMin);
+        REGISTER_OP(Abs);
+        REGISTER_OP(Tan);
+        REGISTER_OP(ATan);
+        REGISTER_OP(Tanh);
+        REGISTER_OP(ATanh);
+        REGISTER_OP(Cos);
+        REGISTER_OP(ACos);
+        REGISTER_OP(Cosh);
+        REGISTER_OP(ACosh);
+        REGISTER_OP(Sin);
+        REGISTER_OP(ASin);
+        REGISTER_OP(Sinh);
+        REGISTER_OP(ASinh);
     }
 };
 

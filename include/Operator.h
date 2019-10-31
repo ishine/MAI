@@ -177,4 +177,14 @@ public:
     float alpha;
 };
 
+struct ArgMaxParam : public Param {
+public:
+    bool keepDim;
+};
+
+struct ArgMinParam : public Param {
+public:
+    bool keepDim;
+};
+
 } // namespace MAI
