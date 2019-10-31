@@ -17,6 +17,8 @@
 #include <stack>
 #include <functional>
 
+namespace MAI {
+
 template<typename T>
 void dfs(const std::vector<T>& srcNodes, std::stack<T>& dstNodes,
         typename std::vector<T>::size_type index,
@@ -49,3 +51,5 @@ void topologicalSort(const std::vector<T>& srcNodes, std::vector<T>& dstNodes,
         nodes.pop();
     }
 }
+
+} // namespace MAI

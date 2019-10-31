@@ -144,6 +144,30 @@ inline std::string getNameFromDataType(DataType dataType) {
     }
 }
 
+inline int32 getSizeFromDataType(DataType dataType) {
+    switch(dataType) {
+    case DT_INVALID:return -1;
+    case DT_FLOAT:return sizeof(float);
+    case DT_DOUBLE:return sizeof(double);
+    case DT_INT32:return sizeof(int32);
+    case DT_UINT8:return sizeof(uint8);
+    case DT_INT16:return sizeof(int16);
+    case DT_INT8:return sizeof(int8);
+    case DT_STRING:return -1;
+    case DT_COMPLEX64:return -1;
+    case DT_INT64:return sizeof(int64);
+    case DT_BOOL:return sizeof(bool);
+    case DT_QINT8:return sizeof(int8);
+    case DT_QUINT8:return sizeof(uint8);
+    case DT_QINT32:return sizeof(int32);
+    case DT_QINT16:return sizeof(int16);
+    case DT_QUINT16:return sizeof(uint16);
+    case DT_UINT16:return sizeof(uint16);
+    case DT_HALF:return 16;
+    default:return -1;
+    }
+}
+
 template<class T>
 struct DataTypeToEnum;
 

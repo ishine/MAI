@@ -198,6 +198,38 @@ OP_PARSER(Conv2D) {
     parseAttrs(parser, node, CONV2D, tfDataType, param, attrParsers);
 }
 
+OP_PARSER(Conv2DBackpropInput) {
+    TransposeConv2dParam* param = new TransposeConv2dParam();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"strides", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->strides.insert(param->strides.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"dilations", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->dilations.insert(param->dilations.end(), attr.list().i().begin(), attr.list().i().end());
+            }
+        },
+
+        {"padding", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->paddingMode = tf2MIPaddingMode(attr.s());
+            }
+        },
+
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    parseAttrs(parser, node, TRANSPOSE_CONV2D, tfDataType, param, attrParsers);
+    parser.mTFNetwork->getTensor(node.input(1/*filter*/))->setDataFormat(HWOI);
+}
+
 OP_PARSER(DepthwiseConv2dNative) {
     DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
     tensorflow::DataType tfDataType;
@@ -310,6 +342,66 @@ OP_PARSER(FusedBatchNorm) {
     parseAttrs(parser, node, FUSED_BATCH_NORM, tfDataType, param, attrParsers);
 }
 
+OP_PARSER(Add) {
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    parseAttrs(parser, node, ADD, tfDataType, NULL/*param*/, attrParsers);
+}
+
+OP_PARSER(Identity) {
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    parseAttrs(parser, node, IDENTITY, tfDataType, NULL/*param*/, attrParsers);
+}
+
+OP_PARSER(Mul) {
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    parseAttrs(parser, node, MUL, tfDataType, NULL/*param*/, attrParsers);
+}
+
+OP_PARSER(Sigmoid) {
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    parseAttrs(parser, node, SIGMOID, tfDataType, NULL/*param*/, attrParsers);
+}
+
+OP_PARSER(Relu) {
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    parseAttrs(parser, node, RELU, tfDataType, NULL/*param*/, attrParsers);
+}
+
 OP_PARSER(Relu6) {
     tensorflow::DataType tfDataType;
     std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
@@ -410,7 +502,22 @@ OP_PARSER(Const) {
     }
     tensor->setDataFormat(HWIO);// TODO:(gavinchen) setDataFormat should be done in node parser
     tensor->allocateBuffer(dims);
-    tensor->copy(tfTensor.tensor_content().c_str(), tfTensor.tensor_content().size());
+    if (!tfTensor.tensor_content().empty()) {
+        tensor->copy(tfTensor.tensor_content().c_str(), tfTensor.tensor_content().size());
+    } else {
+        DataType dataType = tf2MIDataType(tfTensor.dtype());
+        const void* value;
+        if (dataType == DT_FLOAT) {
+            value = tfTensor.float_val().data();
+        } else if (dataType == DT_INT32 || dataType == DT_INT16
+                || dataType == DT_INT8 || dataType == DT_UINT8) {
+            value = tfTensor.int_val().data();
+        } else {
+            MAI_ABORT("Unsupported data type:%s", getNameFromDataType(dataType).c_str());
+        }
+        tensor->copy(value, getSizeFromDataType(dataType));
+    }
+    tensor->setConst(true);
     parser.mTFNetwork->addTensor(tensor);
 }
 
@@ -441,6 +548,81 @@ OP_PARSER(Placeholder) {
         }
     }
     parser.mTFNetwork->addModelInput(node.name(), tf2MIDataType(tfDataType), NHWC, shape);
+}
+
+OP_PARSER(ResizeBilinear) {
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+    };
+    parseAttrs(parser, node, RESIZE_BILINEAR, tfDataType, NULL/*param*/, attrParsers);
+}
+
+OP_PARSER(Pack) {
+    PackParam* param = new PackParam();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+        {"axis", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->axis = attr.i();
+            }
+        },
+        {"N", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->num = attr.i();
+            }
+        },
+    };
+    parseAttrs(parser, node, PACK, tfDataType, param, attrParsers);
+}
+
+OP_PARSER(StridedSlice) {
+    StridedSliceParam* param = new StridedSliceParam();
+    tensorflow::DataType tfDataType;
+    std::map<std::string, std::function<void(const tensorflow::AttrValue&)>> attrParsers = {
+        {"T", [&tfDataType](const tensorflow::AttrValue& attr)
+            {
+                tfDataType = attr.type();
+            }
+        },
+        {"shrink_axis_mask", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->shrinkAxisMask = attr.i();
+            }
+        },
+        {"begin_mask", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->beginMask = attr.i();
+            }
+        },
+        {"end_mask", [&param](const tensorflow::AttrValue& attr)
+            {
+                param->endMask = attr.i();
+            }
+        },
+        {"ellipsis_mask", [&param](const tensorflow::AttrValue& attr)
+            {
+                int32 v = attr.i();
+                MAI_CHECK(v == 0, "ellipsis_mask(%d) not support now", v);
+            }
+        },
+        {"new_axis_mask", [&param](const tensorflow::AttrValue& attr)
+            {
+                int32 v = attr.i();
+                MAI_CHECK(v == 0, "new_axis_mask(%d) not support now", v);
+            }
+        },
+    };
+    parseAttrs(parser, node, STRIDED_SLICE, tfDataType, param, attrParsers);
 }
 
 TensorflowParser::TensorflowParser(NeuralNetwork* network) : mTFNetwork(network) {

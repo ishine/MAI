@@ -15,30 +15,34 @@
 #pragma once
 
 #include "util/MAIType.h"
+#include "MemoryArena.h"
 
 namespace MAI {
 
 class Allocator {
 public:
     virtual ~Allocator() {}
-    virtual uint8* allocate(uint64 bytes) = 0;
-    virtual void deallocate(uint8* buffer, uint64 bytes) = 0;
+    virtual MemoryInfo allocate(uint64 bytes) = 0;
+    virtual void deallocate(const MemoryInfo& memInfo) = 0;
 };
 
 class CPUAllocator : public Allocator {
 public:
-    uint8* allocate(uint64 bytes) {
+    MemoryInfo allocate(uint64 bytes) {
+        MemoryInfo memInfo;
         if (0 == bytes) {
-            return NULL;
+            return memInfo;
         }
         void* data = NULL;
         data = malloc(bytes);
-        return (uint8*)data;
+        memInfo.ptr = (uint8*)data;
+        memInfo.offset = 0;
+        memInfo.size = bytes;
+        return memInfo;
     }
 
-    void deallocate(uint8* buffer, uint64 bytes) {
-        MAI_UNUSED(bytes);
-        free(buffer);
+    void deallocate(const MemoryInfo& memInfo) {
+        free(memInfo.ptr);
     }
 };
 

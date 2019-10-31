@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include "core/SimpleNeuralNetwork.h"
 #include "source/core/OpenMP.h"
 #include "Allocator.h"
@@ -22,7 +23,8 @@
 namespace MAI {
 
 SimpleNeuralNetwork::SimpleNeuralNetwork() {
-    //Op::CPU::CPURegister cpuRegister;
+    Op::CPU::CPURegister::getInstance();
+
     OpenMP::setNumThreads(OpenMP::getNumCPUCores());
 }
 
@@ -57,6 +59,14 @@ MAI_STATUS SimpleNeuralNetwork::run() {
 }
 
 MAI_STATUS SimpleNeuralNetwork::addOperator(std::unique_ptr<Operator>& op) {
+    for (const std::string& name : op->inputNames()) {
+        mTensorsOutDegreeMap[name].emplace_back(op->name());
+    }
+
+    for (const std::string& name : op->outputNames()) {
+        mTensorsInDegreeMap[name].emplace_back(op->name());
+    }
+
     op->setNeuralNetwork(this);
     mOperatorNames.emplace_back(op->name());
     mOperators.emplace_back(std::move(op));
@@ -73,6 +83,20 @@ MAI_STATUS SimpleNeuralNetwork::removeOperator(const std::string& opName) {
 
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
         if ((*it)->name() == opName) {
+            for (const std::string& inputName : (*it)->inputNames()) {
+                auto& opVector = mTensorsOutDegreeMap[inputName];
+                auto degreeIt = std::find(opVector.begin(), opVector.end(), opName);
+                if (degreeIt != opVector.end()) {
+                    opVector.erase(degreeIt);
+                }
+            }
+            for (const std::string& outputName : (*it)->outputNames()) {
+                auto& opVector = mTensorsInDegreeMap[outputName];
+                auto degreeIt = std::find(opVector.begin(), opVector.end(), opName);
+                if (degreeIt != opVector.end()) {
+                    opVector.erase(degreeIt);
+                }
+            }
             mOperators.erase(it);
             break;
         }
@@ -98,6 +122,8 @@ MAI_STATUS SimpleNeuralNetwork::removeTensor(const std::string& tensorName) {
 
     for (auto it = mTensors.begin(); it != mTensors.end(); ++it) {
         if (it->first == tensorName) {
+            mTensorsInDegreeMap.erase(tensorName);
+            mTensorsOutDegreeMap.erase(tensorName);
             mTensors.erase(it);
             break;
         }
@@ -112,6 +138,14 @@ Tensor* SimpleNeuralNetwork::getTensor(const std::string& name) {
 
 std::vector<std::string> SimpleNeuralNetwork::getTensorNames() {
     return mOperatorNames;
+}
+
+int32 SimpleNeuralNetwork::getTensorInDegree(const std::string& name) {
+    return mTensorsInDegreeMap[name].size();
+}
+
+int32 SimpleNeuralNetwork::getTensorOutDegree(const std::string& name) {
+    return mTensorsOutDegreeMap[name].size();
 }
 
 Operator* SimpleNeuralNetwork::getOperator(const std::string& name) {

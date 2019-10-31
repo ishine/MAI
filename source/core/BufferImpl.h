@@ -42,6 +42,7 @@ private:
     uint8* mBufferPtr;
     bool mIsConst;
     uint64 mSize;
+    MemoryInfo memoryInfo;
 };
 
 } // namespace MAI

@@ -47,6 +47,10 @@ std::vector<int32> calcPaddings(PaddingMode paddingMode, const std::vector<int32
             paddingHTSize = paddingHBSize = (kSize[0] - 1);
             paddingWLSize = paddingWRSize = (kSize[1] - 1);
             break;
+        case VALID:
+            paddingHTSize = paddingHBSize = 0;
+            paddingWLSize = paddingWRSize = 0;
+            break;
         default:
             break;
     };

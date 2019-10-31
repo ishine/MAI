@@ -27,6 +27,7 @@ class Tensor {
 public:
     Tensor(DataType dataType);
     Tensor(DataType dataType, Allocator* allocator);
+    Tensor(const Tensor* tensor, bool reuseBuffer = false);
     virtual ~Tensor();
 
 
@@ -57,16 +58,16 @@ public:
     virtual void resize(const std::vector<shape_t>& shape);
     virtual void zero();
     virtual void setConst(bool isConst);
-    virtual bool isConst();
+    virtual bool isConst() const;
 
     template<typename T>
     inline const T* data() const {
-        return reinterpret_cast<const T*>(mBuffer->data());
+        return mBuffer != NULL ? reinterpret_cast<const T*>(mBuffer->data()) : NULL;
     }
 
     template<typename T>
     inline T* mutableData() {
-        return reinterpret_cast<T*>(mBuffer->mutableData());
+        return mBuffer != NULL ? reinterpret_cast<T*>(mBuffer->mutableData()) : NULL;
     }
 
     virtual std::vector<shape_t> shape() const;//TODO: (gavinchen) use const std::vector<uint64>&

@@ -27,12 +27,18 @@ SimpleBuffer::SimpleBuffer(Allocator* allocator) :
     mSize(0) {
 }
 
-SimpleBuffer::~SimpleBuffer(){}
+SimpleBuffer::~SimpleBuffer(){
+    if (mBufferPtr) {
+        mAllocator->deallocate(memoryInfo);
+        mBufferPtr = NULL;
+    }
+}
 
 MAI_STATUS SimpleBuffer::allocate(int64 bytes) {
     MAI_CHECK(mAllocator != NULL, "Allocator is null");
     MAI_CHECK(mBufferPtr == NULL, "Buffer has been allocated");
-    mBufferPtr = mAllocator->allocate(bytes);
+    memoryInfo = mAllocator->allocate(bytes);
+    mBufferPtr = memoryInfo.ptr;
     MAI_CHECK(mBufferPtr != NULL, "allocate buffer failed, sizes:%d", bytes);
     mSize = bytes;
     return MAI_SUCCESS;

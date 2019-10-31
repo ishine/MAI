@@ -32,6 +32,8 @@ DECLARE_REGISTER_OP(BiasAdd);
 DECLARE_REGISTER_OP(Relu);
 DECLARE_REGISTER_OP(Relu1);
 DECLARE_REGISTER_OP(Relu6);
+DECLARE_REGISTER_OP(CRelu);
+DECLARE_REGISTER_OP(LeakyRelu);
 DECLARE_REGISTER_OP(Sigmoid);
 DECLARE_REGISTER_OP(Softmax);
 DECLARE_REGISTER_OP(FusedBatchNorm);
@@ -48,15 +50,26 @@ DECLARE_REGISTER_OP(MaxPool);
 DECLARE_REGISTER_OP(AvgPool);
 DECLARE_REGISTER_OP(GlobalAvgPool);
 DECLARE_REGISTER_OP(Concat);
+DECLARE_REGISTER_OP(Pack);
 DECLARE_REGISTER_OP(Mul);
 DECLARE_REGISTER_OP(Pad);
 DECLARE_REGISTER_OP(Gemm);
 DECLARE_REGISTER_OP(Gather);
 DECLARE_REGISTER_OP(Add);
 DECLARE_REGISTER_OP(Dropout);
+DECLARE_REGISTER_OP(ResizeBilinear);
+DECLARE_REGISTER_OP(StridedSlice);
+DECLARE_REGISTER_OP(Identity);
+DECLARE_REGISTER_OP(TransposeConv2d);
 
 class CPURegister {
 public:
+    inline static CPURegister* getInstance() {
+        static CPURegister cpuRegister;
+        return &cpuRegister;
+    }
+    ~CPURegister() = default;
+private:
     CPURegister() {
         REGISTER_OP(Transpose);
         REGISTER_OP(Reshape);
@@ -66,6 +79,8 @@ public:
         REGISTER_OP(Relu);
         REGISTER_OP(Relu1);
         REGISTER_OP(Relu6);
+        REGISTER_OP(CRelu);
+        REGISTER_OP(LeakyRelu);
         REGISTER_OP(Sigmoid);
         REGISTER_OP(Softmax);
         REGISTER_OP(FusedBatchNorm);
@@ -82,14 +97,18 @@ public:
         REGISTER_OP(AvgPool);
         REGISTER_OP(GlobalAvgPool);
         REGISTER_OP(Concat);
+        REGISTER_OP(Pack);
         REGISTER_OP(Mul);
         REGISTER_OP(Pad);
         REGISTER_OP(Gemm);
         REGISTER_OP(Gather);
         REGISTER_OP(Add);
         REGISTER_OP(Dropout);
+        REGISTER_OP(ResizeBilinear);
+        REGISTER_OP(StridedSlice);
+        REGISTER_OP(Identity);
+        REGISTER_OP(TransposeConv2d);
     }
-    ~CPURegister() = default;
 };
 
 } // namespace CPU

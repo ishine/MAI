@@ -31,6 +31,8 @@ public:
     virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor);
     virtual MAI_STATUS removeTensor(const std::string& tensorName);
     virtual Tensor* getTensor(const std::string& name);
+    virtual int32 getTensorInDegree(const std::string& name);
+    virtual int32 getTensorOutDegree(const std::string& name);
     virtual std::vector<std::string> getTensorNames();
     virtual Operator* getOperator(const std::string& name);
     virtual std::vector<std::string> getOperatorNames();
@@ -48,6 +50,8 @@ private:
     std::vector<std::string> mTensorNames;
     std::vector<std::string> mModelInputs;
     std::vector<std::string> mModelOutputs;
+    std::map<std::string, std::vector<std::string>> mTensorsOutDegreeMap;// Tensor's out-degree
+    std::map<std::string, std::vector<std::string>> mTensorsInDegreeMap;// Tensor's in-degree
 
 };
 
