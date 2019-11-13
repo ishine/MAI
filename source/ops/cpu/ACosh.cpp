@@ -52,7 +52,9 @@ private:
 };
 
 void registerACosh() {
-    MAI_REGISTER_OP((OpContext{.opType=ACOSH,}), float, ACosh);
+    MAI_REGISTER_OP((OpContextBuilder()
+                .setOperatorType(ACOSH)
+                .build()), float, ACosh);
 }
 
 } // namespace CPU

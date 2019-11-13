@@ -118,12 +118,12 @@ public:
 
     static PaddingMode tf2MIPaddingMode(const std::string& paddingModeStr) {
         if (paddingModeStr == "SAME") {
-            return SAME;
+            return PADDING_SAME;
         }
         if (paddingModeStr == "VALID") {
-            return VALID;
+            return PADDING_VALID;
         }
-        return INVALID;
+        return PADDING_INVALID;
     }
 };
 

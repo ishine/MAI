@@ -47,7 +47,7 @@ private:
 };
 
 void registerDropout() {
-    MAI_REGISTER_OP((OpContext{.opType=DROPOUT,}), Dropout);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(DROPOUT).build()), Dropout);
 }
 
 } // namespace CPU

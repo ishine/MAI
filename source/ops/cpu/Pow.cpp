@@ -60,7 +60,7 @@ private:
 };
 
 void registerPow() {
-    MAI_REGISTER_OP((OpContext{.opType=POW,}), float, Pow);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(POW).build()), float, Pow);
 }
 
 } // namespace CPU

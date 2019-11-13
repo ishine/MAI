@@ -124,7 +124,7 @@ private:
 };
 
 void registerArgMin() {
-    MAI_REGISTER_OP((OpContext{.opType=ARG_MIN,}), float, ArgMin);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(ARG_MIN).build()), float, ArgMin);
 }
 
 } // namespace CPU

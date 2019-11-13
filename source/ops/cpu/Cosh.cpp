@@ -52,7 +52,7 @@ private:
 };
 
 void registerCosh() {
-    MAI_REGISTER_OP((OpContext{.opType=COSH,}), float, Cosh);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(COSH).build()), float, Cosh);
 }
 
 } // namespace CPU

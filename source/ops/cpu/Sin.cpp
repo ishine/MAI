@@ -52,7 +52,7 @@ private:
 };
 
 void registerSin() {
-    MAI_REGISTER_OP((OpContext{.opType=SIN,}), float, Sin);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(SIN).build()), float, Sin);
 }
 
 } // namespace CPU

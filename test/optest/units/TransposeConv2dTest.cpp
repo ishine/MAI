@@ -24,7 +24,7 @@ TEST_F(TransposeConv2dTest, floatWithSingleChannelSame_NHWC_OHWI) {
     TransposeConv2dParam* param = new TransposeConv2dParam();
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
-    param->paddingMode = SAME;
+    param->paddingMode = PADDING_SAME;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(TRANSPOSE_CONV2D)

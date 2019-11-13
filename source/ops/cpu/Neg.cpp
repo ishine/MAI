@@ -52,7 +52,7 @@ private:
 };
 
 void registerNeg() {
-    MAI_REGISTER_OP((OpContext{.opType=NEG,}), float, Neg);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(NEG).build()), float, Neg);
 }
 
 } // namespace CPU

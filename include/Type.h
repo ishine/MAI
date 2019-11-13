@@ -120,6 +120,13 @@ enum DataType {
     DT_HALF = 19,
 };
 
+enum DeviceType {
+    DEVICE_CPU,
+    DEVICE_GPU,
+    DEVICE_DSP,
+    DEVICE_NPU,
+};
+
 inline std::string getNameFromDataType(DataType dataType) {
     switch(dataType) {
     case DT_INVALID:return "DT_INVALID";
@@ -243,15 +250,16 @@ DATA_FORMAT_INDEX(OIHW,-1,2,3,-1,1,0);
 DATA_FORMAT_INDEX(IOHW,-1,2,3,-1,0,1);
 
 enum PaddingMode {
-    INVALID,
-    VALID,
-    SAME,
-    FULL,
+    PADDING_INVALID,
+    PADDING_VALID,
+    PADDING_SAME,
+    PADDING_FULL,
 };
 
 struct OpContext {
     MAIOperator opType;
     DataType dataType;
+    DeviceType deviceType;
 
     bool operator < (const OpContext& opContext) const {
 #define COMPARE(value) \
@@ -260,6 +268,11 @@ struct OpContext {
         }
 
         COMPARE(opType)
+        //if (deviceType != opContext.deviceType) {
+            ////printf("deviceType:%d target:%d", deviceType, opContext.deviceType);
+            //return deviceType < opContext.deviceType;
+        //}
+        COMPARE(deviceType)
         if (dataType != opContext.dataType) {
             if (dataType == DT_INVALID || opContext.dataType == DT_INVALID) {
                 return false;
@@ -280,6 +293,36 @@ struct OpContext {
            << "}";
         return ss.str();
     }
+};
+
+class OpContextBuilder {
+public:
+    OpContextBuilder() {
+        mOpContext.opType = INVALID;
+        mOpContext.dataType = DT_INVALID;
+        mOpContext.deviceType = DEVICE_CPU;
+    }
+
+    inline OpContextBuilder& setOperatorType(MAIOperator op) {
+        mOpContext.opType = op;
+        return *this;
+    }
+
+    inline OpContextBuilder& setDataType(DataType dataType) {
+        mOpContext.dataType = dataType;
+        return *this;
+    }
+
+    inline OpContextBuilder& setDeviceType(DeviceType deviceType) {
+        mOpContext.deviceType = deviceType;
+        return *this;
+    }
+
+    inline OpContext build() {
+        return mOpContext;
+    }
+private:
+    OpContext mOpContext;
 };
 
 #define MAI_DYNAMIC_DIM -1

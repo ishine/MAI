@@ -52,7 +52,7 @@ private:
 };
 
 void registerAbs() {
-    MAI_REGISTER_OP((OpContext{.opType=ABS,}), float, Abs);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(ABS).build()), float, Abs);
 }
 
 } // namespace CPU

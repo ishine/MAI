@@ -70,7 +70,7 @@ private:
 };
 
 void registerExpandDims() {
-    MAI_REGISTER_OP((OpContext{.opType=EXPAND_DIMS,}), ExpandDims);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(EXPAND_DIMS).build()), ExpandDims);
 }
 
 } // namespace CPU

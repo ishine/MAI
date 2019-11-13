@@ -109,7 +109,7 @@ private:
 };
 
 void registerPack() {
-    MAI_REGISTER_OP((OpContext{.opType=PACK,}), Pack);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(PACK).build()), Pack);
 }
 
 } // namespace CPU

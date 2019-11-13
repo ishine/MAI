@@ -52,7 +52,7 @@ private:
 };
 
 void registerSigmoid() {
-    MAI_REGISTER_OP((OpContext{.opType=SIGMOID,}), float, Sigmoid);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(SIGMOID).build()), float, Sigmoid);
 }
 
 } // namespace CPU

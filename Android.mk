@@ -12,9 +12,10 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/include            \
                     $(LOCAL_PATH)/source/ops/cpu/ref \
                     $(LOCAL_PATH)/source/ops/cpu/ \
                     $(LOCAL_PATH)/3rd_party/openmp/include \
+                    $(LOCAL_PATH)/3rd_party/opencl \
                     $(call intermediates-dir-for, SHARED_LIBRARIES, $(LOCAL_MODULE))/proto
 
-LOCAL_SRC_FILES := $(call all-cpp-files-under,source/core source/ops/cpu source/util)
+LOCAL_SRC_FILES := $(call all-cpp-files-under,source/core source/ops/cpu source/util source/ops/gpu)
 
 LOCAL_MULTILIB := 64
 LOCAL_STATIC_LIBRARIES := libomp_static libprofiling_static

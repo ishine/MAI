@@ -106,7 +106,7 @@ private:
 };
 
 void registerBiasAdd() {
-    MAI_REGISTER_OP((OpContext{.opType=BIAS_ADD,}), float, BiasAdd);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(BIAS_ADD).build()), float, BiasAdd);
 }
 
 } // namespace CPU

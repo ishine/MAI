@@ -53,7 +53,7 @@ private:
 };
 
 void registerTan() {
-    MAI_REGISTER_OP((OpContext{.opType=TAN,}), float, Tan);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(TAN).build()), float, Tan);
 }
 
 } // namespace CPU

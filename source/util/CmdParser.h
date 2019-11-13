@@ -26,12 +26,21 @@
 
 namespace MAI {
 
+enum class CmdStatus {
+    HELP, // print help info
+    ERROR, // parse error
+    SUCCESS, // parse success
+};
+
+#define ReaderFunction std::function<std::string(const std::string& valueStr, T& value)>
+
 template<class T>
 std::string defaultReader(const std::string& str, T& value) {
     std::istringstream ss(str);
+
     if (!(ss >> value && ss.eof())) {
         std::stringstream ss;
-        ss << "value(" << value << ") cannot be converted to T";
+        ss << "value(" << str << ") cannot be parsed";
         return ss.str();
     }
     return "";
@@ -56,6 +65,43 @@ public:
     }
 private:
     T mLow, mHigh;
+};
+
+template<class T>
+struct EnumReader {
+public:
+    EnumReader(const std::map<std::string, T>& values) : mValues(values) {
+    }
+    std::string operator()(const std::string& str, T& value) {
+        std::string valueStr;
+        std::string error = defaultReader<std::string>(str, valueStr);
+        if (!error.empty()) {
+            return error;
+        }
+
+        if (mValues.find(valueStr) == mValues.end()) {
+            std::stringstream ss;
+            ss << "value(" << value << ") must be one of {" << enumToString() << "}";
+            return ss.str();
+        }
+        value = mValues[valueStr];
+        return "";
+    }
+
+    EnumReader<T>& add(T v) {
+        mValues.emplace_back(v);
+        return *this;
+    }
+private:
+    std::string enumToString() {
+        std::stringstream ss;
+        for (auto kv : mValues) {
+            ss << kv.first << ", ";
+        }
+        return ss.str();
+    }
+private:
+    std::map<std::string, T> mValues;
 };
 
 template<class T>
@@ -85,15 +131,15 @@ private:
     std::vector<T> mValues;
 };
 
-template<class T>
+template<class T, class T2 = T>
 struct ListReader {
 public:
-    ListReader(const std::string& sep = ",")
-        : mSep(sep) {
+    ListReader(std::function<std::string(const std::string& valueStr, T2& value)> reader = defaultReader<T2>, const char& sep = ',')
+        : mReader(reader), mSep(sep) {
     }
 
     std::string operator()(const std::string& str, std::vector<T>& value) {
-        return strSplit(str, ',', value);
+        return strSplit(str, mSep, value);
     }
 
     std::string strSplit(const std::string& s, const char& sep, std::vector<T>& value) {
@@ -101,8 +147,8 @@ public:
         ss.str(s);
         std::string item;
         while (std::getline(ss, item, sep)) {
-            T v;
-            std::string error = defaultReader(item, v);
+            T2 v;
+            std::string error = mReader(item, v);
             if (!error.empty()) {
                 return error;
             }
@@ -112,32 +158,34 @@ public:
     }
 
 private:
-    const std::string& mSep;
+    std::function<std::string(const std::string& valueStr, T2& value)> mReader;
+    const char& mSep;
 };
 
 class CmdParser {
 public:
-    CmdParser& add(const std::string& longName, const std::string& desc) {
+    inline CmdParser& add(const std::string& longName, const std::string& desc) {
         if (mOptions.count(longName)) {
             MAI_ABORT("Repeated flag:%s", longName.c_str());
             return *this;
         }
-        std::shared_ptr<Parser> parser(new FlagParser(longName, 0, desc));
+        std::shared_ptr<Parser> parser(new FlagParser(this, longName, 0, desc));
         mOptions[longName] = parser;
         return *this;
     }
 
-    CmdParser& add(char shortName, const std::string& desc) {
+    inline CmdParser& add(char shortName, const std::string& desc) {
         std::string name(1, shortName);
         if (mOptions.count(name)) {
             MAI_ABORT("Repeated flag:%c", shortName);
             return *this;
         }
-        std::shared_ptr<Parser> parser(new FlagParser("", shortName, desc));
+        std::shared_ptr<Parser> parser(new FlagParser(this, "", shortName, desc));
         mOptions[name] = parser;
         return *this;
     }
-    CmdParser& add(const std::string& longName, char shortName, const std::string& desc) {
+
+    inline CmdParser& add(const std::string& longName, char shortName, const std::string& desc) {
         if (mOptions.count(longName)) {
             MAI_ABORT("Repeated flag:%s", longName.c_str());
             return *this;
@@ -147,59 +195,29 @@ public:
             MAI_ABORT("Repeated flag:%c", shortName);
             return *this;
         }
-        std::shared_ptr<Parser> parser(new FlagParser(longName, shortName, desc));
+        std::shared_ptr<Parser> parser(new FlagParser(this, longName, shortName, desc));
         mOptions[std::string(1, shortName)] = parser;
         mOptions[longName] = parser;
-        return *this;
-    }
-
-    template<class T>
-    CmdParser& add(const std::string& longName, char shortName, const std::string& desc,
-            bool must, T def, std::function<std::string(const std::string& valueStr, T& value)> valueReader = defaultReader<T>) {
-        if (mOptions.count(longName)) {
-            MAI_ABORT("Repeated flag:%s", longName.c_str());
-            return *this;
-        }
-
-        if (mOptions.count(std::string(1, shortName))) {
-            MAI_ABORT("Repeated flag:%c", shortName);
-            return *this;
-        }
-        std::shared_ptr<Parser> parser(new KeyValueParser<T>(longName, shortName, desc, must, def, valueReader));
-        mOptions[std::string(1, shortName)] = parser;
-        mOptions[longName] = parser;
-        return *this;
-    }
-
-    template<class T>
-    CmdParser& add(char shortName, const std::string& desc,
-            bool must, T def, std::function<std::string(const std::string& valueStr, T& value)> valueReader = defaultReader<T>) {
-        if (mOptions.count(std::string(1, shortName))) {
-            MAI_ABORT("Repeated flag:%c", shortName);
-            return *this;
-        }
-        std::shared_ptr<Parser> parser(new KeyValueParser<T>("", shortName, desc, must, def, valueReader));
-        mOptions[std::string(1, shortName)] = parser;
         return *this;
     }
 
     template<class T>
     CmdParser& add(const std::string& longName, const std::string& desc,
-            bool must, T def, std::function<std::string(const std::string& valueStr, T& value)> valueReader = defaultReader<T>) {
+            bool must, T def = T(), ReaderFunction valueReader = defaultReader<T>) {
         if (mOptions.count(longName)) {
             MAI_ABORT("Repeated flag:%s", longName.c_str());
             return *this;
         }
-        std::shared_ptr<Parser> parser(new KeyValueParser<T>(longName, 0, desc, must, def, valueReader));
+        std::shared_ptr<Parser> parser(new KeyValueParser<T>(this, longName, 0, desc, must, def, valueReader));
         mOptions[longName] = parser;
         return *this;
     }
 
-    bool exist(const char& flag) const {
+    inline bool exist(const char& flag) const {
         return exist(std::string(1, flag));
     }
 
-    bool exist(const std::string& name) const {
+    inline bool exist(const std::string& name) const {
         if (mOptions.count(name) == 0) {
             return false;
         }
@@ -215,9 +233,19 @@ public:
         auto it = mOptions.find(name);
         MAI_CHECK(it != mOptions.end(), "Unsupported flag:%s", name.c_str());
 
-        const KeyValueParser<T>* parser = dynamic_cast<const KeyValueParser<T>*>(it->second.get());
+        const KeyValueParser<T>* parser = reinterpret_cast<const KeyValueParser<T>*>(it->second.get());
         MAI_CHECK(parser != NULL, "%s is not a k-v flag", name.c_str());
         return parser->read();
+    }
+
+    template<class T>
+    const std::vector<T> getList(const std::string& name) const {
+        auto it = mOptions.find(name);
+        MAI_CHECK(it != mOptions.end(), "Unsupported flag:%s", name.c_str());
+
+        const KeyValueParser<T>* parser = reinterpret_cast<const KeyValueParser<T>*>(it->second.get());
+        MAI_CHECK(parser != NULL, "%s is not a k-v flag", name.c_str());
+        return parser->readList();
     }
 
     template<class T>
@@ -225,54 +253,96 @@ public:
         return get<T>(std::string(1, flag));
     }
 
-    void parse(int argc, const char* const argv[]) {
+    template<class T>
+    const std::vector<T> getList(const char& flag) const {
+        return getList<T>(std::string(1, flag));
+    }
+
+    inline std::stringstream& addErrorLog() {
+        return mErrorStringStream;
+    }
+
+    inline std::string getErrorLog() {
+        return mErrorStringStream.str();
+    }
+
+    inline std::string getHelpInfo() {
+        std::stringstream ss;
+        ss << mProgramName << std::endl << std::endl;
+        ss << "Usage:" << std::endl;
+        std::vector<std::string> processedKey;
+        for(auto kv : mOptions) {
+            if (std::find(processedKey.begin(), processedKey.end(), kv.second->longName()) == processedKey.end()
+                    && std::find(processedKey.begin(), processedKey.end(), kv.second->shortName()) == processedKey.end()) {
+                if (!(kv.second->shortName().empty())) {
+                    processedKey.emplace_back(kv.second->shortName());
+                }
+                if (!(kv.second->longName().empty())) {
+                    processedKey.emplace_back(kv.second->longName());
+                }
+                ss << kv.second->getHelpInfo() << std::endl;
+            }
+        }
+        return ss.str();
+    }
+
+    CmdStatus parse(int argc, const char* const argv[]) {
+        // add default help info
+        if (mOptions.find("h") == mOptions.end() && mOptions.find("help") == mOptions.end()) {
+            add("help", 'h', "Help Info");
+        }
         if (argc < 1) {
-            return;
+            return CmdStatus::ERROR;
         }
 
         mProgramName = argv[0];// first data is program name
+        if (argc > 1 && (!strncmp(argv[1], "-h", 2) || !strncmp(argv[1], "--help", 6))) {
+            //printf(getHelpInfo().c_str());
+            return CmdStatus::HELP;
+        }
 
         for (int i = 1; i < argc; ++i) {
-            if (strncmp(argv[i], "--", 2) == 0) {
+            if (strncmp(argv[i], "--", 2) == 0) { // long flag
                 const char* p = strchr(argv[i] + 2, '=');
-                if (p) {
+                if (p) {// long flag has a value
                     std::string name(argv[i] + 2, p);
                     std::string value(p+1);
                     auto it = mOptions.find(name);
                     if (it != mOptions.end()) {
                         if(!mOptions[name]->setValue(value)) {
-                            MAI_ABORT("Cannot set value(%s) for flag(%s)", value.c_str(), name.c_str());
+                            continue;
                         }
                     } else {
-                        MAI_ABORT("Cannot parse flag:%s", name.c_str());
+                        addErrorLog() << "Cannot parse flag:" << name << std::endl;
                         continue;
                     }
-                } else {
+                } else {// no value set for long flag
                     std::string name(argv[i] + 2);
                     auto it = mOptions.find(name);
                     if (it == mOptions.end()) {
-                        MAI_ABORT("Cannot parse flag:%s", name.c_str());
+                        addErrorLog() << "Cannot parse flag:" << name << std::endl;
                         continue;
                     }
 
                     if (it->second->needValue()) {
                         if (i + 1 >= argc) {
-                            MAI_ABORT("%s miss value", name.c_str());
+                            addErrorLog() << name << " miss value" << std::endl;
                             continue;
                         } else {
                             if (!it->second->setValue(argv[++i])) {
-                                MAI_ABORT("Cannot set value(%s) for flag(%s)", argv[++i], name.c_str());
+                                addErrorLog() << "Cannot set value(" << argv[i-1]
+                                    << ") for flag(" << name << ")" << std::endl;
                                 continue;
                             }
                         }
                     } else {
                         if (!it->second->set()) {
-                            MAI_ABORT("%s need value", name.c_str());
+                            addErrorLog() << name << " need value" << std::endl;
                             continue;
                         }
                     }
                 }
-            } else if (strncmp(argv[i], "-", 1) == 0) {
+            } else if (strncmp(argv[i], "-", 1) == 0) { // short flag
                 if (!argv[i][1]) {
                     continue;
                 }
@@ -281,7 +351,7 @@ public:
                     last = argv[i][j];
                     auto it = mOptions.find(std::string(1, argv[i][j - 1]));
                     if (it == mOptions.end()) {
-                        MAI_ABORT("Cannot parse flag:%c", argv[i][j-1]);
+                        addErrorLog() << "Cannot parse flag:" << argv[i][j-1] << std::endl;
                         continue;
                     }
 
@@ -289,17 +359,18 @@ public:
                 }
                 auto it = mOptions.find(std::string(1, last));
                 if (it == mOptions.end()) {
-                    MAI_ABORT("Cannot parse flag:%c", last);
+                    addErrorLog() << "Cannot parse flag:" << last << std::endl;
                     continue;
                 }
 
                 if (it->second->needValue()) {
                     if (i + 1 < argc) {
                         if (!it->second->setValue(argv[i+1])) {
-                            MAI_ABORT("Cannot set value(%s) for flag(%c)", argv[i+1], last);
+                            addErrorLog() << "Cannot set value(" << argv[i+1]
+                                << ") for flag(" << last <<")"<< std::endl;
                         }
                     } else {
-                        MAI_ABORT("%c miss value", last);
+                        addErrorLog() << last << " miss value" << std::endl;
                         continue;
                     }
                 } else {
@@ -310,141 +381,225 @@ public:
 
         for (auto it = mOptions.begin(); it != mOptions.end(); ++it) {
             if (it->second->must() && !it->second->isSet()) {
-                MAI_ABORT("%s must be set", it->second->name().c_str());
+                addErrorLog() << it->second->name() << " must be set" << std::endl;
                 continue;
             }
         }
+
+        if (!mErrorStringStream.str().empty()) {
+            //ALOGE(mErrorStringStream.str().c_str());
+            //printf(getHelpInfo().c_str());
+            return CmdStatus::ERROR;
+        }
+        return CmdStatus::SUCCESS;
     }
 private:
     class Parser {
     public:
+        Parser(CmdParser* cmdParser) : mCmdParser(cmdParser) {
+        }
         virtual ~Parser() {}
         virtual bool needValue() const = 0;
         virtual bool set() = 0;// for flag option
         virtual bool setValue(const std::string& value) = 0; // for key-value option
         virtual bool isSet() const = 0;
         virtual bool must() const = 0;
-        virtual char shortName() const = 0;
+        virtual std::string shortName() const = 0;
         virtual std::string longName() const = 0;
         virtual std::string name() const = 0;
+        virtual std::string getHelpInfo() const = 0;
+        void addErrorLog(const std::string& errLog) {
+            mCmdParser->addErrorLog() << errLog << std::endl;
+        }
+
+        std::stringstream& addErrorLog() {
+            return mCmdParser->addErrorLog();
+        }
+    private:
+        CmdParser* mCmdParser;
     };
 
     class FlagParser : public Parser {
     public:
-        FlagParser(const std::string& longName, char shortName, const std::string& desc)
-            : Parser(), mIsSet(false), mShortName(shortName), mLongName(longName) {
+        FlagParser(CmdParser* cmdParser, const std::string& longName,
+                char shortName, const std::string& desc)
+            : Parser(cmdParser), mIsSet(false),
+            mLongName(longName), mDesc(desc) {
+            if (shortName != 0) {
+                mShortName = std::string(1, shortName);
+            }
 
         }
 
-        bool needValue() const {
+        inline bool needValue() const {
             return false;
         }
 
-        bool set() {
+        inline bool set() {
             if (mIsSet) {
-                MAI_ABORT("Flag %s has been set", name().c_str());
+                addErrorLog() << "Flag " << name() << " has been set" << std::endl;
+                return false;
             }
             mIsSet = true;
             return true;
         }
 
-        bool setValue(const std::string& value) {
-            MAI_ABORT("Flag '%s' no need value", name().c_str());
+        inline bool setValue(const std::string& value) {
+            addErrorLog() << "Flag " << name() << " no need value" << std::endl;
             return false;
         }
 
-        bool isSet() const {
+        inline bool isSet() const {
             return mIsSet;
         }
 
-        bool must() const {// FLAG no need to be set must
+        inline bool must() const {// FLAG no need to be set must
             return false;
         }
 
-        char shortName() const {
+        inline std::string shortName() const {
             return mShortName;
         }
-        std::string longName() const {
+
+        inline std::string longName() const {
             return mLongName;
         }
 
-        std::string name() const {
-            return mLongName.empty() ? std::string(1, mShortName) : mLongName;
+        inline std::string name() const {
+            return mLongName.empty() ? mShortName : mLongName;
+        }
+
+        inline std::string getHelpInfo() const {
+            std::stringstream ss;
+            if (!mShortName.empty() && !mLongName.empty()) {
+                ss << "-" << mShortName << ", --" << mLongName;
+            } else if (mShortName.empty()) {
+                ss << "-" << mShortName;
+            } else if (!mLongName.empty()) {
+                ss << "--" << mLongName;
+            }
+            if (!mDesc.empty()) {
+                ss << "\t\t" << mDesc;
+            }
+            return ss.str();
         }
 
     private:
         bool mIsSet;
-        char mShortName;
+        std::string mShortName;
         std::string mLongName;
+        std::string mDesc;
     };
 
     template<class T>
     class KeyValueParser : public Parser {
     public:
-        KeyValueParser(const std::string& longName, char shortName, const std::string& desc,
-                bool must, T& def, std::function<std::string(const std::string&, T&)> valueReader)
-            : Parser(), mMust(must), mIsSet(false), mShortName(shortName),
-            mLongName(longName), mValue(def), mReader(valueReader) {
+        KeyValueParser(CmdParser* cmdParser, const std::string& longName, char shortName, const std::string& desc,
+                bool must, T& def, ReaderFunction valueReader)
+            : Parser(cmdParser), mMust(must), mIsSet(false),
+            mLongName(longName), mDesc(desc), mReader(valueReader) {
+            if (shortName != 0) {
+                mShortName = std::string(1, shortName);
+            }
 
+            mValues.push_back(def);
         }
 
-        bool needValue() const {
+        KeyValueParser(CmdParser* cmdParser, const std::string& longName, char shortName, const std::string& desc,
+                bool must, ReaderFunction valueReader)
+            : Parser(cmdParser), mMust(must), mIsSet(false),
+            mLongName(longName), mDesc(desc), mReader(valueReader) {
+            if (shortName != 0) {
+                mShortName = std::string(1, shortName);
+            }
+        }
+
+        inline bool needValue() const {
             return true;
         }
 
-        bool set() {
-            MAI_ABORT("Need a value for flag:%s", name().c_str());
+        inline bool set() {
+            addErrorLog() << "Need a value for flag:" << name() << std::endl;
             return false;
         }
 
-        bool setValue(const std::string& value) {
+        inline bool setValue(const std::string& value) {
+            std::string r;
             if (mIsSet) {
-                MAI_ABORT("Flag '%s' has been set", name().c_str());
+                mValues.resize(mValues.size() + 1);
+                r = mReader(value, mValues[mValues.size() - 1]);
+            } else {
+                r = mReader(value, mValues[0]);
             }
-            std::string r = mReader(value, mValue);
             if (r.empty()) {
                 mIsSet = true;
                 return true;
             } else {
-                MAI_ABORT("Error: %s", r.c_str());
+                addErrorLog() << "Error: " << r << std::endl;
                 return false;
             }
         }
 
-        bool isSet() const {
+        inline bool isSet() const {
             return mIsSet;
         }
 
-        bool must() const {
+        inline bool must() const {
             return mMust;
         }
 
-        char shortName() const {
+        inline std::string shortName() const {
             return mShortName;
         }
 
-        std::string longName() const {
+        inline std::string longName() const {
             return mLongName;
         }
 
-        std::string name() const {
-            return mLongName.empty() ? std::string(1, mShortName) : mLongName;
+        inline std::string name() const {
+            return mLongName.empty() ? mShortName : mLongName;
         }
 
-        T read() const {
-            return mValue;
+        inline T read() const {
+            return mValues[0];
         }
+
+        inline std::vector<T> readList() const {
+            return mValues;
+        }
+
+        inline std::string getHelpInfo() const {
+            std::stringstream ss;
+            if (!mShortName.empty() && !mLongName.empty()) {
+                ss << "-" << mShortName << ", --" << mLongName;
+            } else if (!mShortName.empty()) {
+                ss << "-" << mShortName;
+            } else if (!mLongName.empty()) {
+                ss << "--" << mLongName;
+            }
+            ss << "\t\t";
+            if (mMust) {
+                ss <<"(required)";
+            }
+            if (!mDesc.empty()) {
+                ss << mDesc;
+            }
+            return ss.str();
+        }
+
     private:
         bool mMust;
         bool mIsSet;
-        char mShortName;
+        std::string mShortName;
         std::string mLongName;
-        T mValue;
-        std::function<std::string(const std::string&, T&)> mReader;
+        std::string mDesc;
+        std::vector<T> mValues;
+        ReaderFunction mReader;
     };
 
 private:
     std::map<std::string, std::shared_ptr<Parser>> mOptions;
     std::string mProgramName;
+    std::stringstream mErrorStringStream;
 };
 } //namespace MAI

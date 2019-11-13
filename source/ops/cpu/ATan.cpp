@@ -52,7 +52,7 @@ private:
 };
 
 void registerATan() {
-    MAI_REGISTER_OP((OpContext{.opType=ATAN,}), float, ATan);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(ATAN).build()), float, ATan);
 }
 
 } // namespace CPU

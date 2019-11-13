@@ -52,7 +52,7 @@ private:
 };
 
 void registerACos() {
-    MAI_REGISTER_OP((OpContext{.opType=ACOS,}), float, ACos);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(ACOS).build()), float, ACos);
 }
 
 } // namespace CPU

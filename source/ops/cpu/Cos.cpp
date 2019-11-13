@@ -52,7 +52,7 @@ private:
 };
 
 void registerCos() {
-    MAI_REGISTER_OP((OpContext{.opType=COS,}), float, Cos);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(COS).build()), float, Cos);
 }
 
 } // namespace CPU

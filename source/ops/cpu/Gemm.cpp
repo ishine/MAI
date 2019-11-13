@@ -181,7 +181,7 @@ private:
 };
 
 void registerGemm() {
-    MAI_REGISTER_OP((OpContext{.opType=GEMM,}), float, Gemm);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(GEMM).build()), float, Gemm);
 }
 
 } // namespace CPU

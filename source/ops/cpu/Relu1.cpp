@@ -52,7 +52,7 @@ private:
 };
 
 void registerRelu1() {
-    MAI_REGISTER_OP((OpContext{.opType=RELU1,}), float, Relu1);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(RELU1).build()), float, Relu1);
 }
 
 } // namespace CPU

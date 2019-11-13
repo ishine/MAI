@@ -125,9 +125,9 @@ private:
 };
 
 void registerGather() {
-    MAI_REGISTER_OP((OpContext{.opType=GATHER,}), float, Gather);
-    MAI_REGISTER_OP((OpContext{.opType=GATHER,}), int32, Gather);
-    MAI_REGISTER_OP((OpContext{.opType=GATHER,}), int64, Gather);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(GATHER).build()), float, Gather);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(GATHER).build()), int32, Gather);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(GATHER).build()), int64, Gather);
 }
 
 } // namespace CPU

@@ -92,7 +92,7 @@ private:
 };
 
 void registerReshape() {
-    MAI_REGISTER_OP((OpContext{.opType=RESHAPE,}), float, Reshape);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(RESHAPE).build()), float, Reshape);
 }
 
 } // namespace CPU

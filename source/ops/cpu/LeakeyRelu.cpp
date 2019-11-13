@@ -62,7 +62,7 @@ private:
 };
 
 void registerLeakyRelu() {
-    MAI_REGISTER_OP((OpContext{.opType=LEAKY_RELU,}), float, LeakyRelu);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(LEAKY_RELU).build()), float, LeakyRelu);
 }
 
 } // namespace CPU

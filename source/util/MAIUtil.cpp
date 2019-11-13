@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
 #include "util/MAIUtil.h"
 #if defined(_MSC_VER)
 #include <chrono>
@@ -30,7 +28,7 @@ std::vector<int32> calcPaddings(PaddingMode paddingMode, const std::vector<int32
     int32 paddingWLSize = 0;
     int32 paddingWRSize = 0;
     switch (paddingMode) {
-        case SAME:
+        case PADDING_SAME:
             if (kSize[0] % 2 != 0) {
                 paddingHTSize = (kSize[0] - 1) / 2;
                 paddingHBSize = (kSize[0] - 1) / 2 + 1;
@@ -43,11 +41,11 @@ std::vector<int32> calcPaddings(PaddingMode paddingMode, const std::vector<int32
                 paddingWRSize = (kSize[1] - 1) / 2;
             }
             break;
-        case FULL:
+        case PADDING_FULL:
             paddingHTSize = paddingHBSize = (kSize[0] - 1);
             paddingWLSize = paddingWRSize = (kSize[1] - 1);
             break;
-        case VALID:
+        case PADDING_VALID:
             paddingHTSize = paddingHBSize = 0;
             paddingWLSize = paddingWRSize = 0;
             break;
@@ -73,16 +71,16 @@ std::vector<int32> calculateHW(const std::vector<int32>& hw,
     auto calcSize = [](int32 k, PaddingMode paddingMode, int32 iSize, int32 s, const int32* paddings) -> int32 {
         int32 p = 0;
         switch(paddingMode) {
-            case SAME:
+            case PADDING_SAME:
                 p = (k - 1);
                 break;
-            case FULL:
+            case PADDING_FULL:
                 p = (k - 1) * 2;
                 break;
-            case VALID:
+            case PADDING_VALID:
                 p = 0;
                 break;
-            case INVALID:
+            case PADDING_INVALID:
                 p = paddings[0] + paddings[1];
         };
         int32 size = (iSize - k + p) / s + 1;

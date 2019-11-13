@@ -53,7 +53,7 @@ private:
 };
 
 void registerFloor() {
-    MAI_REGISTER_OP((OpContext{.opType=FLOOR,}), float, Floor);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(FLOOR).build()), float, Floor);
 }
 
 } // namespace CPU

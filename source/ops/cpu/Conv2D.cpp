@@ -136,7 +136,7 @@ private:
 };
 
 void registerConv2D() {
-    MAI_REGISTER_OP((OpContext{.opType=CONV2D,}), float, Conv2D);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(CONV2D).build()), float, Conv2D);
 }
 
 } // namespace CPU

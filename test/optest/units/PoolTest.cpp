@@ -53,34 +53,34 @@ void test(MAIOperator op,
 }
 
 TEST_F(PoolTest, avgPool_floatWithSingleChannelValid_NHWC) {
-    test<float>(AVG_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, VALID, {2,2,4,1}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
+    test<float>(AVG_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, PADDING_VALID, {2,2,4,1}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
             {2,1,3,1}, {3.5f,4.5f,5.5f,11.5f,12.5f,13.5f});
 }
 
 TEST_F(PoolTest, avgPool_floatWithSingleChannelSame_NHWC) {
-    test<float>(AVG_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, SAME, {2,2,4,1}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
+    test<float>(AVG_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, PADDING_SAME, {2,2,4,1}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},
             {2,2,4,1}, {3.5f,4.5f,5.5f,6.f,5.5f,6.5f,7.5f,8.f,11.5f,12.5f,13.5f,14.f,13.5f,14.5f,15.5f,16.f});
 }
 
 TEST_F(PoolTest, avgPool_floatWithMultiChannelValid_NHWC) {
-    test<float>(AVG_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, VALID, {1,2,2,2}, {1,2,3,4,5,6,7,8},
+    test<float>(AVG_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, PADDING_VALID, {1,2,2,2}, {1,2,3,4,5,6,7,8},
             {1,1,1,2}, {4.f,5.f});
 }
 
 TEST_F(PoolTest, avgPool_floatWithMultiChannelSame_NHWC) {
-    test<float>(AVG_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, SAME, {1,2,2,2}, {1,2,3,4,5,6,7,8},
+    test<float>(AVG_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, PADDING_SAME, {1,2,2,2}, {1,2,3,4,5,6,7,8},
             {1,2,2,2}, {4.f,5.f,5.f,6.f,6.f,7.f,7.f,8.f});
 }
 
 TEST_F(PoolTest, maxPool_floatWithMultiChannelSame_NHWC) {
-    test<float>(MAX_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, SAME, {1,2,2,2}, {-1,-2,-3,-4,-5,-6,-7,-8},
+    test<float>(MAX_POOL, DT_FLOAT, {1,2,2,1}, {1,1,1,1}, PADDING_SAME, {1,2,2,2}, {-1,-2,-3,-4,-5,-6,-7,-8},
             {1,2,2,2}, {-1,-2,-3,-4,-5,-6,-7,-8});
 }
 
 TEST_F(PoolTest, globalAveragePoolNCHW) {
-    test<float>(GLOBAL_AVG_POOL, DT_FLOAT, {1,1,3,3}/*not used*/, {1,1,1,1}/*not used*/, VALID/*not used*/, {1,1,3,3}, {1,2,3,4,5,6,7,8,9},
+    test<float>(GLOBAL_AVG_POOL, DT_FLOAT, {1,1,3,3}/*not used*/, {1,1,1,1}/*not used*/, PADDING_VALID/*not used*/, {1,1,3,3}, {1,2,3,4,5,6,7,8,9},
             {1,1,1,1}, {5}, NCHW);
-    test<float>(GLOBAL_AVG_POOL, DT_FLOAT, {1,1,3,3}/*not used*/, {1,1,1,1}/*not used*/, VALID/*not used*/, {1,2,3,3},
+    test<float>(GLOBAL_AVG_POOL, DT_FLOAT, {1,1,3,3}/*not used*/, {1,1,1,1}/*not used*/, PADDING_VALID/*not used*/, {1,2,3,3},
             {1,2,3,4,5,6,7,8,9,
              10,11,12,13,14,15,16,17,18,
             },

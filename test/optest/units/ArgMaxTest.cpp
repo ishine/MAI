@@ -25,7 +25,7 @@ TEST_F(ArgMaxTest, ArgMaxNoKeepDim) {
     param->keepDim = false;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
-            .setType(ARG_MAX)
+            .setType(OP_ARG_MAX)
             .setDataType(DT_FLOAT)
             .setInputNames({"input", "axis"})
             .setOutputNames({"output"})
@@ -47,7 +47,7 @@ TEST_F(ArgMaxTest, ArgMaxKeepDim) {
     param->keepDim = true;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
-            .setType(ARG_MAX)
+            .setType(OP_ARG_MAX)
             .setDataType(DT_FLOAT)
             .setInputNames({"input", "axis"})
             .setOutputNames({"output"})

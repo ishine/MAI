@@ -124,7 +124,7 @@ private:
 };
 
 void registerArgMax() {
-    MAI_REGISTER_OP((OpContext{.opType=ARG_MAX,}), float, ArgMax);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(OP_ARG_MAX).build()), float, ArgMax);
 }
 
 } // namespace CPU

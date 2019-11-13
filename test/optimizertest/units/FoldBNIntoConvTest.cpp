@@ -24,7 +24,7 @@ TEST_F(FoldBNIntoConvTest, Conv2DHWIO) {
     Conv2DParam* convParam = new Conv2DParam();
     convParam->dilations = {1,1,1,1};
     convParam->strides = {1,1,1,1};
-    convParam->paddingMode = VALID;
+    convParam->paddingMode = PADDING_VALID;
     convParam->group = 1;
 
     FusedBatchNormParam* fusedParam = new FusedBatchNormParam();
@@ -70,7 +70,7 @@ TEST_F(FoldBNIntoConvTest, Conv2D_BiasAdd) {
     Conv2DParam* convParam = new Conv2DParam();
     convParam->dilations = {1,1,1,1};
     convParam->strides = {1,1,1,1};
-    convParam->paddingMode = VALID;
+    convParam->paddingMode = PADDING_VALID;
     convParam->group = 1;
 
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
@@ -110,7 +110,7 @@ TEST_F(FoldBNIntoConvTest, Conv2D_BiasAdd_BatchNorm) {
     Conv2DParam* convParam = new Conv2DParam();
     convParam->dilations = {1,1,1,1};
     convParam->strides = {1,1,1,1};
-    convParam->paddingMode = VALID;
+    convParam->paddingMode = PADDING_VALID;
     convParam->group = 1;
 
     FusedBatchNormParam* fusedParam = new FusedBatchNormParam();
@@ -164,7 +164,7 @@ TEST_F(FoldBNIntoConvTest, DepthwiseConv2dHWIO) {
     DepthwiseConv2dParam* depthwiseConv2dParam = new DepthwiseConv2dParam();
     depthwiseConv2dParam->dilations = {1,1,1,1};
     depthwiseConv2dParam->strides = {1,1,1,1};
-    depthwiseConv2dParam->paddingMode = VALID;
+    depthwiseConv2dParam->paddingMode = PADDING_VALID;
 
     FusedBatchNormParam* fusedParam = new FusedBatchNormParam();
     fusedParam->epsilon = 0.001f;
@@ -208,7 +208,7 @@ TEST_F(FoldBNIntoConvTest, DepthwiseConv2d_BiasAdd) {
     DepthwiseConv2dParam* depthwiseConv2dParam = new DepthwiseConv2dParam();
     depthwiseConv2dParam->dilations = {1,1,1,1};
     depthwiseConv2dParam->strides = {1,1,1,1};
-    depthwiseConv2dParam->paddingMode = VALID;
+    depthwiseConv2dParam->paddingMode = PADDING_VALID;
 
     FusedBatchNormParam* fusedParam = new FusedBatchNormParam();
     fusedParam->epsilon = 0.001f;
