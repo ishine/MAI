@@ -36,6 +36,19 @@ enum MAI_STATUS {
     MAI_FAILED,
 };
 
+constexpr inline int cc(const char* s) {
+    return 1;
+}
+
+template<int id, typename EnumType, EnumType enumValue>
+struct TypeTraits{};
+
+#define MAI_DECLARE_TYPE_TRAITS(id, enumType, enumValue, T) \
+    template<> \
+    struct TypeTraits<cc(#id), enumType, enumValue> { \
+        typedef T Type; \
+    }
+
 #define DEFINE_OP_NAME(name) name,
 #define DEFINE_OP_NAME_INDEX(name, index) name = index,
 

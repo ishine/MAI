@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "GPUDevice.h"
+#pragma once
+
+#include "Allocator.h"
 
 namespace MAI {
 
-GPUDevice::GPUDevice() : mAllocator(this) {
-}
+class GPUDevice;
+class OpenCLAllocator : public Allocator {
+public:
+    OpenCLAllocator(GPUDevice* device);
 
-Runtime* GPUDevice::runtime() {
-    ALOGI("GPUDevice::runtime");
-    return &mOpenCLRuntime;
-}
+    MemoryInfo allocate(uint64 bytes) override;
 
-Allocator* GPUDevice::allocator() {
-    return &mAllocator;
-}
+    void deallocate(MemoryInfo& memInfo) override;
 
-REGISTE_DEVICE(DEVICE_GPU, GPUDevice);
+private:
+    GPUDevice* mDevice;
+};
 
 } // namespace MAI

@@ -14,6 +14,7 @@
 
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
+#include "runtime/GPUDevice.h"
 
 namespace MAI {
 namespace Op {
@@ -46,12 +47,32 @@ public:
         }
         return MAI_SUCCESS;
     }
+
+    MAI_STATUS run(Context* context) override {
+        ALOGI("GPU Relu run context ==================");
+        GPUDevice* device = context->device<DEVICE_GPU>();
+        //OpenCLRuntime* runtime = device->runtime();
+        const Tensor* input = getInputTensor(0);
+        Tensor* output = getOutputTensor(0);
+
+        MAI_OP_RUN_FIRST_START
+        MAI_CHECK_NULL(input);
+        MAI_CHECK_NULL(output);
+        output->resize(input->shape());
+        MAI_OP_RUN_FIRST_END
+
+        const T* inputData = input->data<T>();
+        T* outputData = output->mutableData<T>();
+        for (shape_t i = 0; i < input->elementSize(); ++i) {
+            outputData[i] = std::max(inputData[i], static_cast<T>(0));
+        }
+        return MAI_SUCCESS;
+    }
 private:
     bool mRunFirst;
 };
 
 void registerRelu() {
-    //ALOGI("register gpu relu");
     MAI_REGISTER_OP((OpContextBuilder().setOperatorType(RELU).setDeviceType(DEVICE_GPU).build()), float, Relu);
 }
 

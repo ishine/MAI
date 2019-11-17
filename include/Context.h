@@ -14,36 +14,38 @@
 
 #pragma once
 
-#include "util/MAIType.h"
-#include "MemoryArena.h"
+#include <string>
+#include <vector>
+//#include "Device.h"
 
 namespace MAI {
 
-class Allocator {
-public:
-    virtual ~Allocator() {}
-    virtual MemoryInfo allocate(uint64 bytes) = 0;
-    virtual void deallocate(MemoryInfo& memInfo) = 0;
-};
+//class GPUDevice;
+//MAI_DECLARE_TYPE_TRAITS(DeviceType, DEVICE_GPU, GPUDevice);
 
-class CPUAllocator : public Allocator {
+class Device;
+class Context {
 public:
-    MemoryInfo allocate(uint64 bytes) {
-        MemoryInfo memInfo;
-        if (0 == bytes) {
-            return memInfo;
-        }
-        void* data = NULL;
-        data = malloc(bytes);
-        memInfo.ptr = (uint8*)data;
-        memInfo.offset = 0;
-        memInfo.size = bytes;
-        return memInfo;
+    Context() = default;
+
+    template<DeviceType deviceType> typename
+    TypeTraits<cc("device"), DeviceType, deviceType>::Type*
+    device() {
+        return reinterpret_cast<typename TypeTraits<cc("device"), DeviceType, deviceType>::Type* >(mDevice);
+        //return mDevice.get();
     }
 
-    void deallocate(MemoryInfo& memInfo) {
-        free(memInfo.ptr);
+    //void setDevice(Device* device) {
+    //    mDevice.reset(device);
+    //}
+    //
+    void setDevice(Device* device) {
+        mDevice = device;
     }
+
+private:
+    //std::shared_ptr<Device> mDevice;
+    Device* mDevice;
 };
 
 } // namespace MAI

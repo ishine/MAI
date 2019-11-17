@@ -214,12 +214,14 @@ clGetCommandQueueInfo(cl_command_queue      command_queue,
                       size_t *              param_value_size_ret) CL_API_SUFFIX__VERSION_1_0;
 
 /* Memory Object APIs */
-extern CL_API_ENTRY cl_mem CL_API_CALL
+CL_API_ENTRY cl_mem CL_API_CALL
 clCreateBuffer(cl_context   context,
                cl_mem_flags flags,
                size_t       size,
                void *       host_ptr,
-               cl_int *     errcode_ret) CL_API_SUFFIX__VERSION_1_0;
+               cl_int *     errcode_ret) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clCreateBuffer, context, flags, size, host_ptr, errcode_ret);
+}
 
 #ifdef CL_VERSION_1_1
 
@@ -259,8 +261,10 @@ clCreatePipe(cl_context                 context,
 extern CL_API_ENTRY cl_int CL_API_CALL
 clRetainMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0;
 
-extern CL_API_ENTRY cl_int CL_API_CALL
-clReleaseMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0;
+CL_API_ENTRY cl_int CL_API_CALL
+clReleaseMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clReleaseMemObject, memobj);
+}
 
 extern CL_API_ENTRY cl_int CL_API_CALL
 clGetSupportedImageFormats(cl_context           context,

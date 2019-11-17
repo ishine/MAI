@@ -58,6 +58,16 @@ MAI_STATUS SimpleNeuralNetwork::run() {
     return MAI_SUCCESS;
 }
 
+MAI_STATUS SimpleNeuralNetwork::run(Context* context) {
+    ALOGI("SimpleNeuralNetwork::run with context");
+    for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
+        ALOGI("run op:%s, type:%s", (*it)->name().c_str(), getNameFromOperator((*it)->type()).c_str());
+        SCOPED_OPERATOR_PROFILE(getProfiler(), (*it)->name(), getNameFromOperator((*it)->type()));
+        (*it)->run(context);
+    }
+    return MAI_SUCCESS;
+}
+
 MAI_STATUS SimpleNeuralNetwork::addOperator(std::unique_ptr<Operator>& op) {
     for (const std::string& name : op->inputNames()) {
         mTensorsOutDegreeMap[name].emplace_back(op->name());

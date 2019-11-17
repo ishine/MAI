@@ -1,9 +1,10 @@
 #include <map>
 #include "CL/cl2.hpp"
+#include "include/Runtime.h"
 
 namespace MAI {
 
-class OpenCLRuntime {
+class OpenCLRuntime : public Runtime {
 public:
     enum class OpenCLDeviceType {
         UNKNOWN = -1,

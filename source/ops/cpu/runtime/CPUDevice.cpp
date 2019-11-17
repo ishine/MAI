@@ -19,9 +19,15 @@ namespace MAI {
 class CPUDevice : public Device {
 public:
     CPUDevice();
+    virtual Runtime* runtime();
 };
 
 CPUDevice::CPUDevice() {
+}
+
+Runtime* CPUDevice::runtime() {
+    ALOGI("CPUDevice::runtime");
+    return NULL;
 }
 
 } // namespace MAI

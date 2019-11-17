@@ -11,6 +11,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/include            \
                     $(LOCAL_PATH)/source/core        \
                     $(LOCAL_PATH)/source/ops/cpu/ref \
                     $(LOCAL_PATH)/source/ops/cpu/ \
+                    $(LOCAL_PATH)/source/ops/gpu/ \
                     $(LOCAL_PATH)/3rd_party/openmp/include \
                     $(LOCAL_PATH)/3rd_party/opencl \
                     $(call intermediates-dir-for, SHARED_LIBRARIES, $(LOCAL_MODULE))/proto

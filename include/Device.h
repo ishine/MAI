@@ -16,14 +16,21 @@
 
 #include "include/NeuralNetwork.h"
 #include "include/Tensor.h"
+#include "include/Runtime.h"
 
 namespace MAI {
+
+//class GPURuntime;
+//MAI_DECLARE_TYPE_TRAITS(DeviceType, DEVICE_GPU, GPURuntime);
 
 class Device {
 public:
     typedef std::function<std::shared_ptr<Device>()> CreateDeviceFunction;
     static std::shared_ptr<Device> createDevice(DeviceType deviceType);
     static void registerDevice(DeviceType deviceType, CreateDeviceFunction func);
+
+    virtual Runtime* runtime() = 0;
+    virtual Allocator* allocator() = 0;
     //virtual MAI_STATUS init(const NeuralNetwork& network) = 0;
     //virtual MAI_STATUS run(const Tensor& tensor) = 0;
 private:

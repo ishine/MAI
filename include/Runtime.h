@@ -12,22 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "GPUDevice.h"
+#pragma once
+
+#include "include/NeuralNetwork.h"
+#include "include/Tensor.h"
 
 namespace MAI {
 
-GPUDevice::GPUDevice() : mAllocator(this) {
-}
+class Runtime {
+};
 
-Runtime* GPUDevice::runtime() {
-    ALOGI("GPUDevice::runtime");
-    return &mOpenCLRuntime;
-}
-
-Allocator* GPUDevice::allocator() {
-    return &mAllocator;
-}
-
-REGISTE_DEVICE(DEVICE_GPU, GPUDevice);
 
 } // namespace MAI
