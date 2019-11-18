@@ -201,7 +201,9 @@ private:
 };
 
 void registerDepthwiseConv2d() {
-    MAI_REGISTER_OP((OpContext{.opType=DEPTHWISE_CONV2D,}), float, DepthwiseConv2d);
+    MAI_REGISTER_OP((OpContextBuilder()
+                .setOperatorType(DEPTHWISE_CONV2D)
+                .build()), float, DepthwiseConv2d);
 }
 
 } // namespace CPU

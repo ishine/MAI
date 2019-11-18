@@ -20,7 +20,7 @@ namespace Test {
 class ReluTest : public OperatorTest {
 };
 
-TEST_F(ReluTest, ReluBasic) {
+static void reluTest(DeviceType deviceType = DEVICE_CPU) {
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(RELU)
@@ -36,6 +36,14 @@ TEST_F(ReluTest, ReluBasic) {
     network->run();
 
     ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
+}
+
+TEST_F(ReluTest, ReluBasic) {
+    reluTest();
+}
+
+TEST_F(ReluTest, ReluGPUBasic) {
+    reluTest(DEVICE_GPU);
 }
 
 } // namespace Test

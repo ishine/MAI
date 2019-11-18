@@ -176,8 +176,8 @@ private:
 };
 
 void registerStridedSlice() {
-    MAI_REGISTER_OP((OpContext{.opType=STRIDED_SLICE,}), float, StridedSlice);
-    MAI_REGISTER_OP((OpContext{.opType=STRIDED_SLICE,}), int32, StridedSlice);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(STRIDED_SLICE).build()), float, StridedSlice);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(STRIDED_SLICE).build()), int32, StridedSlice);
 }
 
 } // namespace CPU

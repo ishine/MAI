@@ -164,19 +164,19 @@ public:
     static PaddingMode onnx2MIPaddingMode(const std::string& paddingModeStr) {
         if (paddingModeStr == "SAME_LOWER") {
             MAI_CHECK("Unsupport padding mode:%s", paddingModeStr.c_str());
-            return SAME;
+            return PADDING_SAME;
         }
         if (paddingModeStr == "SAME_UPPER") {
             MAI_CHECK("Unsupport padding mode:%s", paddingModeStr.c_str());
-            return SAME;
+            return PADDING_SAME;
         }
         if (paddingModeStr == "NOTSET") {
-            return INVALID;
+            return PADDING_INVALID;
         }
         if (paddingModeStr == "VALID") {
-            return VALID;
+            return PADDING_VALID;
         }
-        return INVALID;
+        return PADDING_INVALID;
     }
 };
 static bool findTensor(const onnx::GraphProto& graphProto, const std::string& name, onnx::TensorProto& tensor) {

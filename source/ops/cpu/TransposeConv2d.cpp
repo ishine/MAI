@@ -125,7 +125,7 @@ private:
 };
 
 void registerTransposeConv2d() {
-    MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE_CONV2D,}), float, TransposeConv2d);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(TRANSPOSE_CONV2D).build()), float, TransposeConv2d);
 }
 
 } // namespace CPU

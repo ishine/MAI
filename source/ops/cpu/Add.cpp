@@ -56,7 +56,7 @@ private:
 };
 
 void registerAdd() {
-    MAI_REGISTER_OP((OpContext{.opType=ADD,}), float, Add);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(ADD).build()), float, Add);
 }
 
 } // namespace CPU

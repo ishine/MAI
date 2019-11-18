@@ -18,6 +18,7 @@
 #include "Tensor.h"
 #include "Type.h"
 #include "Log.h"
+#include "Context.h"
 
 namespace MAI {
 
@@ -30,6 +31,9 @@ public:
     virtual ~Operator() = default;
     virtual MAI_STATUS init() = 0;
     virtual MAI_STATUS run() = 0;
+    virtual MAI_STATUS run(Context* context) {
+        return MAI_SUCCESS;
+    }
 
     void addInputName(const std::string& name);
 
@@ -175,6 +179,16 @@ public:
 struct LeakyReluParam : public Param {
 public:
     float alpha;
+};
+
+struct ArgMaxParam : public Param {
+public:
+    bool keepDim;
+};
+
+struct ArgMinParam : public Param {
+public:
+    bool keepDim;
 };
 
 } // namespace MAI

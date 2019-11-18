@@ -81,7 +81,7 @@ private:
 };
 
 void registerSqueeze() {
-    MAI_REGISTER_OP((OpContext{.opType=SQUEEZE,}), float, Squeeze);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(SQUEEZE).build()), float, Squeeze);
 }
 
 } // namespace CPU

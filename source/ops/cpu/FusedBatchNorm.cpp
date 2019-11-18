@@ -146,7 +146,7 @@ private:
 };
 
 void registerFusedBatchNorm() {
-    MAI_REGISTER_OP((OpContext{.opType=FUSED_BATCH_NORM,}), float, FusedBatchNorm);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(FUSED_BATCH_NORM).build()), float, FusedBatchNorm);
 }
 
 } // namespace CPU

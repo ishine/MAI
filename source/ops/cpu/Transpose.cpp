@@ -130,7 +130,7 @@ private:
 };
 
 void registerTranspose() {
-    MAI_REGISTER_OP((OpContext{.opType=TRANSPOSE,}), Transpose);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(TRANSPOSE).build()), Transpose);
 }
 
 } // namespace CPU

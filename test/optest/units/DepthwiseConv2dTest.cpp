@@ -25,7 +25,7 @@ TEST_F(DepthwiseConv2dTest, floatWithSingleChannelValid_NHWC_HWIO) {
     DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
-    param->paddingMode = VALID;
+    param->paddingMode = PADDING_VALID;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(DEPTHWISE_CONV2D)
@@ -51,7 +51,7 @@ TEST_F(DepthwiseConv2dTest, floatWithSingleChannelSame_NHWC_HWIO) {
     DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
-    param->paddingMode = SAME;
+    param->paddingMode = PADDING_SAME;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(DEPTHWISE_CONV2D)
@@ -80,7 +80,7 @@ TEST_F(DepthwiseConv2dTest, floatWithMultiChannelSame_NHWC_HWIO) {
     DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
-    param->paddingMode = SAME;
+    param->paddingMode = PADDING_SAME;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(DEPTHWISE_CONV2D)
@@ -107,7 +107,7 @@ TEST_F(DepthwiseConv2dTest, floatWithMultiChannelValid_NHWC_HWIO) {
     DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
-    param->paddingMode = VALID;
+    param->paddingMode = PADDING_VALID;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(DEPTHWISE_CONV2D)
@@ -134,7 +134,7 @@ TEST_F(DepthwiseConv2dTest, floatWithMultiChannelSameBias_NHWC_HWIO) {
     DepthwiseConv2dParam* param = new DepthwiseConv2dParam();
     param->dilations = {1,1,1,1};
     param->strides = {1,1,1,1};
-    param->paddingMode = SAME;
+    param->paddingMode = PADDING_SAME;
     std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
         .addOperator(OperatorBuilder()
             .setType(DEPTHWISE_CONV2D)

@@ -111,7 +111,7 @@ private:
 };
 
 void registerResizeBilinear() {
-    MAI_REGISTER_OP((OpContext{.opType=RESIZE_BILINEAR,}), float, ResizeBilinear);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(RESIZE_BILINEAR).build()), float, ResizeBilinear);
 }
 
 } // namespace CPU

@@ -55,7 +55,7 @@ public:
                 delete mParam;
             }
             mParam = new PoolParam();
-            mParam->paddingMode = VALID;
+            mParam->paddingMode = PADDING_VALID;
             mParam->strides = {1,1,1,1};
         }
         MAI_CHECK_NULL(mParam);
@@ -283,15 +283,15 @@ public:
 };
 
 void registerMaxPool() {
-    MAI_REGISTER_OP((OpContext{.opType=MAX_POOL,}), float, MaxPool);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(MAX_POOL).build()), float, MaxPool);
 }
 
 void registerAvgPool() {
-    MAI_REGISTER_OP((OpContext{.opType=AVG_POOL,}), float, AvgPool);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(AVG_POOL).build()), float, AvgPool);
 }
 
 void registerGlobalAvgPool() {
-    MAI_REGISTER_OP((OpContext{.opType=GLOBAL_AVG_POOL,}), float, GlobalAvgPool);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(GLOBAL_AVG_POOL).build()), float, GlobalAvgPool);
 }
 
 } // namespace CPU

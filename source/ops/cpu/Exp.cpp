@@ -52,7 +52,7 @@ private:
 };
 
 void registerExp() {
-    MAI_REGISTER_OP((OpContext{.opType=EXP,}), float, Exp);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(EXP).build()), float, Exp);
 }
 
 } // namespace CPU

@@ -86,9 +86,9 @@ private:
 };
 
 void registerSplit() {
-    MAI_REGISTER_OP((OpContext{.opType=SPLIT,}), int32, Split);
-    MAI_REGISTER_OP((OpContext{.opType=SPLIT,}), int64, Split);
-    MAI_REGISTER_OP((OpContext{.opType=SPLIT,}), float, Split);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(SPLIT).build()), float, Split);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(SPLIT).build()), int32, Split);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(SPLIT).build()), int64, Split);
 }
 
 } // namespace CPU

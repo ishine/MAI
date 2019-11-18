@@ -36,6 +36,19 @@ enum MAI_STATUS {
     MAI_FAILED,
 };
 
+constexpr inline int cc(const char* s) {
+    return 1;
+}
+
+template<int id, typename EnumType, EnumType enumValue>
+struct TypeTraits{};
+
+#define MAI_DECLARE_TYPE_TRAITS(id, enumType, enumValue, T) \
+    template<> \
+    struct TypeTraits<cc(#id), enumType, enumValue> { \
+        typedef T Type; \
+    }
+
 #define DEFINE_OP_NAME(name) name,
 #define DEFINE_OP_NAME_INDEX(name, index) name = index,
 
@@ -118,6 +131,13 @@ enum DataType {
     DT_QUINT16 = 16,
     DT_UINT16 = 17,
     DT_HALF = 19,
+};
+
+enum DeviceType {
+    DEVICE_CPU,
+    DEVICE_GPU,
+    DEVICE_DSP,
+    DEVICE_NPU,
 };
 
 inline std::string getNameFromDataType(DataType dataType) {
@@ -243,15 +263,16 @@ DATA_FORMAT_INDEX(OIHW,-1,2,3,-1,1,0);
 DATA_FORMAT_INDEX(IOHW,-1,2,3,-1,0,1);
 
 enum PaddingMode {
-    INVALID,
-    VALID,
-    SAME,
-    FULL,
+    PADDING_INVALID,
+    PADDING_VALID,
+    PADDING_SAME,
+    PADDING_FULL,
 };
 
 struct OpContext {
     MAIOperator opType;
     DataType dataType;
+    DeviceType deviceType;
 
     bool operator < (const OpContext& opContext) const {
 #define COMPARE(value) \
@@ -260,6 +281,11 @@ struct OpContext {
         }
 
         COMPARE(opType)
+        //if (deviceType != opContext.deviceType) {
+            ////printf("deviceType:%d target:%d", deviceType, opContext.deviceType);
+            //return deviceType < opContext.deviceType;
+        //}
+        COMPARE(deviceType)
         if (dataType != opContext.dataType) {
             if (dataType == DT_INVALID || opContext.dataType == DT_INVALID) {
                 return false;
@@ -280,6 +306,36 @@ struct OpContext {
            << "}";
         return ss.str();
     }
+};
+
+class OpContextBuilder {
+public:
+    OpContextBuilder() {
+        mOpContext.opType = INVALID;
+        mOpContext.dataType = DT_INVALID;
+        mOpContext.deviceType = DEVICE_CPU;
+    }
+
+    inline OpContextBuilder& setOperatorType(MAIOperator op) {
+        mOpContext.opType = op;
+        return *this;
+    }
+
+    inline OpContextBuilder& setDataType(DataType dataType) {
+        mOpContext.dataType = dataType;
+        return *this;
+    }
+
+    inline OpContextBuilder& setDeviceType(DeviceType deviceType) {
+        mOpContext.deviceType = deviceType;
+        return *this;
+    }
+
+    inline OpContext build() {
+        return mOpContext;
+    }
+private:
+    OpContext mOpContext;
 };
 
 #define MAI_DYNAMIC_DIM -1

@@ -50,8 +50,8 @@ private:
 };
 
 void registerShape() {
-    MAI_REGISTER_OP((OpContext{.opType=SHAPE,}), int32, Shape);
-    MAI_REGISTER_OP((OpContext{.opType=SHAPE,}), int64, Shape);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(SHAPE).build()), int32, Shape);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(SHAPE).build()), int64, Shape);
 }
 
 } // namespace CPU

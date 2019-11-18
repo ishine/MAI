@@ -23,7 +23,7 @@ class Allocator {
 public:
     virtual ~Allocator() {}
     virtual MemoryInfo allocate(uint64 bytes) = 0;
-    virtual void deallocate(const MemoryInfo& memInfo) = 0;
+    virtual void deallocate(MemoryInfo& memInfo) = 0;
 };
 
 class CPUAllocator : public Allocator {
@@ -41,7 +41,7 @@ public:
         return memInfo;
     }
 
-    void deallocate(const MemoryInfo& memInfo) {
+    void deallocate(MemoryInfo& memInfo) {
         free(memInfo.ptr);
     }
 };

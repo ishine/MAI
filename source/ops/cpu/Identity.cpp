@@ -46,7 +46,7 @@ private:
 };
 
 void registerIdentity() {
-    MAI_REGISTER_OP((OpContext{.opType=IDENTITY,}), Identity);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(IDENTITY).build()), Identity);
 }
 
 } // namespace CPU

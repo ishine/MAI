@@ -135,8 +135,8 @@ private:
 };
 
 void registerMul() {
-    MAI_REGISTER_OP((OpContext{.opType=MUL,}), float, Mul);
-    MAI_REGISTER_OP((OpContext{.opType=MUL,}), int32, Mul);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(MUL).build()), float, Mul);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(MUL).build()), int32, Mul);
 }
 
 } // namespace CPU

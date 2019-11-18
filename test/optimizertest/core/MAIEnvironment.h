@@ -24,7 +24,7 @@ namespace Test {
 class MAIEnvironment : public testing::Environment {
 public:
     virtual void SetUp() {
-        Op::CPU::CPURegister cpuRegister;
+        Op::CPU::CPURegister::getInstance();
     }
 
     virtual void TearDown() {

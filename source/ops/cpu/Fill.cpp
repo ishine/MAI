@@ -60,8 +60,8 @@ private:
 };
 
 void registerFill() {
-    MAI_REGISTER_OP((OpContext{.opType=FILL,}), float, Fill);
-    MAI_REGISTER_OP((OpContext{.opType=FILL,}), int32, Fill);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(FILL).build()), float, Fill);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(FILL).build()), int32, Fill);
 }
 
 } // namespace CPU

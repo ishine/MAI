@@ -14,6 +14,7 @@
 
 #pragma once
 #include <memory>
+#include "include/Type.h"
 
 namespace MAI {
 

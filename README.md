@@ -126,7 +126,40 @@ MAI是一个神经网络推理引擎，以跨平台为目标，开发目标：Li
       <td>Squeeze</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
+      <td>Tan</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
       <td>Tanh</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>ATan</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>ATanh</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>Sin</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>Sinh</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>ASin</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>ASinh</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>Cos</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>Cosh</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>ACos</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>ACosh</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
    <tr>
       <td>Transpose</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
@@ -142,5 +175,20 @@ MAI是一个神经网络推理引擎，以跨平台为目标，开发目标：Li
    </tr>
    <tr>
       <td>ResizeBilinear</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>Pow</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>Neg</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>ArgMax</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>ArgMin</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
+   </tr>
+   <tr>
+      <td>Abs</td> <td>yes</td> <td></td> <td></td> <td></td> <td>yes</td> <td></td> <td></td> <td></td>
    </tr>
 </table>

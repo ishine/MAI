@@ -26,6 +26,7 @@ public:
     ~SimpleNeuralNetwork() = default;
     virtual MAI_STATUS init();
     virtual MAI_STATUS run();
+    virtual MAI_STATUS run(Context* context);
     virtual MAI_STATUS addOperator(std::unique_ptr<Operator>& op);
     virtual MAI_STATUS removeOperator(const std::string& opName);
     virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor);

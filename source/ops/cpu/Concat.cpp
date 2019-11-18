@@ -99,7 +99,7 @@ private:
 };
 
 void registerConcat() {
-    MAI_REGISTER_OP((OpContext{.opType=CONCAT,}), Concat);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(CONCAT).build()), Concat);
 }
 
 } // namespace CPU

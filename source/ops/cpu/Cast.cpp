@@ -90,9 +90,7 @@ private:
 };
 
 void registerCast() {
-    MAI_REGISTER_OP((OpContext{.opType=CAST,}), Cast);
-    //MAI_REGISTER_OP((OpContext{.opType=CAST,}), int64, Cast);
-    //MAI_REGISTER_OP((OpContext{.opType=CAST,}), float, Cast);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(CAST).build()), Cast);
 }
 
 } // namespace CPU

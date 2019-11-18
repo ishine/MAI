@@ -52,8 +52,18 @@ public:
     inline Profiling::Profiler* getProfiler() {
         return mProfiler;
     }
+
+    inline void setDevice(std::shared_ptr<Device> device) {
+        mDevice = device;
+    }
+
+    inline std::shared_ptr<Device> getDevice() {
+        return mDevice;
+    }
+
     virtual MAI_STATUS init() = 0;
     virtual MAI_STATUS run() = 0;
+    virtual MAI_STATUS run(Context* context) = 0;
     virtual MAI_STATUS addOperator(std::unique_ptr<Operator>& op) = 0;
     virtual MAI_STATUS removeOperator(const std::string& opName) = 0;
     virtual MAI_STATUS addTensor(std::unique_ptr<Tensor>& tensor) = 0;
@@ -80,6 +90,7 @@ public:
 private:
     std::vector<std::unique_ptr<Optimizer> > mOptimizers;
     Profiling::Profiler* mProfiler;
+    std::shared_ptr<Device> mDevice;
 };
 
 } // namespace MAI

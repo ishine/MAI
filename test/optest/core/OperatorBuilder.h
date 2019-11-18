@@ -23,7 +23,7 @@ namespace Test {
 class OperatorBuilder {
 public:
 
-    OperatorBuilder() : mParam(NULL) {}
+    OperatorBuilder() : mOpContext(OpContextBuilder().build()), mParam(NULL) {}
 
     inline OperatorBuilder& setType(MAIOperator opType) {
         mOpContext.opType = opType;
@@ -32,6 +32,11 @@ public:
 
     inline OperatorBuilder& setDataType(DataType dataType) {
         mOpContext.dataType = dataType;
+        return *this;
+    }
+
+    inline OperatorBuilder& setDeviceType(DeviceType deviceType) {
+        mOpContext.deviceType = deviceType;
         return *this;
     }
 

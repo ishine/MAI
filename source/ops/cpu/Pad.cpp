@@ -166,7 +166,7 @@ private:
 };
 
 void registerPad() {
-    MAI_REGISTER_OP((OpContext{.opType=PAD,}), float, Pad);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(PAD).build()), float, Pad);
 }
 
 } // namespace CPU

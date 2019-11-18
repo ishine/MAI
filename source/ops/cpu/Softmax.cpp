@@ -110,7 +110,7 @@ private:
 };
 
 void registerSoftmax() {
-    MAI_REGISTER_OP((OpContext{.opType=SOFTMAX,}), float, Softmax);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(SOFTMAX).build()), float, Softmax);
 }
 
 } // namespace CPU
