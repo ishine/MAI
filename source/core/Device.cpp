@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "include/Device.h"
+#include "util/MAIType.h"
 
 namespace MAI {
 
@@ -20,7 +21,8 @@ std::map<DeviceType, Device::CreateDeviceFunction> Device::sMap;
 
 /*static*/
 std::shared_ptr<Device> Device::createDevice(DeviceType deviceType) {
-    ALOGI("createDevice : %d", deviceType);
+    ALOGI("createDevice : %d, sMap.size():%d", deviceType, sMap.size());
+    MAI_CHECK(sMap.find(deviceType) != sMap.end(), "Cannot create device for %d", deviceType);
     return sMap[deviceType]();
 }
 

@@ -26,6 +26,14 @@ void Profiler::reset() {
     mEventHub->reset();
 }
 
+int32_t EventHub::addEvent(const ProfileEvent& event) {
+    if (!mEnabled) {
+        return -1;
+    }
+    mEvents.push_back(event);
+    return mEvents.size() - 1;
+}
+
 int32_t EventHub::beginEvent(const ProfileEvent& event) {
     if (!mEnabled) {
         return -1;

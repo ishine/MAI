@@ -98,8 +98,11 @@ void Tensor::allocateBuffer(const std::vector<shape_t>& shape) {
     MAI_CHECK(mAllocator != NULL, "Allocator cannot be null");
     mShape = shape;
     mFlag |= MEMORY_OWNER;
-    mBuffer = new SimpleBuffer(mAllocator);
-    mBuffer->allocate(size());
+    mBuffer = mAllocator->allocateBuffer(size());
+    MAI_CHECK_NULL(mBuffer);
+    ALOGI("Tensor::allocateBuffer end");
+    //mBuffer = new SimpleBuffer(mAllocator);
+    //mBuffer->allocate(size());
 }
 
 void Tensor::resize(const std::vector<shape_t>& shape) {

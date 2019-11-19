@@ -14,15 +14,14 @@
 
 #pragma once
 
-#include "Allocator.h"
+#include "source/core/Allocator.h"
 
 namespace MAI {
 
-class GPUDevice;
-class OpenCLRuntime;
-class OpenCLAllocator : public Allocator {
+class CPUDevice;
+class CPUAllocator : public Allocator {
 public:
-    OpenCLAllocator(GPUDevice* device);
+    CPUAllocator(CPUDevice* device);
 
     Buffer* allocateBuffer(uint64 bytes) override;
 
@@ -30,12 +29,8 @@ public:
 
     void deallocate(MemoryInfo& memInfo) override;
 
-    void* mapBuffer(cl::Buffer* buffer, int32 offset, int32 bytes);
-    void unmap(void* buffer, void* mappedBuffer);
-
 private:
-    GPUDevice* mDevice;
-    OpenCLRuntime* mRuntime;
+    CPUDevice* mDevice;
 };
 
 } // namespace MAI

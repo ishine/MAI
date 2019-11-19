@@ -1,3 +1,19 @@
+// Copyright 2019 MAI. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#pragma once
+
 #include <map>
 #include "CL/cl2.hpp"
 #include "include/Runtime.h"
@@ -20,6 +36,7 @@ public:
         VER_2_0,
         VER_2_2,
     };
+    static std::string openCLErrorCodeToString(cl_int err);
     OpenCLRuntime();
     ~OpenCLRuntime();
     OpenCLDeviceType deviceType();
@@ -27,6 +44,8 @@ public:
     cl::Context& context();
     cl::Device& device();
     cl::CommandQueue& commandQueue();
+    void setCLDir(const std::string& dir);
+    std::string getCLDir();
     bool buildKernel(
             const std::string& programName,
             const std::string& kernelName,
@@ -52,6 +71,7 @@ private:
     std::map<std::string, cl::Program> mProgramMap;
     OpenCLDeviceType mDeviceType;
     OpenCLVersionType mVersionType;
+    std::string mCLDir;
 };
 
 } // namespace MAI

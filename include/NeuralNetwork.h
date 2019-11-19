@@ -90,6 +90,7 @@ public:
 private:
     std::vector<std::unique_ptr<Optimizer> > mOptimizers;
     Profiling::Profiler* mProfiler;
+protected:
     std::shared_ptr<Device> mDevice;
 };
 

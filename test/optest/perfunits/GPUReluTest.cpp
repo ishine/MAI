@@ -18,29 +18,25 @@
 namespace MAI {
 namespace Test {
 
-class ReluTest : public OperatorTest {
+class GPUReluPerfTest : public OperatorTest {
 };
 
-static void reluTest(DeviceType deviceType = DEVICE_CPU) {
-    std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
+TEST_F(GPUReluPerfTest, ReluGPUBasic) {
+    std::unique_ptr<PerformanceRunner> runner = NetworkBuilder(DEVICE_GPU)
         .addOperator(OperatorBuilder()
             .setType(RELU)
             .setDataType(DT_FLOAT)
+            .setDeviceType(DEVICE_GPU)
             .setInputNames({"input"})
             .setOutputNames({"output"})
             .build())
-        .addTensor<float>("input", {1, 2, 2, 2}, {0,2,3,4,-7,0,-8,-100})
+        .addRandomTensor<float>("input", {1, 1000, 1000, 3})
         .addTensor<float>("output", {}, {})
-        .addTensor<float>("check", {1, 2, 2, 2}, {0,2,3,4,0,0,0,0})
-        .build();
-    network->init();
-    network->run();
-
-    ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
-}
-
-TEST_F(ReluTest, ReluBasic) {
-    reluTest();
+        .buildPerformanceRunner();
+    Context context;
+    std::shared_ptr<Device> device = Device::createDevice(DEVICE_GPU);
+    context.setDevice(device.get());
+    runner->run(&context);
 }
 
 } // namespace Test

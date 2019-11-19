@@ -2,6 +2,7 @@
 
 #include <dlfcn.h>
 #include "CL/cl2.hpp"
+#include "OpenCLQCom.h"
 #include "util/MAIType.h"
 
 inline void* loadLibrary(const char* path) {
@@ -350,12 +351,14 @@ clGetSamplerInfo(cl_sampler         sampler,
                  size_t *           param_value_size_ret) CL_API_SUFFIX__VERSION_1_0;
 
 /* Program Object APIs */
-extern CL_API_ENTRY cl_program CL_API_CALL
+CL_API_ENTRY cl_program CL_API_CALL
 clCreateProgramWithSource(cl_context        context,
                           cl_uint           count,
                           const char **     strings,
                           const size_t *    lengths,
-                          cl_int *          errcode_ret) CL_API_SUFFIX__VERSION_1_0;
+                          cl_int *          errcode_ret) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clCreateProgramWithSource, context, count, strings, lengths, errcode_ret);
+}
 
 extern CL_API_ENTRY cl_program CL_API_CALL
 clCreateProgramWithBinary(cl_context                     context,
@@ -397,14 +400,16 @@ clReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0 {
     DL_CALL_FUNCTION(clReleaseProgram, program);
 }
 
-extern CL_API_ENTRY cl_int CL_API_CALL
+CL_API_ENTRY cl_int CL_API_CALL
 clBuildProgram(cl_program           program,
                cl_uint              num_devices,
                const cl_device_id * device_list,
                const char *         options,
                void (CL_CALLBACK *  pfn_notify)(cl_program program,
                                                 void * user_data),
-               void *               user_data) CL_API_SUFFIX__VERSION_1_0;
+               void *               user_data) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clBuildProgram, program, num_devices, device_list, options, pfn_notify, user_data);
+}
 
 #ifdef CL_VERSION_1_2
 
@@ -457,20 +462,24 @@ clUnloadPlatformCompiler(cl_platform_id platform) CL_API_SUFFIX__VERSION_1_2;
 
 #endif
 
-extern CL_API_ENTRY cl_int CL_API_CALL
+CL_API_ENTRY cl_int CL_API_CALL
 clGetProgramInfo(cl_program         program,
                  cl_program_info    param_name,
                  size_t             param_value_size,
                  void *             param_value,
-                 size_t *           param_value_size_ret) CL_API_SUFFIX__VERSION_1_0;
+                 size_t *           param_value_size_ret) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clGetProgramInfo, program, param_name, param_value_size, param_value, param_value_size_ret);
+}
 
-extern CL_API_ENTRY cl_int CL_API_CALL
+CL_API_ENTRY cl_int CL_API_CALL
 clGetProgramBuildInfo(cl_program            program,
                       cl_device_id          device,
                       cl_program_build_info param_name,
                       size_t                param_value_size,
                       void *                param_value,
-                      size_t *              param_value_size_ret) CL_API_SUFFIX__VERSION_1_0;
+                      size_t *              param_value_size_ret) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clGetProgramBuildInfo, program, device, param_name, param_value_size, param_value, param_value_size_ret);
+}
 
 /* Kernel Object APIs */
 CL_API_ENTRY cl_kernel CL_API_CALL
@@ -504,11 +513,13 @@ clReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0 {
     DL_CALL_FUNCTION(clReleaseKernel, kernel);
 }
 
-extern CL_API_ENTRY cl_int CL_API_CALL
+CL_API_ENTRY cl_int CL_API_CALL
 clSetKernelArg(cl_kernel    kernel,
                cl_uint      arg_index,
                size_t       arg_size,
-               const void * arg_value) CL_API_SUFFIX__VERSION_1_0;
+               const void * arg_value) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clSetKernelArg, kernel, arg_index, arg_size, arg_value);
+}
 
 #ifdef CL_VERSION_2_0
 
@@ -567,9 +578,11 @@ clGetKernelSubGroupInfo(cl_kernel                   kernel,
 #endif
 
 /* Event Object APIs */
-extern CL_API_ENTRY cl_int CL_API_CALL
+CL_API_ENTRY cl_int CL_API_CALL
 clWaitForEvents(cl_uint             num_events,
-                const cl_event *    event_list) CL_API_SUFFIX__VERSION_1_0;
+                const cl_event *    event_list) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clWaitForEvents, num_events, event_list);
+}
 
 extern CL_API_ENTRY cl_int CL_API_CALL
 clGetEventInfo(cl_event         event,
@@ -589,8 +602,10 @@ clCreateUserEvent(cl_context    context,
 extern CL_API_ENTRY cl_int CL_API_CALL
 clRetainEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0;
 
-extern CL_API_ENTRY cl_int CL_API_CALL
-clReleaseEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0;
+CL_API_ENTRY cl_int CL_API_CALL
+clReleaseEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clReleaseEvent, event);
+}
 
 #ifdef CL_VERSION_1_1
 
@@ -609,12 +624,15 @@ clSetEventCallback(cl_event    event,
 #endif
 
 /* Profiling APIs */
-extern CL_API_ENTRY cl_int CL_API_CALL
+CL_API_ENTRY cl_int CL_API_CALL
 clGetEventProfilingInfo(cl_event            event,
                         cl_profiling_info   param_name,
                         size_t              param_value_size,
                         void *              param_value,
-                        size_t *            param_value_size_ret) CL_API_SUFFIX__VERSION_1_0;
+                        size_t *            param_value_size_ret) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clGetEventProfilingInfo, event, param_name,
+            param_value_size, param_value, param_value_size_ret);
+}
 
 /* Flush and Finish APIs */
 CL_API_ENTRY cl_int CL_API_CALL
@@ -808,7 +826,7 @@ clEnqueueCopyBufferToImage(cl_command_queue command_queue,
                            const cl_event * event_wait_list,
                            cl_event *       event) CL_API_SUFFIX__VERSION_1_0;
 
-extern CL_API_ENTRY void * CL_API_CALL
+CL_API_ENTRY void * CL_API_CALL
 clEnqueueMapBuffer(cl_command_queue command_queue,
                    cl_mem           buffer,
                    cl_bool          blocking_map,
@@ -818,7 +836,10 @@ clEnqueueMapBuffer(cl_command_queue command_queue,
                    cl_uint          num_events_in_wait_list,
                    const cl_event * event_wait_list,
                    cl_event *       event,
-                   cl_int *         errcode_ret) CL_API_SUFFIX__VERSION_1_0;
+                   cl_int *         errcode_ret) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clEnqueueMapBuffer, command_queue, buffer, blocking_map, map_flags, offset,
+            size, num_events_in_wait_list, event_wait_list, event, errcode_ret);
+}
 
 extern CL_API_ENTRY void * CL_API_CALL
 clEnqueueMapImage(cl_command_queue  command_queue,
@@ -834,13 +855,16 @@ clEnqueueMapImage(cl_command_queue  command_queue,
                   cl_event *        event,
                   cl_int *          errcode_ret) CL_API_SUFFIX__VERSION_1_0;
 
-extern CL_API_ENTRY cl_int CL_API_CALL
+CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueUnmapMemObject(cl_command_queue command_queue,
                         cl_mem           memobj,
                         void *           mapped_ptr,
                         cl_uint          num_events_in_wait_list,
                         const cl_event * event_wait_list,
-                        cl_event *       event) CL_API_SUFFIX__VERSION_1_0;
+                        cl_event *       event) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clEnqueueUnmapMemObject, command_queue, memobj,
+            mapped_ptr, num_events_in_wait_list, event_wait_list, event);
+}
 
 #ifdef CL_VERSION_1_2
 
@@ -855,7 +879,7 @@ clEnqueueMigrateMemObjects(cl_command_queue       command_queue,
 
 #endif
 
-extern CL_API_ENTRY cl_int CL_API_CALL
+CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueNDRangeKernel(cl_command_queue command_queue,
                        cl_kernel        kernel,
                        cl_uint          work_dim,
@@ -864,7 +888,11 @@ clEnqueueNDRangeKernel(cl_command_queue command_queue,
                        const size_t *   local_work_size,
                        cl_uint          num_events_in_wait_list,
                        const cl_event * event_wait_list,
-                       cl_event *       event) CL_API_SUFFIX__VERSION_1_0;
+                       cl_event *       event) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clEnqueueNDRangeKernel, command_queue, kernel, work_dim,
+            global_work_offset, global_work_size, local_work_size,
+            num_events_in_wait_list, event_wait_list, event);
+}
 
 extern CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueNativeKernel(cl_command_queue  command_queue,

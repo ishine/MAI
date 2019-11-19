@@ -15,6 +15,9 @@
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
 #include "runtime/GPUDevice.h"
+#include "runtime/OpenCLUtil.h"
+#include "runtime/OpenCLBuffer.h"
+#include "tools/profiling/Profiler.h"
 
 namespace MAI {
 namespace Op {
@@ -31,45 +34,42 @@ public:
     }
 
     MAI_STATUS run() override {
-        const Tensor* input = getInputTensor(0);
-        Tensor* output = getOutputTensor(0);
-
-        MAI_OP_RUN_FIRST_START
-        MAI_CHECK_NULL(input);
-        MAI_CHECK_NULL(output);
-        output->resize(input->shape());
-        MAI_OP_RUN_FIRST_END
-
-        const T* inputData = input->data<T>();
-        T* outputData = output->mutableData<T>();
-        for (shape_t i = 0; i < input->elementSize(); ++i) {
-            outputData[i] = std::max(inputData[i], static_cast<T>(0));
-        }
         return MAI_SUCCESS;
     }
 
     MAI_STATUS run(Context* context) override {
         ALOGI("GPU Relu run context ==================");
         GPUDevice* device = context->device<DEVICE_GPU>();
-        //OpenCLRuntime* runtime = device->runtime();
+
+        OpenCLRuntime* runtime = reinterpret_cast<OpenCLRuntime*>(device->runtime());
+        runtime->buildKernel("Relu", "relu", "", mKernel);
         const Tensor* input = getInputTensor(0);
         Tensor* output = getOutputTensor(0);
-
-        MAI_OP_RUN_FIRST_START
         MAI_CHECK_NULL(input);
         MAI_CHECK_NULL(output);
+        std::vector<shape_t> shape= input->shape();
+        ALOGI("nputshape:%s", shapeToString(shape).c_str());
         output->resize(input->shape());
-        MAI_OP_RUN_FIRST_END
-
-        const T* inputData = input->data<T>();
-        T* outputData = output->mutableData<T>();
-        for (shape_t i = 0; i < input->elementSize(); ++i) {
-            outputData[i] = std::max(inputData[i], static_cast<T>(0));
-        }
+        ALOGI("after resize");
+        mKernel.setArg(0, *reinterpret_cast<OpenCLBuffer*>(input->buffer())->openclBuffer());
+        mKernel.setArg(1, *reinterpret_cast<OpenCLBuffer*>(output->buffer())->openclBuffer());
+        ALOGI("after setarg");
+        uint32 inputSize = static_cast<uint32>(input->elementSize());
+        std::vector<uint32> gws = {inputSize};
+        //std::vector<uint32> lws = {inputSize};
+        std::vector<uint32> lws = {20, 0};
+        cl::Event event;
+        run1DKernel(runtime, mKernel, gws, lws, event);
+        event.wait();
+        uint64 start = event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
+        uint64 end = event.getProfilingInfo<CL_PROFILING_COMMAND_END>();
+        BASIC_OPERATOR_PROFILE(Profiling::Profiler::getInstance(), name(), getNameFromOperator(type()), start, end);
+        ALOGI("after run cost:%lu", (end - start));
         return MAI_SUCCESS;
     }
 private:
     bool mRunFirst;
+    cl::Kernel mKernel;
 };
 
 void registerRelu() {

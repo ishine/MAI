@@ -16,34 +16,36 @@
 
 #include "util/MAIType.h"
 #include "MemoryArena.h"
+#include "Buffer.h"
 
 namespace MAI {
 
 class Allocator {
 public:
     virtual ~Allocator() {}
+    virtual Buffer* allocateBuffer(uint64 bytes) = 0;
     virtual MemoryInfo allocate(uint64 bytes) = 0;
     virtual void deallocate(MemoryInfo& memInfo) = 0;
 };
 
-class CPUAllocator : public Allocator {
-public:
-    MemoryInfo allocate(uint64 bytes) {
-        MemoryInfo memInfo;
-        if (0 == bytes) {
-            return memInfo;
-        }
-        void* data = NULL;
-        data = malloc(bytes);
-        memInfo.ptr = (uint8*)data;
-        memInfo.offset = 0;
-        memInfo.size = bytes;
-        return memInfo;
-    }
-
-    void deallocate(MemoryInfo& memInfo) {
-        free(memInfo.ptr);
-    }
-};
+//class CPUAllocator1 : public Allocator {
+//public:
+    //MemoryInfo allocate(uint64 bytes) {
+        //MemoryInfo memInfo;
+        //if (0 == bytes) {
+            //return memInfo;
+        //}
+        //void* data = NULL;
+        //data = malloc(bytes);
+        //memInfo.ptr = (uint8*)data;
+        //memInfo.offset = 0;
+        //memInfo.size = bytes;
+        //return memInfo;
+    //}
+//
+    //void deallocate(MemoryInfo& memInfo) {
+        //free(memInfo.ptr);
+    //}
+//};
 
 } // namespace MAI

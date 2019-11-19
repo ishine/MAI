@@ -18,5 +18,7 @@ include $(MY_PATH)/Android.mk
 #operator_test
 include $(MY_PATH)/test/optest/Android.mk
 
+#include $(MY_PATH)/tools/opencl_info/Android.mk
+
 #optimizer_test
-include $(MY_PATH)/test/optimizertest/Android.mk
+#include $(MY_PATH)/test/optimizertest/Android.mk

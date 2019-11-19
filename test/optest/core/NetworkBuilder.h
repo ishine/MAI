@@ -21,13 +21,18 @@
 #include "core/SimpleNeuralNetwork.h"
 #include "core/Allocator.h"
 #include "PerformanceRunner.h"
+#include "NeuralNetworkRunner.h"
+#include "Device.h"
 
 namespace MAI {
 namespace Test {
 
 class NetworkBuilder {
 public:
-    NetworkBuilder() : mNetwork(new SimpleNeuralNetwork()) {
+    NetworkBuilder(DeviceType deviceType = DEVICE_CPU)
+        : mNetwork(new SimpleNeuralNetwork()), mDeviceType(deviceType) {
+            std::shared_ptr<MAI::Device> device = Device::createDevice(mDeviceType);
+        mNetwork->setDevice(Device::createDevice(mDeviceType));
         mNetwork->init();
     }
     virtual ~NetworkBuilder() = default;
@@ -49,7 +54,8 @@ public:
             const std::vector<shape_t>& dims,
             const std::vector<T>& data,
             const DataFormat dataFormat = NHWC) {
-        std::unique_ptr<Tensor> tensor(new Tensor(DataTypeToEnum<T>::value, new CPUAllocator()));
+        Allocator* all = mNetwork->getDevice()->allocator();
+        std::unique_ptr<Tensor> tensor(new Tensor(DataTypeToEnum<T>::value, mNetwork->getDevice()->allocator()));
         tensor->setName(name);
         if (!dims.empty()) {
             tensor->allocateBuffer(dims);
@@ -68,6 +74,11 @@ public:
         return std::move(mNetwork);
     }
 
+    inline std::unique_ptr<NeuralNetworkRunner> buildRunner() {
+        mNeuralNetworkRunner.reset(new NeuralNetworkRunner(mNetwork));
+        return std::move(mNeuralNetworkRunner);
+    }
+
     inline std::unique_ptr<PerformanceRunner> buildPerformanceRunner() {
         mNetwork->init();
         mPerformanceRunner.reset(new PerformanceRunner(mNetwork));
@@ -76,7 +87,9 @@ public:
 
 private:
     std::unique_ptr<NeuralNetwork> mNetwork;
+    std::unique_ptr<NeuralNetworkRunner> mNeuralNetworkRunner;
     std::unique_ptr<PerformanceRunner> mPerformanceRunner;
+    DeviceType mDeviceType;
 };
 
 template<>

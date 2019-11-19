@@ -8,7 +8,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/core \
                     $(LOCAL_PATH)/../../source \
                     $(LOCAL_PATH)/../../include \
 
-LOCAL_SRC_FILES := $(call all-cpp-files-under,core units)
+LOCAL_SRC_FILES := $(call all-cpp-files-under,core units units/gpu)
 $(info LOCAL_C_INCLUDES=$(LOCAL_C_INCLUDES))
 
 LOCAL_MODULE := optest
