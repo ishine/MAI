@@ -30,11 +30,18 @@ namespace Test {
 class NetworkBuilder {
 public:
     NetworkBuilder(DeviceType deviceType = DEVICE_CPU)
-        : mNetwork(new SimpleNeuralNetwork()), mDeviceType(deviceType) {
-            std::shared_ptr<MAI::Device> device = Device::createDevice(mDeviceType);
-        mNetwork->setDevice(Device::createDevice(mDeviceType));
+        : mNetwork(new SimpleNeuralNetwork()) {
+        //std::shared_ptr<MAI::Device> device = Device::createDevice(mDeviceType);
+        mNetwork->setDevice(Device::createDevice(deviceType));
         mNetwork->init();
     }
+
+    NetworkBuilder(std::shared_ptr<Device> device)
+        : mNetwork(new SimpleNeuralNetwork()) {
+        mNetwork->setDevice(device);
+        mNetwork->init();
+    }
+
     virtual ~NetworkBuilder() = default;
 
     inline NetworkBuilder& addOperator(std::unique_ptr<Operator>&& op) {
@@ -89,7 +96,6 @@ private:
     std::unique_ptr<NeuralNetwork> mNetwork;
     std::unique_ptr<NeuralNetworkRunner> mNeuralNetworkRunner;
     std::unique_ptr<PerformanceRunner> mPerformanceRunner;
-    DeviceType mDeviceType;
 };
 
 template<>

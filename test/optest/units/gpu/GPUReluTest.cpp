@@ -22,7 +22,8 @@ class GPUReluTest : public OperatorTest {
 };
 
 TEST_F(GPUReluTest, ReluGPUBasic) {
-    std::unique_ptr<NeuralNetwork> network = NetworkBuilder(DEVICE_GPU)
+    std::shared_ptr<Device> device = Device::createDevice(DEVICE_GPU);
+    std::unique_ptr<NeuralNetwork> network = NetworkBuilder(device)
         .addOperator(OperatorBuilder()
             .setType(RELU)
             .setDataType(DT_FLOAT)
@@ -36,7 +37,6 @@ TEST_F(GPUReluTest, ReluGPUBasic) {
         .build();
     network->init();
     Context context;
-    std::shared_ptr<Device> device = Device::createDevice(DEVICE_GPU);
     context.setDevice(device.get());
     network->run(&context);
 

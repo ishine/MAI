@@ -1,8 +1,10 @@
 #include "OpenCLRuntime.h"
 #include "OpenCLHandle.h"
 #include "util/MAIType.h"
+#include "util/MAIUtil.h"
 #include <iostream>
 #include <fstream>
+#include <memory>
 
 namespace {
 
@@ -34,10 +36,94 @@ MAI::OpenCLRuntime::OpenCLVersionType getVersionType(const std::string& versionN
 
 namespace MAI {
 
+MAI_STATUS CLPrecompiledFile::load() {
+    std::ifstream f(mFile.c_str());
+    if (!f.good()) {
+        return MAI_FAILED;
+    }
+
+    const char* data = mapFile<char>(mFile);
+    uint64 dataNum = 0;
+    memcpy(&dataNum, data, sizeof(uint64));
+    data += sizeof(uint64);
+    int32 intSize = sizeof(int32);
+    int32 keySize = 0;
+    int32 valueSize = 0;
+    for (uint64 i = 0; i < dataNum; ++i) {
+        memcpy(&keySize, data, intSize);
+        data += intSize;
+
+        std::unique_ptr<char[]> key(new char[keySize+1]);
+        memcpy(&key[0], data, keySize);
+        key[keySize] = '\0';
+        data += keySize;
+
+        memcpy(&valueSize, data, intSize);
+        data += intSize;
+
+        std::vector<unsigned char> value(valueSize);
+        memcpy(value.data(), data, valueSize);
+        data += valueSize;
+
+        mData.emplace(std::string(&key[0]), value);
+    }
+    return MAI_SUCCESS;
+}
+
+MAI_STATUS CLPrecompiledFile::store() {
+    std::ofstream outFile(mFile, std::ios::out | std::ios::binary);
+    uint64 dataSize = sizeof(uint64);
+    for (auto& kv : mData) {
+        dataSize += sizeof(uint32) * 2 + kv.first.size() + kv.second.size();
+    }
+    std::unique_ptr<char[]> buffer(new char[dataSize]);
+    char* bufferPtr = buffer.get();
+    uint64 size = mData.size();
+    memcpy(bufferPtr, &size, sizeof(uint64));
+    bufferPtr += sizeof(uint64);
+    for (auto& kv : mData) {
+        int32 keySize = kv.first.size();
+        memcpy(bufferPtr, &keySize, sizeof(int32));
+        bufferPtr += sizeof(int32);
+
+        memcpy(bufferPtr, kv.first.c_str(), kv.first.size());
+        bufferPtr += kv.first.size();
+
+        int32 valueSize = kv.second.size();
+        memcpy(bufferPtr, &valueSize, sizeof(int32));
+        bufferPtr += sizeof(int32);
+
+        memcpy(bufferPtr, kv.second.data(), kv.second.size());
+        bufferPtr += kv.second.size();
+    }
+    outFile.write(buffer.get(), dataSize);
+    return MAI_SUCCESS;
+}
+
+void CLPrecompiledFile::add(const std::string& key,
+        const std::vector<uint8>& value) {
+    auto res = mData.emplace(key, value);
+    if (!res.second) {
+        mData[key] = value;
+    }
+}
+
+std::vector<uint8>* CLPrecompiledFile::find(const std::string& key) {
+    auto it = mData.find(key);
+    if (it == mData.end()) {
+        return NULL;
+    }
+
+    return &(it->second);
+}
+
 OpenCLRuntime::OpenCLRuntime()
     : mDeviceType(OpenCLDeviceType::UNKNOWN),
       mVersionType(OpenCLVersionType::UNKNOWN),
-      mCLDir("/sdcard") {
+      mCLDir("/sdcard"),
+      mPrecompiledFile(mCLDir + "/mai_precompiled_cl.bin") {
+    //CLPrecompiledFile file(mCLDir + "/mai_precompiled_cl.bin");
+    mPrecompiledFile.load();
     // 1. get all platforms
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
@@ -85,6 +171,7 @@ OpenCLRuntime::OpenCLRuntime()
 
 OpenCLRuntime::~OpenCLRuntime() {
     mCommandQueue->finish();
+    mPrecompiledFile.store();
 }
 
 OpenCLRuntime::OpenCLDeviceType OpenCLRuntime::deviceType() {
@@ -124,9 +211,9 @@ bool OpenCLRuntime::buildKernel(
     const std::string programKey = programName + buildOptions;
     auto it = mProgramMap.find(programKey);
     cl::Program program;
-    if (it != mProgramMap.end()) {
-        program = it->second;
-    } else {
+    //if (it != mProgramMap.end()) {
+    //    program = it->second;
+    //} else {
         bool success = buildProgram(programName, buildOptions, program);
         if (!success) {
             ALOGE("build program(%s, %s) failed", programName.c_str(),
@@ -134,7 +221,7 @@ bool OpenCLRuntime::buildKernel(
             return false;
         }
         mProgramMap.emplace(programKey, program);
-    }
+    //}
 
     cl_int err;
     kernel = cl::Kernel(program, kernelName.c_str(), &err);
@@ -145,19 +232,22 @@ bool OpenCLRuntime::buildKernel(
 bool OpenCLRuntime::buildProgram(const std::string& programName,
         const std::string& buildOptions,
         cl::Program& program) {
+    std::string programUniqueKey = programName + buildOptions;
     bool ret;
-    ret = buildProgramFromBinary(programName, buildOptions, program);
+    ret = buildProgramFromBinary(programUniqueKey, buildOptions, program);
     if (ret) {
         return true;
     }
-    ret = buildProgramFromSource(programName, buildOptions, program);
+    ret = buildProgramFromSource(programUniqueKey, programName, buildOptions, program);
     if (ret) {
         return true;
     }
     return false;
 }
 
-bool OpenCLRuntime::buildProgramFromSource(const std::string& programName,
+bool OpenCLRuntime::buildProgramFromSource(
+        const std::string& programKey,
+        const std::string& programName,
         const std::string& buildOptions,
         cl::Program& program) {
     std::ifstream programFile(mCLDir + "/" + programName + ".cl");
@@ -174,14 +264,36 @@ bool OpenCLRuntime::buildProgramFromSource(const std::string& programName,
         MAI_ABORT("Cannot build program");
         return false;
     }
-    ALOGD("build program(%s) success", programName.c_str());
+    std::vector<std::vector<unsigned char>> binary = program.getInfo<CL_PROGRAM_BINARIES>();
+    MAI_CHECK(binary.size() == 1, "getInfo<CL_PROGRAM_BINARIES> error");
+    mPrecompiledFile.add(programKey, binary[0]);
+    ALOGD("build program(%s) from source success", programName.c_str());
+    //write program into file
     return true;;
 }
 
-bool OpenCLRuntime::buildProgramFromBinary(const std::string& programName,
+bool OpenCLRuntime::buildProgramFromBinary(const std::string& programKey,
         const std::string& buildOptions,
         cl::Program& program) {
-    return false;
+    auto content = mPrecompiledFile.find(programKey);
+    if (content == NULL) {
+        return false;
+    }
+
+    cl_int ret;
+    program = cl::Program(*mContext, {*mDevice}, {*content});
+    ret = program.build({device()}, buildOptions.c_str());
+    if (ret != CL_SUCCESS) {
+        if (program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(device()) ==
+                CL_BUILD_ERROR) {
+            std::string buildLog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device());
+            ALOGI("Program build log:%s", buildLog.c_str());
+        }
+        ALOGI("Build program from binary error:%s", programKey.c_str());
+        return false;
+    }
+    ALOGD("build program(%s) from binary success", programKey.c_str());
+    return true;
 }
 
 /*static*/

@@ -360,14 +360,17 @@ clCreateProgramWithSource(cl_context        context,
     DL_CALL_FUNCTION(clCreateProgramWithSource, context, count, strings, lengths, errcode_ret);
 }
 
-extern CL_API_ENTRY cl_program CL_API_CALL
+CL_API_ENTRY cl_program CL_API_CALL
 clCreateProgramWithBinary(cl_context                     context,
                           cl_uint                        num_devices,
                           const cl_device_id *           device_list,
                           const size_t *                 lengths,
                           const unsigned char **         binaries,
                           cl_int *                       binary_status,
-                          cl_int *                       errcode_ret) CL_API_SUFFIX__VERSION_1_0;
+                          cl_int *                       errcode_ret) CL_API_SUFFIX__VERSION_1_0 {
+    DL_CALL_FUNCTION(clCreateProgramWithBinary, context, num_devices,
+            device_list, lengths, binaries, binary_status, errcode_ret);
+}
 
 #ifdef CL_VERSION_1_2
 
