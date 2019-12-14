@@ -9,7 +9,6 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/core \
                     $(LOCAL_PATH)/../../include \
 
 LOCAL_SRC_FILES := $(call all-cpp-files-under,core units units/gpu)
-$(info LOCAL_C_INCLUDES=$(LOCAL_C_INCLUDES))
 
 LOCAL_MODULE := optest
 LOCAL_MULTILIB := 64

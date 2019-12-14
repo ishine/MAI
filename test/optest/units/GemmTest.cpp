@@ -20,6 +20,33 @@ namespace Test {
 class GemmTest : public OperatorTest {
 };
 
+TEST_F(GemmTest, GemmBasic1) {
+    GemmParam* param = new GemmParam();
+    param->alpha = 1.f;
+    param->beta = 1.f;
+    param->transA = false;
+    param->transB = false;
+    std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
+        .addOperator(OperatorBuilder()
+            .setType(GEMM)
+            .setDataType(DT_FLOAT)
+            .setInputNames({"input0", "input1", "input2"})
+            .setOutputNames({"output"})
+            .setParam(param)
+            .build())
+        .addTensor<float>("input0", {4,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16})
+        .addTensor<float>("input1", {4,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16})
+        //.addTensor<float>("input2", {4}, {1,2,3,4})
+        .addTensor<float>("input2", {4}, {0,0,0,0})
+        .addTensor<float>("output", {}, {})
+        //.addTensor<float>("check", {4,4}, {91,102,113,124,203,230,257,284,315,358,401,444,427,486,545,604})
+        .addTensor<float>("check", {4,4}, {90,100,110,120,202,228,254,280,314,356,398,440,426,484,542,600})
+        .build();
+    network->init();
+    network->run();
+
+    ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
+}
 TEST_F(GemmTest, GemmBasic) {
     GemmParam* param = new GemmParam();
     param->alpha = 1.f;

@@ -9,7 +9,7 @@ include $(MY_PATH)/3rd_party/gtest/Android.mk
 #openmp
 include $(MY_PATH)/3rd_party/openmp/NDK_Android.mk
 
-#profiling & benchmark
+#profiling & benchmark & opencl_info
 include $(call all-makefiles-under,$(MY_PATH)/tools/)
 
 #libmai
@@ -18,7 +18,5 @@ include $(MY_PATH)/Android.mk
 #operator_test
 include $(MY_PATH)/test/optest/Android.mk
 
-#include $(MY_PATH)/tools/opencl_info/Android.mk
-
 #optimizer_test
-#include $(MY_PATH)/test/optimizertest/Android.mk
+include $(MY_PATH)/test/optimizertest/Android.mk

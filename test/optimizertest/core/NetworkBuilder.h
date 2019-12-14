@@ -20,6 +20,7 @@
 #include "NeuralNetwork.h"
 #include "core/SimpleNeuralNetwork.h"
 #include "core/Allocator.h"
+#include "Device.h"
 
 namespace MAI {
 namespace Test {
@@ -48,7 +49,7 @@ public:
             const std::vector<shape_t>& dims,
             const std::vector<T>& data,
             const DataFormat dataFormat = NHWC) {
-        std::unique_ptr<Tensor> tensor(new Tensor(DataTypeToEnum<T>::value, new CPUAllocator()));
+        std::unique_ptr<Tensor> tensor(new Tensor(DataTypeToEnum<T>::value, mNetwork->getDevice()->allocator()));
         tensor->setName(name);
         if (!dims.empty()) {
             tensor->allocateBuffer(dims);

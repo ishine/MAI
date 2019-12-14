@@ -69,6 +69,14 @@ void getInfoByDevice(cl::Device& device, int index) {
     printf("    CL_DEVICE_GLOBAL_MEM_SIZE: %s\n", memStr(device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()).c_str());
     printf("    CL_DEVICE_LOCAL_MEM_SIZE: %s\n", memStr(device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()).c_str());
     printf("    CL_DEVICE_MAX_PARAMETER_SIZE: %lu\n", device.getInfo<CL_DEVICE_MAX_PARAMETER_SIZE>());
+    printf("    CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR: %u\n", device.getInfo<CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR>());
+    printf("    CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT: %u\n", device.getInfo<CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT>());
+    printf("    CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT: %u\n", device.getInfo<CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT>());
+    printf("    CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG: %u\n", device.getInfo<CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG>());
+    printf("    CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT: %u\n", device.getInfo<CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT>());
+    printf("    CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE: %u\n", device.getInfo<CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE>());
+    printf("    CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF: %u\n", device.getInfo<CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF>());
+    printf("    CL_DEVICE_PROFILING_TIMER_RESOLUTION: %uns\n", device.getInfo<CL_DEVICE_PROFILING_TIMER_RESOLUTION>());
     printf("    CL_DEVICE_IMAGE_SUPPORT: %s\n", boolToString(device.getInfo<CL_DEVICE_IMAGE_SUPPORT>()).c_str());
     printf("    CL_DEVICE_ENDIAN_LITTLE: %s\n", boolToString(device.getInfo<CL_DEVICE_ENDIAN_LITTLE>()).c_str());
     printf("    CL_DEVICE_AVAILABLE: %s\n", boolToString(device.getInfo<CL_DEVICE_AVAILABLE>()).c_str());

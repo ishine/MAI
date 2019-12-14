@@ -14,6 +14,13 @@
 
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
+#include "neon/Gemm_mace.h"
+
+#ifdef MAI_NEON_ENABLED
+#include "neon/GemmNeon.h"
+#else
+#include "ref/GemmRef.h"
+#endif
 
 namespace MAI {
 namespace Op {
@@ -132,6 +139,7 @@ public:
         MAI_CHECK_NULL(tensorB);
         MAI_CHECK(tensorC != NULL, "Gemm mat c must be exists");// TODO:(gavinchen) c can be NULL
         MAI_CHECK_NULL(output);
+        MAI_CHECK_NULL(mGemmParam);
         MAI_CHECK(tensorA->dimSize() == 2, "Gemm mat a must be 2-d");
         MAI_CHECK(tensorB->dimSize() == 2, "Gemm mat b must be 2-d");
         MAI_OP_RUN_FIRST_END
@@ -146,8 +154,27 @@ public:
             output->resize(outputShape);
             output->zero();
             T* outputData = output->mutableData<T>();
-            GemmImpl<T, false,false>::gemm(tensorA->shape(), t1Data, tensorB->shape(), t2Data,
-                    tensorC->shape(), t3Data, outputShape, outputData);
+            //GemmImpl<T, false,false>::gemm(tensorA->shape(), t1Data, tensorB->shape(), t2Data,
+            //        tensorC->shape(), t3Data, outputShape, outputData);
+#ifdef MAI_NEON_ENABLED
+            const char* mai_exe = getenv("mai_exe");
+            if (mai_exe != NULL && strlen(mai_exe) == 1 && mai_exe[0] == '1') {
+            //NEON::Gemm<T, false, false>::gemm(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
+            //        tensorB->dim(1), tensorA->dim(1));
+            } else if (mai_exe != NULL && strlen(mai_exe) == 1 && mai_exe[0] == '2') {
+            NEON::Gemm<T, false, false>::gemm_2(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
+                    tensorB->dim(1), tensorA->dim(1));
+            } else if (mai_exe != NULL && strlen(mai_exe) == 1 && mai_exe[0] == '3') {
+            NEON::Gemm<T, false, false>::gemm_b_morden(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
+                    tensorB->dim(1), tensorA->dim(1));
+            } else {
+            coreai::runtime::Gemm(t1Data, t2Data, 1, tensorA->dim(0), tensorA->dim(1),
+                    tensorB->dim(1), outputData);
+            }
+#else
+            Ref::Gemm<T, false, false>::gemm(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
+                    tensorB->dim(1), tensorA->dim(1));
+#endif
         } else if (!mGemmParam->transA && mGemmParam->transB) {
             outputShape[0] = tensorA->dim(0);
             outputShape[1] = tensorB->dim(0);
