@@ -14,7 +14,6 @@
 
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
-#include "neon/Gemm_mace.h"
 
 #ifdef MAI_NEON_ENABLED
 #include "neon/GemmNeon.h"
@@ -167,9 +166,6 @@ public:
             } else if (mai_exe != NULL && strlen(mai_exe) == 1 && mai_exe[0] == '3') {
             NEON::Gemm<T, false, false>::gemm_b_morden(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
                     tensorB->dim(1), tensorA->dim(1));
-            } else {
-            coreai::runtime::Gemm(t1Data, t2Data, 1, tensorA->dim(0), tensorA->dim(1),
-                    tensorB->dim(1), outputData);
             }
 #else
             Ref::Gemm<T, false, false>::gemm(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
