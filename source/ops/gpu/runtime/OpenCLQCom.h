@@ -14,28 +14,22 @@
 
 #pragma once
 
-#include "Allocator.h"
+typedef cl_uint cl_perf_hint;
 
-namespace MAI {
+#define CL_CONTEXT_PERF_HINT_QCOM 0x40C2
+#define CL_PERF_HINT_HIGH_QCOM 0x40C3
+#define CL_PERF_HINT_NORMAL_QCOM 0x40C4
+#define CL_PERF_HINT_LOW_QCOM 0x40C5
 
-class GPUDevice;
-class OpenCLRuntime;
-class OpenCLAllocator : public Allocator {
-public:
-    OpenCLAllocator(GPUDevice* device);
+// Adreno priority hints
+typedef cl_uint cl_priority_hint;
 
-    Buffer* allocateBuffer(uint64 bytes) override;
+#define CL_PRIORITY_HINT_NONE_QCOM 0
+#define CL_CONTEXT_PRIORITY_HINT_QCOM 0x40C9
+#define CL_PRIORITY_HINT_HIGH_QCOM 0x40CA
+#define CL_PRIORITY_HINT_NORMAL_QCOM 0x40CB
+#define CL_PRIORITY_HINT_LOW_QCOM 0x40CC
 
-    MemoryInfo allocate(uint64 bytes) override;
+/* Accepted by clGetKernelWorkGroupInfo */
+#define CL_KERNEL_WAVE_SIZE_QCOM 0xAA02
 
-    void deallocate(MemoryInfo& memInfo) override;
-
-    void* mapBuffer(cl::Buffer* buffer, int32 offset, int32 bytes);
-    void unmap(void* buffer, void* mappedBuffer);
-
-private:
-    GPUDevice* mDevice;
-    OpenCLRuntime* mRuntime;
-};
-
-} // namespace MAI

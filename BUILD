@@ -39,6 +39,7 @@ cc_library(
        "source/core/*.cpp",
        "source/core/optimizers/*.cpp",
        "source/ops/cpu/*.cpp",
+       "source/ops/cpu/runtime/*.cpp",
        "source/util/*.cpp",
    ]) + if_tensorflow_enabled(["//tools/converter/tensorflow:TensorflowParser.cpp"])
       + if_onnx_enabled(["//tools/converter/onnx:OnnxParser.cpp"]),
@@ -49,6 +50,7 @@ cc_library(
        "source/core/optimizers/*.h",
        "source/util/*.h",
        "source/ops/cpu/*.h",
+       "source/ops/cpu/runtime/*.h",
        "tools/profiling/*.h",
        "source/ops/cpu/ref/*.h",
        "source/ops/cpu/neon/*.h",
@@ -62,6 +64,7 @@ cc_library(
    linkopts = ["-fopenmp"],
    includes = ["source", "include"],
    visibility = ["//visibility:public"],
+   alwayslink = 1,
 
    deps = [
         "//tools/profiling:mai_profiling",

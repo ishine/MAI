@@ -21,7 +21,8 @@ namespace Test {
 int32 PerformanceRunner::sLoopCount = 100;
 
 PerformanceRunner::PerformanceRunner(std::unique_ptr<NeuralNetwork>& network)
-    : mNetwork(std::move(network)){}
+    : mNetwork(std::move(network)),
+    mProfiler(Profiling::Profiler::getInstance()){}
 
 /*static*/
 void PerformanceRunner::setLoopCount(int32 loopCount) {
@@ -35,18 +36,42 @@ void PerformanceRunner::run() {
 void PerformanceRunner::run(int32 counts) {
     mNetwork->init();
 
-    mNetwork->setProfiler(&mProfiler);
+    mNetwork->setProfiler(mProfiler);
 
-    mProfiler.setEnable(false);
-    mProfiler.reset();
+    mProfiler->setEnable(false);
+    mProfiler->reset();
     mNetwork->run();
     for (int32 i = 0; i < counts; ++i) {
-        mProfiler.setEnable(true);
-        mProfiler.reset();
-        mProfiler.startProfiling();
+        mProfiler->setEnable(true);
+        mProfiler->reset();
+        mProfiler->startProfiling();
         mNetwork->run();
-        mProfiler.stopProfiling();
-        auto& events = mProfiler.getProfileEvents();
+        mProfiler->stopProfiling();
+        auto& events = mProfiler->getProfileEvents();
+        mCalc.processSingleRunEvents(events);
+    }
+    printf("%s\n", mCalc.getTotalTime().toString().c_str());
+}
+
+void PerformanceRunner::run(Context* context) {
+    run(context, sLoopCount);
+}
+
+void PerformanceRunner::run(Context* context, int32 counts) {
+    mNetwork->init();
+
+    mNetwork->setProfiler(mProfiler);
+
+    mProfiler->setEnable(false);
+    mProfiler->reset();
+    mNetwork->run();
+    for (int32 i = 0; i < counts; ++i) {
+        mProfiler->setEnable(true);
+        mProfiler->reset();
+        mProfiler->startProfiling();
+        mNetwork->run(context);
+        mProfiler->stopProfiling();
+        auto& events = mProfiler->getProfileEvents();
         mCalc.processSingleRunEvents(events);
     }
     printf("%s\n", mCalc.getTotalTime().toString().c_str());

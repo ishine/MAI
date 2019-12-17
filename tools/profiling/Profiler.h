@@ -19,6 +19,7 @@ public:
         : mEnabled(enable) {
     }
 
+    int32_t addEvent(const ProfileEvent& event);
     // return unqiue handle for this event
     int32_t beginEvent(const ProfileEvent& event);
     // handle refer to the specified event
@@ -43,9 +44,13 @@ private:
 };
 
 class ScopedOperatorProfiler;
+class BasicOperatorProfiler;
 class Profiler {
 public:
-    Profiler();
+    static Profiler* getInstance() {
+        static Profiler profiler;
+        return &profiler;
+    }
     virtual ~Profiler();
 
     void startProfiling();
@@ -58,9 +63,37 @@ public:
         return mEventHub->getProfileEvents();
     }
 private:
+    Profiler();
     friend class ScopedOperatorProfiler;
+    friend class BasicOperatorProfiler;
     EventHub* mEventHub;
 };
+
+class BasicOperatorProfiler {
+public:
+    BasicOperatorProfiler(
+            Profiler* profiler,
+            const std::string& opName,
+            const std::string& opType,
+            uint64_t beginTime,
+            uint64_t endTime)
+        : mEventHub(NULL), mEventHandle(-1) {
+        if (profiler) {
+            mEventHub = profiler->mEventHub;
+            ProfileEvent event;
+            event.name = opName;
+            event.type = opType;
+            event.beginTime = beginTime;
+            event.endTime = endTime;
+            mEventHandle = mEventHub->addEvent(event);
+        }
+    }
+
+private:
+    EventHub* mEventHub;
+    int32_t mEventHandle;
+};
+
 
 class ScopedOperatorProfiler {
 public:
@@ -91,6 +124,9 @@ private:
 #define SCOPED_OPERATOR_PROFILE(profiler, name, type) \
     MAI::Profiling::ScopedOperatorProfiler \
         NAME_UNIQ(_profile_, __COUNTER__)((profiler), (name), (type))
+#define BASIC_OPERATOR_PROFILE(profiler, name, type, beginTime, endTime) \
+    MAI::Profiling::BasicOperatorProfiler \
+        NAME_UNIQ(_profile_, __COUNTER__)((profiler), (name), (type), (beginTime), (endTime))
 
 } // namespace Profiling
 } // namespace MAI

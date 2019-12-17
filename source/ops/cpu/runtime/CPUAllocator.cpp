@@ -12,22 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "CPUAllocator.h"
 #include "CPUDevice.h"
+#include "BufferImpl.h"
 
 namespace MAI {
 
-CPUDevice::CPUDevice() : mAllocator(this) {
+CPUAllocator::CPUAllocator(CPUDevice* device) : mDevice(device) {}
+
+Buffer* CPUAllocator::allocateBuffer(uint64 bytes) {
+    Buffer* buffer = new SimpleBuffer(this);
+    buffer->allocate(bytes);
+    ALOGI("CPUAllocator::allocateBuffer");
+    return buffer;
 }
 
-Runtime* CPUDevice::runtime() {
-    ALOGI("CPUDevice::runtime");
-    return &mRuntime;
+MemoryInfo CPUAllocator::allocate(uint64 bytes) {
+    MemoryInfo memInfo;
+    if (0 == bytes) {
+        return memInfo;
+    }
+    void* data = NULL;
+    data = malloc(bytes);
+    memInfo.ptr = (uint8*)data;
+    memInfo.offset = 0;
+    memInfo.size = bytes;
+    return memInfo;
 }
 
-Allocator* CPUDevice::allocator() {
-    return &mAllocator;
+void CPUAllocator::deallocate(MemoryInfo& memInfo) {
+    MAI_DELETE_PTR(memInfo.ptr);
 }
-
-REGISTE_DEVICE(DEVICE_CPU, CPUDevice);
 
 } // namespace MAI

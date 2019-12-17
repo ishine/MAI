@@ -16,11 +16,23 @@
 
 #include "CL/cl2.hpp"
 #include "OpenCLAllocator.h"
+#include "OpenCLBuffer.h"
+#include "OpenCLRuntime.h"
 #include "GPUDevice.h"
+#include "util/MAIType.h"
 
 namespace MAI {
 
-OpenCLAllocator::OpenCLAllocator(GPUDevice* device) : mDevice(device) {}
+OpenCLAllocator::OpenCLAllocator(GPUDevice* device)
+    : mDevice(device),
+    mRuntime(reinterpret_cast<OpenCLRuntime*>(mDevice->runtime())) {
+}
+
+Buffer* OpenCLAllocator::allocateBuffer(uint64 bytes) {
+    OpenCLBuffer* buf = new OpenCLBuffer(this);
+    buf->allocate(bytes);
+    return buf;
+}
 
 MemoryInfo OpenCLAllocator::allocate(uint64 bytes) {
     MemoryInfo memInfo;
@@ -43,6 +55,28 @@ MemoryInfo OpenCLAllocator::allocate(uint64 bytes) {
 
 void OpenCLAllocator::deallocate(MemoryInfo& memInfo) {
     MAI_DELETE_PTR(memInfo.ptr);
+}
+
+void* OpenCLAllocator::mapBuffer(cl::Buffer* buffer, int32 offset, int32 bytes) {
+    auto queue = mRuntime->commandQueue();
+    cl_int error;
+    void* mappedBuffer = queue.enqueueMapBuffer(*buffer, CL_TRUE, CL_MAP_READ | CL_MAP_WRITE,
+            offset, bytes, nullptr, nullptr, &error);
+    if (error != CL_SUCCESS) {
+        ALOGE("Map buffer error");
+        mappedBuffer = NULL;
+    }
+    return mappedBuffer;
+}
+
+void OpenCLAllocator::unmap(void* buffer, void* mappedBuffer) {
+    MAI_CHECK_NULL(buffer);
+    MAI_CHECK_NULL(mappedBuffer);
+    auto queue = mRuntime->commandQueue();
+    cl_int error = queue.enqueueUnmapMemObject(*reinterpret_cast<cl::Buffer*>(buffer), mappedBuffer, NULL, NULL);
+    if (error != CL_SUCCESS) {
+        ALOGE("unmap error");
+    }
 }
 
 } // namespace MAI

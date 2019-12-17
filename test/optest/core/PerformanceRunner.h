@@ -29,11 +29,13 @@ public:
     static void setLoopCount(int32 loopCount);
     void run(int32 counts);
     void run();
+    void run(Context* context);
+    void run(Context* context, int32 counts);
 
 private:
     static int32 sLoopCount;
     std::unique_ptr<NeuralNetwork> mNetwork;
-    Profiling::Profiler mProfiler;
+    Profiling::Profiler* mProfiler;
     Profiling::OperatorStatsCalculator mCalc;
 };
 

@@ -14,28 +14,21 @@
 
 #pragma once
 
-#include "Allocator.h"
+#include "NeuralNetwork.h"
 
 namespace MAI {
+namespace Test {
 
-class GPUDevice;
-class OpenCLRuntime;
-class OpenCLAllocator : public Allocator {
+class NeuralNetworkRunner {
 public:
-    OpenCLAllocator(GPUDevice* device);
+    NeuralNetworkRunner(std::unique_ptr<NeuralNetwork>& network);
+    virtual ~NeuralNetworkRunner() = default;
 
-    Buffer* allocateBuffer(uint64 bytes) override;
-
-    MemoryInfo allocate(uint64 bytes) override;
-
-    void deallocate(MemoryInfo& memInfo) override;
-
-    void* mapBuffer(cl::Buffer* buffer, int32 offset, int32 bytes);
-    void unmap(void* buffer, void* mappedBuffer);
+    void run();
 
 private:
-    GPUDevice* mDevice;
-    OpenCLRuntime* mRuntime;
+    std::unique_ptr<NeuralNetwork> mNetwork;
 };
 
+} // namespace Test
 } // namespace MAI

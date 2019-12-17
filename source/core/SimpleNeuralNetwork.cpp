@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "core/SimpleNeuralNetwork.h"
 #include "source/core/OpenMP.h"
+#include "include/Device.h"
 #include "Allocator.h"
 #include "util/MAIType.h"
 #include "source/ops/cpu/CPURegister.h"
@@ -62,7 +63,7 @@ MAI_STATUS SimpleNeuralNetwork::run(Context* context) {
     ALOGI("SimpleNeuralNetwork::run with context");
     for (auto it = mOperators.begin(); it != mOperators.end(); ++it) {
         ALOGI("run op:%s, type:%s", (*it)->name().c_str(), getNameFromOperator((*it)->type()).c_str());
-        SCOPED_OPERATOR_PROFILE(getProfiler(), (*it)->name(), getNameFromOperator((*it)->type()));
+        //SCOPED_OPERATOR_PROFILE(getProfiler(), (*it)->name(), getNameFromOperator((*it)->type()));
         (*it)->run(context);
     }
     return MAI_SUCCESS;
@@ -183,7 +184,7 @@ void SimpleNeuralNetwork::addModelInput(const std::string& inputName,
         DataType dataType, DataFormat dataFormat,
         const std::vector<shape_t>& inputShape) {
     mModelInputs.emplace_back(inputName);
-    std::unique_ptr<Tensor> tensor(new Tensor(dataType, new CPUAllocator()));
+    std::unique_ptr<Tensor> tensor(new Tensor(dataType, mDevice->allocator()));
     tensor->setName(inputName);
     tensor->setDataFormat(dataFormat);
     tensor->allocateBuffer(inputShape);

@@ -12,30 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#include "Allocator.h"
+#include "NetworkBuilder.h"
+#include "NeuralNetworkRunner.h"
 
 namespace MAI {
+namespace Test {
 
-class GPUDevice;
-class OpenCLRuntime;
-class OpenCLAllocator : public Allocator {
-public:
-    OpenCLAllocator(GPUDevice* device);
+NeuralNetworkRunner::NeuralNetworkRunner(std::unique_ptr<NeuralNetwork>& network)
+    : mNetwork(std::move(network)){}
 
-    Buffer* allocateBuffer(uint64 bytes) override;
+void NeuralNetworkRunner::run() {
+    mNetwork->init();
 
-    MemoryInfo allocate(uint64 bytes) override;
+    mNetwork->run();
+}
 
-    void deallocate(MemoryInfo& memInfo) override;
-
-    void* mapBuffer(cl::Buffer* buffer, int32 offset, int32 bytes);
-    void unmap(void* buffer, void* mappedBuffer);
-
-private:
-    GPUDevice* mDevice;
-    OpenCLRuntime* mRuntime;
-};
-
+} // namespace Test
 } // namespace MAI

@@ -12,30 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
-
-#include "Allocator.h"
+#include "include/Device.h"
+#include "CPURuntime.h"
+#include "CPUAllocator.h"
 
 namespace MAI {
-
-class GPUDevice;
-class OpenCLRuntime;
-class OpenCLAllocator : public Allocator {
+class CPUDevice : public Device {
 public:
-    OpenCLAllocator(GPUDevice* device);
-
-    Buffer* allocateBuffer(uint64 bytes) override;
-
-    MemoryInfo allocate(uint64 bytes) override;
-
-    void deallocate(MemoryInfo& memInfo) override;
-
-    void* mapBuffer(cl::Buffer* buffer, int32 offset, int32 bytes);
-    void unmap(void* buffer, void* mappedBuffer);
-
+    CPUDevice();
+    Runtime* runtime() override;
+    Allocator* allocator() override;
 private:
-    GPUDevice* mDevice;
-    OpenCLRuntime* mRuntime;
+    CPURuntime mRuntime;
+    CPUAllocator mAllocator;
 };
 
 } // namespace MAI

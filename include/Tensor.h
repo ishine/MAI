@@ -59,6 +59,9 @@ public:
     virtual void zero();
     virtual void setConst(bool isConst);
     virtual bool isConst() const;
+    virtual Buffer* buffer() const {
+        return mBuffer;
+    }
 
     template<typename T>
     inline const T* data() const {

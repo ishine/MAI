@@ -14,28 +14,30 @@
 
 #pragma once
 
-#include "Allocator.h"
+#include "include/Type.h"
 
 namespace MAI {
+namespace Op {
+namespace CPU {
+namespace Ref {
 
-class GPUDevice;
-class OpenCLRuntime;
-class OpenCLAllocator : public Allocator {
-public:
-    OpenCLAllocator(GPUDevice* device);
-
-    Buffer* allocateBuffer(uint64 bytes) override;
-
-    MemoryInfo allocate(uint64 bytes) override;
-
-    void deallocate(MemoryInfo& memInfo) override;
-
-    void* mapBuffer(cl::Buffer* buffer, int32 offset, int32 bytes);
-    void unmap(void* buffer, void* mappedBuffer);
-
-private:
-    GPUDevice* mDevice;
-    OpenCLRuntime* mRuntime;
+template<typename T, bool transpose_a, bool transpose_b>
+struct Gemm {
+    // O = C + A * B;
+    // A: MxK B: KxN C: MxN
+    static void gemm(const T* aPtr, const T* bPtr, const T* cPtr, T* oPtr, int M, int N, int K) {
+        for (int m = 0; m < M; ++m) {
+            for (int n = 0; n < N; ++n) {
+                oPtr[m * N + n] = cPtr[n];
+                for (int k = 0; k < K; ++k) {
+                    oPtr[m * N + n] += aPtr[m * K + k] * bPtr[k * N + n];
+                }
+            }
+        }
+    }
 };
 
+} // namespace Ref
+} // namespace CPU
+} // namespace Op
 } // namespace MAI
