@@ -93,6 +93,8 @@ inline int8 getDataTypeSize(DataType dataType) {
             return sizeof(int32);
         case DT_INT64:
             return sizeof(int64);
+        case DT_INT8:
+            return sizeof(int8);
         default:
             MAI_CHECK(0, "unsupport dataType:%d", dataType);
             break;

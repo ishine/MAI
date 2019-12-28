@@ -21,17 +21,16 @@ namespace Op {
 namespace CPU {
 
 template<class T>
-class Add : public Broadcast<T, T> {
+class LogicalAnd : public Broadcast<T, int8> {
 public:
     MAI_STATUS onCommonCompute(const Tensor* inputA, const Tensor* inputB,
             Tensor* output) {
-        ALOGI("Add::onCommonCompute=============");
         const T* inputAData = inputA->data<T>();
         const T* inputBData = inputB->data<T>();
-        T* outputData = output->mutableData<T>();
+        int8* outputData = output->mutableData<int8>();
         #pragma omp parallel for
         for (int32 i = 0; i < output->elementSize(); ++i) {
-            outputData[i] = inputAData[i] + inputBData[i];
+            outputData[i] = inputAData[i] && inputBData[i];
         }
         return MAI_SUCCESS;
     }
@@ -39,24 +38,24 @@ public:
     MAI_STATUS onScalarCompute(const Tensor* input, const T inputScalar,
             Tensor* output, bool convertInput) {
         const T* inputData = input->data<T>();
-        T* outputData = output->mutableData<T>();
+        int8* outputData = output->mutableData<int8>();
         #pragma omp parallel for
         for (int32 i = 0; i < input->elementSize(); ++i) {
-            outputData[i] = inputData[i] + inputScalar;
+            outputData[i] = inputData[i] && inputScalar;
         }
         return MAI_SUCCESS;
     }
 
     MAI_STATUS onBroadcastCompute() {
-        auto addFunc = [](const T* x, const T* y, T* o) {
-            *o = *x + *y;
+        auto addFunc = [](const T* x, const T* y, int8* o) {
+            *o = *x && *y;
         };
         return this->broadcastCompute(addFunc);
     }
 };
 
-void registerAdd() {
-    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(ADD).build()), float, Add);
+void registerLogicalAnd() {
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(LOGICAL_AND).build()), int8, LogicalAnd);
 }
 
 } // namespace CPU

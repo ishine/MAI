@@ -17,13 +17,17 @@
 
 #ifdef MAI_NEON_ENABLED
 #include "neon/GemmNeon.h"
-#else
-#include "ref/GemmRef.h"
 #endif
+#include "ref/GemmRef.h"
 
 namespace MAI {
 namespace Op {
 namespace CPU {
+
+#define GEMM_FUNC_PARAM const float* aPtr, const float* bPtr,\
+    const float* cPtr, float* oPtr, int M, int N, int K
+
+#define GEMM_FUNC_DECALRE void(GEMM_FUNC_PARAM)
 
 template<typename T, bool transpose_a, bool transpose_b>
 class GemmImpl {
@@ -111,8 +115,14 @@ template<typename T>
 class Gemm : public Operator {
 public:
     Gemm() : mGemmParam(NULL), mRunFirst(true) {
+#ifdef MAI_NEON_ENABLED
+        mNoTransANoTransBFunc = NEON::Gemm<T, false, false>::gemm;
+#else
+        mNoTransANoTransBFunc = Ref::Gemm<T, false, false>::gemm;
+#endif
     }
-    ~Gemm() {
+
+    virtual ~Gemm() {
         if (mGemmParam != NULL) {
             delete mGemmParam;
             mGemmParam = NULL;
@@ -155,22 +165,8 @@ public:
             T* outputData = output->mutableData<T>();
             //GemmImpl<T, false,false>::gemm(tensorA->shape(), t1Data, tensorB->shape(), t2Data,
             //        tensorC->shape(), t3Data, outputShape, outputData);
-#ifdef MAI_NEON_ENABLED
-            const char* mai_exe = getenv("mai_exe");
-            if (mai_exe != NULL && strlen(mai_exe) == 1 && mai_exe[0] == '1') {
-            //NEON::Gemm<T, false, false>::gemm(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
-            //        tensorB->dim(1), tensorA->dim(1));
-            } else if (mai_exe != NULL && strlen(mai_exe) == 1 && mai_exe[0] == '2') {
-            NEON::Gemm<T, false, false>::gemm_2(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
+            mNoTransANoTransBFunc(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
                     tensorB->dim(1), tensorA->dim(1));
-            } else if (mai_exe != NULL && strlen(mai_exe) == 1 && mai_exe[0] == '3') {
-            NEON::Gemm<T, false, false>::gemm_b_morden(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
-                    tensorB->dim(1), tensorA->dim(1));
-            }
-#else
-            Ref::Gemm<T, false, false>::gemm(t1Data, t2Data, t3Data, outputData, tensorA->dim(0),
-                    tensorB->dim(1), tensorA->dim(1));
-#endif
         } else if (!mGemmParam->transA && mGemmParam->transB) {
             outputShape[0] = tensorA->dim(0);
             outputShape[1] = tensorB->dim(0);
@@ -198,13 +194,45 @@ public:
         }
         return MAI_SUCCESS;
     }
+protected:
+    std::function<GEMM_FUNC_DECALRE> mNoTransANoTransBFunc;
+
+    std::function<GEMM_FUNC_DECALRE> mNoTransATransBFunc;
+
 private:
     GemmParam* mGemmParam;
     bool mRunFirst;
 };
 
+template<typename T>
+class GemmBMorden : public Gemm<T> {
+public:
+    GemmBMorden() : Gemm<T>(){
+        this->mNoTransANoTransBFunc = NEON::Gemm<T, false, false>::gemm_b_morden;
+    }
+
+    ~GemmBMorden(){}
+
+};
+
+
+template<typename T>
+class GemmRef : public Gemm<T> {
+public:
+    GemmRef() : Gemm<T>(){
+        this->mNoTransANoTransBFunc = Ref::Gemm<T, false, false>::gemm;
+        ALOGI("GemmRef11 mNoTransANoTransBFunc: == NULL =%d", this->mNoTransANoTransBFunc == NULL);
+    }
+
+    ~GemmRef(){}
+
+};
+
 void registerGemm() {
+    ALOGI("registerGemm");
     MAI_REGISTER_OP((OpContextBuilder().setOperatorType(GEMM).build()), float, Gemm);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(GEMM).setExtraInfo("ref").build()), float, GemmRef);
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(GEMM).setExtraInfo("b_morden").build()), float, GemmBMorden);
 }
 
 } // namespace CPU

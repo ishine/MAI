@@ -77,6 +77,19 @@ DECLARE_REGISTER_OP(Sin);
 DECLARE_REGISTER_OP(ASin);
 DECLARE_REGISTER_OP(Sinh);
 DECLARE_REGISTER_OP(ASinh);
+DECLARE_REGISTER_OP(Sum);
+DECLARE_REGISTER_OP(Square);
+DECLARE_REGISTER_OP(Greater);
+DECLARE_REGISTER_OP(Less);
+DECLARE_REGISTER_OP(Equal);
+DECLARE_REGISTER_OP(NotEqual);
+DECLARE_REGISTER_OP(LogicalAnd);
+DECLARE_REGISTER_OP(LogicalNot);
+DECLARE_REGISTER_OP(FloorDiv);
+DECLARE_REGISTER_OP(FloorMod);
+DECLARE_REGISTER_OP(RealDiv);
+DECLARE_REGISTER_OP(All);
+DECLARE_REGISTER_OP(Any);
 
 class CPURegister {
 public:
@@ -140,6 +153,19 @@ private:
         REGISTER_OP(ASin);
         REGISTER_OP(Sinh);
         REGISTER_OP(ASinh);
+        REGISTER_OP(Sum);
+        REGISTER_OP(Square);
+        REGISTER_OP(Greater);
+        REGISTER_OP(Less);
+        REGISTER_OP(Equal);
+        REGISTER_OP(NotEqual);
+        REGISTER_OP(LogicalAnd);
+        REGISTER_OP(LogicalNot);
+        REGISTER_OP(FloorMod);
+        REGISTER_OP(FloorDiv);
+        REGISTER_OP(RealDiv);
+        REGISTER_OP(All);
+        REGISTER_OP(Any);
     }
 };
 

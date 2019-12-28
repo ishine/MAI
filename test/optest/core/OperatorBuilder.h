@@ -40,6 +40,11 @@ public:
         return *this;
     }
 
+    inline OperatorBuilder& setExtra(const std::string& extraInfo) {
+        mOpContext.extraInfo = extraInfo;
+        return *this;
+    }
+
     inline OperatorBuilder& setOpContext(const OpContext& context) {
         mOpContext = context;
         return *this;

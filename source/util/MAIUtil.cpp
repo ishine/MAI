@@ -117,13 +117,15 @@ bool isShapeCompatible(const std::vector<shape_t>& shape1, const std::vector<sha
 std::vector<shape_t> broadcastShape(
         const std::vector<shape_t>& shape1, const std::vector<shape_t>& shape2) {
     std::vector<shape_t> outputShape(shape1.size() > shape2.size() ? shape1.size() : shape2.size());
+    shape_t deltA = outputShape.size() - shape1.size();
+    shape_t deltB = outputShape.size() - shape2.size();
     for (int32 i = static_cast<int32>(outputShape.size() - 1); i >= 0; --i) {
         if ((outputShape.size() - i) > shape1.size()) {
             outputShape[i] = shape2[i];
         } else if ((outputShape.size() - i) > shape2.size()) {
             outputShape[i] = shape1[i];
         } else {
-            outputShape[i] = shape1[i] == 1 ? shape2[i] : shape1[i];
+            outputShape[i] = shape1[i - deltA] == 1 ? shape2[i - deltB] : shape1[i - deltA];
         }
     }
     return outputShape;

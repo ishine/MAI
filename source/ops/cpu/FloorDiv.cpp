@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <math.h>
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
 #include "Broadcast.h"
@@ -21,17 +22,17 @@ namespace Op {
 namespace CPU {
 
 template<class T>
-class Add : public Broadcast<T, T> {
+class FloorDiv : public Broadcast<T, T> {
 public:
     MAI_STATUS onCommonCompute(const Tensor* inputA, const Tensor* inputB,
             Tensor* output) {
-        ALOGI("Add::onCommonCompute=============");
+        ALOGI("FloorDiv::onCommonCompute=============");
         const T* inputAData = inputA->data<T>();
         const T* inputBData = inputB->data<T>();
         T* outputData = output->mutableData<T>();
         #pragma omp parallel for
         for (int32 i = 0; i < output->elementSize(); ++i) {
-            outputData[i] = inputAData[i] + inputBData[i];
+            outputData[i] = floor(inputAData[i] / inputBData[i]);
         }
         return MAI_SUCCESS;
     }
@@ -40,23 +41,30 @@ public:
             Tensor* output, bool convertInput) {
         const T* inputData = input->data<T>();
         T* outputData = output->mutableData<T>();
-        #pragma omp parallel for
-        for (int32 i = 0; i < input->elementSize(); ++i) {
-            outputData[i] = inputData[i] + inputScalar;
+        if (convertInput) {
+            #pragma omp parallel for
+            for (int32 i = 0; i < input->elementSize(); ++i) {
+                outputData[i] = floor(inputScalar / inputData[i]);
+            }
+        } else {
+            #pragma omp parallel for
+            for (int32 i = 0; i < input->elementSize(); ++i) {
+                outputData[i] = floor(inputData[i] / inputScalar);
+            }
         }
         return MAI_SUCCESS;
     }
 
     MAI_STATUS onBroadcastCompute() {
         auto addFunc = [](const T* x, const T* y, T* o) {
-            *o = *x + *y;
+            *o = floor(*x / *y);
         };
         return this->broadcastCompute(addFunc);
     }
 };
 
-void registerAdd() {
-    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(ADD).build()), float, Add);
+void registerFloorDiv() {
+    MAI_REGISTER_OP((OpContextBuilder().setOperatorType(FLOOR_DIV).build()), float, FloorDiv);
 }
 
 } // namespace CPU

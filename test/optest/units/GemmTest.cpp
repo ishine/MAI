@@ -73,6 +73,96 @@ TEST_F(GemmTest, GemmBasic) {
     ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("check"));
 }
 
+TEST_F(GemmTest, GemmBasic_1024) {
+    auto generateAArray = [](std::vector<float>& result, int h, int w) {
+        result.resize(h * w);
+        for(int i = 0; i < h; ++i) {
+            for(int j = 0; j < w; ++j) {
+                result[i * w + j] = i + 1;
+                //result[i * w + j] = i * w + j;
+                //result[i * w + j] = 2;
+            }
+        }
+    };
+    auto generateBArray = [](std::vector<float>& result, int h, int w) {
+        result.resize(h * w);
+        for(int i = 0; i < h; ++i) {
+            for(int j = 0; j < w; ++j) {
+                result[i * w + j] = j + 1;
+                //result[i * w + j] = i * w + j;
+            }
+        }
+    };
+    auto generateCArray = [](std::vector<float>& result, int h, int w, int k) {
+        result.resize(h * w);
+        for(int i = 0; i < h; ++i) {
+            for(int j = 0; j < w; ++j) {
+                result[i * w + j] = (i + 1) * (j + 1) * k;
+                //result[i * w + j] = 2 * (j + 1) * k;
+            }
+        }
+    };
+    //int lenM = 1011;
+    //int lenK = 879;
+    //int lenN = 1033;
+    srand(time(0));
+    int lenM = rand() % 4096;
+    int lenK = rand() % 4096;
+    int lenN = rand() % 4096;
+    ALOGI("lenM:%d, lenK=%d, lenN=%d", lenM, lenK, lenN);
+    //int lenM = 100;
+    //int lenK = 100;
+    //int lenN = 128;
+    std::vector<float> aArray;
+    std::vector<float> bArray;
+    std::vector<float> cArray;
+    generateAArray(aArray, lenM, lenK);
+    generateBArray(bArray, lenK, lenN);
+    generateCArray(cArray, lenM, lenN, lenK);
+
+    GemmParam* param = new GemmParam();
+    param->alpha = 1.f;
+    param->beta = 1.f;
+    param->transA = false;
+    param->transB = false;
+    GemmParam* param_ref = new GemmParam();
+    param_ref->alpha = 1.f;
+    param_ref->beta = 1.f;
+    param_ref->transA = false;
+    param_ref->transB = false;
+    std::unique_ptr<NeuralNetwork> network = NetworkBuilder()
+        .addOperator(OperatorBuilder()
+            .setType(GEMM)
+            .setDataType(DT_FLOAT)
+            .setInputNames({"input0", "input1", "input2"})
+            .setOutputNames({"output"})
+            .setParam(param)
+            //.setExtra("b_morden")
+            .build())
+        .addOperator(OperatorBuilder()
+            .setType(GEMM)
+            .setDataType(DT_FLOAT)
+            .setInputNames({"input0", "input1", "input2"})
+            .setOutputNames({"output_ref"})
+            .setParam(param_ref)
+            .setExtra("ref")
+            .build())
+        //.addTensor<float>("input0", {lenM,lenK}, aArray)
+        //.addTensor<float>("input1", {lenK,lenN}, bArray)
+        .addRandomTensor<float>("input0", {lenM,lenK})
+        .addRandomTensor<float>("input1", {lenK,lenN})
+        .addTensor<float>("input2", {lenN}, {0})
+        .addTensor<float>("output", {}, {})
+        .addTensor<float>("output_ref", {}, {})
+        .build();
+    network->init();
+    network->run();
+    Tensor* outputTensor = network->getTensor("output");
+    Tensor* checkTensor = network->getTensor("output_ref");
+
+    ExpectTensorEQ<float, float>(network->getTensor("output"), network->getTensor("output_ref"));
+}
+
 TEST_F(GemmTest, GemmBasicTransA) {
     GemmParam* param = new GemmParam();
     param->alpha = 1.f;
