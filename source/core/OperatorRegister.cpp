@@ -34,7 +34,6 @@ std::unique_ptr<Operator> OperatorRegister::createOperator(const OpContext& opCo
         continue; \
     }
 
-    bool findExactly = false;
     auto find = mOps.end();
     for(auto it = mOps.begin(); it != mOps.end(); ++it) {
         COMPARE(opType)

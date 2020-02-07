@@ -6,6 +6,12 @@ MAI是一个神经网络推理引擎，以跨平台为目标，开发目标：Li
 
 ./bazel-bin/tools/benchmark/mai_benchmark --model_format=TENSORFLOW --model_path=tools/converter/tensorflow/models/mobilenet-v1-1.0.pb --num_runs=1 --warm_up=0
 
+## operator test
+
+bazel build //test/optest:optest --incompatible_disable_deprecated_attr_params=false
+
+./bazel-bin/test/optest/optest
+
 ## Supported models
 
 | Models                            | ONNX     | Tensorflow |

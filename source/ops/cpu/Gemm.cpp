@@ -208,7 +208,9 @@ template<typename T>
 class GemmBMorden : public Gemm<T> {
 public:
     GemmBMorden() : Gemm<T>(){
+#ifdef MAI_NEON_ENABLED
         this->mNoTransANoTransBFunc = NEON::Gemm<T, false, false>::gemm_b_morden;
+#endif
     }
 
     ~GemmBMorden(){}

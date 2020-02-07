@@ -28,7 +28,7 @@ namespace CPU {
 //    return offset;
 //}
 
-template<class TI, class TO, int N, int I = 0>
+template<class TI, class TO, int N, int I = 1>
 struct RecursiveFor {
     using BinaryFunc = std::function<void(const TI* inputA, const TI* inputB, TO* output)>;
     static void recursiveFor(
@@ -37,17 +37,17 @@ struct RecursiveFor {
             TO* output, const std::vector<shape_t>& strideO,
             const std::vector<shape_t>& loopShape,
             BinaryFunc func) {
-        for (int i = 0; i < loopShape[I]; ++i) {
+        for (int i = 0; i < loopShape[I - 1]; ++i) {
             RecursiveFor<TI, TO, N, I + 1>::recursiveFor(
-                    inputA + i * strideA[I], strideA,
-                    inputB + i * strideB[I], strideB,
-                    output + i * strideO[I], strideO, loopShape, func);
+                    inputA + i * strideA[I - 1], strideA,
+                    inputB + i * strideB[I - 1], strideB,
+                    output + i * strideO[I - 1], strideO, loopShape, func);
         }
     }
 };
 
 template<class TI, class TO, int N>
-struct RecursiveFor<TI, TO, N, (N - 1)> {
+struct RecursiveFor<TI, TO, N, N> {
     using BinaryFunc = std::function<void(const TI* inputA, const TI* inputB, TO* output)>;
     static void recursiveFor(
             const TI* inputA, const std::vector<shape_t>& strideA,
