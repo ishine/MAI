@@ -20,3 +20,7 @@ include $(MY_PATH)/test/optest/Android.mk
 
 #optimizer_test
 include $(MY_PATH)/test/optimizertest/Android.mk
+
+#neon_test
+include $(MY_PATH)/test/neontest/Android.mk
+
