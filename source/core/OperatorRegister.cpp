@@ -22,7 +22,6 @@ OperatorRegister* OperatorRegister::getInstance() {
     return &instance;
 }
 
-
 void OperatorRegister::registerOperator(const OpContext opContext, const OperatorCreator creator) {
     auto it = mOps.find(opContext);
     MAI_CHECK(it == mOps.end(), "Operator(%s) is already registered", opContext.toString().c_str());
@@ -30,9 +29,42 @@ void OperatorRegister::registerOperator(const OpContext opContext, const Operato
 }
 
 std::unique_ptr<Operator> OperatorRegister::createOperator(const OpContext& opContext) {
-    auto it = mOps.find(opContext);
-    MAI_CHECK(it != mOps.end(), "Operator(%s) is not registered", opContext.toString().c_str());
-    auto op = it->second();
+#define COMPARE(value) \
+    if (it->first.value != opContext.value) { \
+        continue; \
+    }
+
+    auto find = mOps.end();
+    for(auto it = mOps.begin(); it != mOps.end(); ++it) {
+        COMPARE(opType)
+        COMPARE(deviceType)
+
+        if (it->first.dataType == opContext.dataType
+                && it->first.extraInfo == opContext.extraInfo) {
+            // find exactly
+            find = it;
+            break;
+        }
+
+        if (find != mOps.end()) {
+            continue;
+        }
+
+        if (it->first.dataType != DT_INVALID && it->first.dataType != opContext.dataType) {
+            continue;
+        }
+
+        if (it->first.extraInfo != "" && it->first.extraInfo != opContext.extraInfo) {
+            continue;
+        }
+
+        // find compatible
+        find = it;
+    }
+#undef COMPARE
+
+    MAI_CHECK(find != mOps.end(), "Operator(%s) is not registered", opContext.toString().c_str());
+    auto op = find->second();
     op->setType(opContext.opType);
     return op;
 }

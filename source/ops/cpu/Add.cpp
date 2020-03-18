@@ -14,45 +14,45 @@
 
 #include "core/OperatorRegister.h"
 #include "util/MAIUtil.h"
+#include "Broadcast.h"
 
 namespace MAI {
 namespace Op {
 namespace CPU {
 
-template<typename T>
-class Add : public Operator {
+template<class T>
+class Add : public Broadcast<T, T> {
 public:
-    Add() : mRunFirst(true) {}
-    ~Add() = default;
-
-    MAI_STATUS init() override {
-        return MAI_SUCCESS;
-    }
-
-    MAI_STATUS run() override {
-        //TODO:(gavinchen) support broadcast
-        const Tensor* t1 = getInputTensor(0);
-        const Tensor* t2 = getInputTensor(1);
-        Tensor* output = getOutputTensor(0);
-        MAI_OP_RUN_FIRST_START
-        MAI_CHECK_NULL(t1);
-        MAI_CHECK_NULL(t2);
-        MAI_CHECK_NULL(output);
-        MAI_CHECK(isShapeSame(t1->shape(), t2->shape()), "t1->shape(%s) != t2->shape(%s)",
-                shapeToString(t1->shape()).c_str(), shapeToString(t2->shape()).c_str());
-        std::vector<shape_t> outputShape(t1->shape());
-        output->resize(outputShape);
-        MAI_OP_RUN_FIRST_END
-        const T* t1Data = t1->data<T>();
-        const T* t2Data = t2->data<T>();
+    MAI_STATUS onCommonCompute(const Tensor* inputA, const Tensor* inputB,
+            Tensor* output) {
+        ALOGI("Add::onCommonCompute=============");
+        const T* inputAData = inputA->data<T>();
+        const T* inputBData = inputB->data<T>();
         T* outputData = output->mutableData<T>();
-        for (shape_t i = 0; i < t1->elementSize(); ++i) {
-            outputData[i] = t1Data[i] + t2Data[i];
+        #pragma omp parallel for
+        for (int32 i = 0; i < output->elementSize(); ++i) {
+            outputData[i] = inputAData[i] + inputBData[i];
         }
         return MAI_SUCCESS;
     }
-private:
-    bool mRunFirst;
+
+    MAI_STATUS onScalarCompute(const Tensor* input, const T inputScalar,
+            Tensor* output, bool convertInput) {
+        const T* inputData = input->data<T>();
+        T* outputData = output->mutableData<T>();
+        #pragma omp parallel for
+        for (int32 i = 0; i < input->elementSize(); ++i) {
+            outputData[i] = inputData[i] + inputScalar;
+        }
+        return MAI_SUCCESS;
+    }
+
+    MAI_STATUS onBroadcastCompute() {
+        auto addFunc = [](const T* x, const T* y, T* o) {
+            *o = *x + *y;
+        };
+        return this->broadcastCompute(addFunc);
+    }
 };
 
 void registerAdd() {

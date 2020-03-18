@@ -63,8 +63,8 @@ public:
         event.wait();
         uint64 start = event.getProfilingInfo<CL_PROFILING_COMMAND_START>();
         uint64 end = event.getProfilingInfo<CL_PROFILING_COMMAND_END>();
-        BASIC_OPERATOR_PROFILE(Profiling::Profiler::getInstance(), name(), getNameFromOperator(type()), start, end);
-        ALOGI("after run cost:%lu", (end - start));
+        BASIC_OPERATOR_PROFILE(Profiling::Profiler::getInstance(), name(), getNameFromOperator(type()), start / 1000, end / 1000);
+        ALOGI("after run cost:%lu ns", (end - start) / 1000);
         return MAI_SUCCESS;
     }
 private:

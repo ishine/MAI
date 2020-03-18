@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "include/Type.h"
 
 namespace MAI {
@@ -26,10 +27,11 @@ struct Gemm {
     // O = C + A * B;
     // A: MxK B: KxN C: MxN
     static void gemm(const T* aPtr, const T* bPtr, const T* cPtr, T* oPtr, int M, int N, int K) {
+        ALOGI("Ref::Gemm");
         for (int m = 0; m < M; ++m) {
-            for (int n = 0; n < N; ++n) {
-                oPtr[m * N + n] = cPtr[n];
-                for (int k = 0; k < K; ++k) {
+            memcpy(oPtr + m * N, cPtr, sizeof(T) * N);
+            for (int k = 0; k < K; ++k) {
+                for (int n = 0; n < N; ++n) {
                     oPtr[m * N + n] += aPtr[m * K + k] * bPtr[k * N + n];
                 }
             }

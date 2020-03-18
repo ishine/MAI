@@ -14,7 +14,7 @@
 
 #include "CPUAllocator.h"
 #include "CPUDevice.h"
-#include "BufferImpl.h"
+#include "source/core/BufferImpl.h"
 
 namespace MAI {
 

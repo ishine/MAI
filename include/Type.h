@@ -140,6 +140,16 @@ enum DeviceType {
     DEVICE_NPU,
 };
 
+inline std::string getNameFromDeviceType(DeviceType deviceType) {
+    switch(deviceType) {
+    case DEVICE_CPU:return "CPU";
+    case DEVICE_GPU:return "GPU";
+    case DEVICE_DSP:return "DSP";
+    case DEVICE_NPU:return "NPU";
+    default:return "Unrecognized device";
+    }
+}
+
 inline std::string getNameFromDataType(DataType dataType) {
     switch(dataType) {
     case DT_INVALID:return "DT_INVALID";
@@ -207,6 +217,7 @@ struct EnumToDataType;
 MAI_MAPPING_DATA_TYPE(float, DT_FLOAT);
 MAI_MAPPING_DATA_TYPE(uint8, DT_UINT8);
 MAI_MAPPING_DATA_TYPE(int8, DT_INT8);
+MAI_MAPPING_DATA_TYPE(bool, DT_BOOL);
 MAI_MAPPING_DATA_TYPE(int32, DT_INT32);
 MAI_MAPPING_DATA_TYPE(int64, DT_INT64);
 
@@ -273,6 +284,7 @@ struct OpContext {
     MAIOperator opType;
     DataType dataType;
     DeviceType deviceType;
+    std::string extraInfo;
 
     bool operator < (const OpContext& opContext) const {
 #define COMPARE(value) \
@@ -281,18 +293,9 @@ struct OpContext {
         }
 
         COMPARE(opType)
-        //if (deviceType != opContext.deviceType) {
-            ////printf("deviceType:%d target:%d", deviceType, opContext.deviceType);
-            //return deviceType < opContext.deviceType;
-        //}
         COMPARE(deviceType)
-        if (dataType != opContext.dataType) {
-            if (dataType == DT_INVALID || opContext.dataType == DT_INVALID) {
-                return false;
-            }
-            return dataType < opContext.dataType;
-        }
-
+        COMPARE(dataType)
+        COMPARE(extraInfo)
 #undef COMPARE
         return false;
     }
@@ -303,6 +306,10 @@ struct OpContext {
            << getNameFromOperator(opType)
            << ", DataType:"
            << getNameFromDataType(dataType)
+           << ", DeviceType:"
+           << getNameFromDeviceType(deviceType)
+           << ", ExtraInfo:"
+           << extraInfo
            << "}";
         return ss.str();
     }
@@ -314,6 +321,7 @@ public:
         mOpContext.opType = INVALID;
         mOpContext.dataType = DT_INVALID;
         mOpContext.deviceType = DEVICE_CPU;
+        mOpContext.extraInfo = "";
     }
 
     inline OpContextBuilder& setOperatorType(MAIOperator op) {
@@ -328,6 +336,11 @@ public:
 
     inline OpContextBuilder& setDeviceType(DeviceType deviceType) {
         mOpContext.deviceType = deviceType;
+        return *this;
+    }
+
+    inline OpContextBuilder& setExtraInfo(const std::string& extraInfo) {
+        mOpContext.extraInfo = extraInfo;
         return *this;
     }
 

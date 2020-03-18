@@ -191,4 +191,10 @@ public:
     bool keepDim;
 };
 
+struct ReduceParam : public Param {
+public:
+    std::vector<int32> axes;
+    bool keepDim;
+};
+
 } // namespace MAI

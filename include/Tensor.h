@@ -43,6 +43,10 @@ public:
         mName = name;
     }
 
+    inline Allocator* allocator() const {
+        return mAllocator;
+    }
+
     void setDataFormat(DataFormat dataFormat);
 
     inline DataFormat getDataFormat() const {

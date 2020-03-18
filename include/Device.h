@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <functional>
 #include "include/NeuralNetwork.h"
 #include "include/Tensor.h"
 #include "include/Runtime.h"
